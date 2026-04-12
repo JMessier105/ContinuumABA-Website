@@ -1249,6 +1249,46 @@
     }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // ── Strip checker background from hero logo ──────────────────────────
+    // The PNG has the Canva checker baked in as pixels. We load it onto an
+    // offscreen canvas, find every pixel that is bright AND neutral-gray
+    // (the checker), make it transparent, then swap the img src.
+    (function removeCheckerFromLogo() {
+      const img = document.getElementById('hero-logo');
+      if (!img) return;
+
+      function process(src) {
+        const off = document.createElement('canvas');
+        const octx = off.getContext('2d');
+        const tmp = new Image();
+        tmp.crossOrigin = 'anonymous';
+        tmp.onload = () => {
+          off.width  = tmp.naturalWidth;
+          off.height = tmp.naturalHeight;
+          octx.drawImage(tmp, 0, 0);
+          const id = octx.getImageData(0, 0, off.width, off.height);
+          const d  = id.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], g = d[i+1], b = d[i+2];
+            // Pixel is bright AND near-neutral (gray/white = checker)
+            const bright  = r > 195 && g > 195 && b > 195;
+            const neutral = Math.abs(r - g) < 20 && Math.abs(g - b) < 20;
+            if (bright && neutral) d[i+3] = 0; // make transparent
+          }
+          octx.putImageData(id, 0, 0);
+          img.src = off.toDataURL('image/png');
+        };
+        tmp.onerror = () => {}; // silently keep original on failure
+        tmp.src = src;
+      }
+
+      if (img.complete && img.naturalWidth) {
+        process(img.src);
+      } else {
+        img.addEventListener('load', () => process(img.src), { once: true });
+      }
+    })();
   </script>
 
   <!-- ══════════════════════ WAVY HERO BACKGROUND ══════════════════════ -->
