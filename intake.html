@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Start Your Intake — Continuum ABA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal: {
+              50:  '#f0fafb', 100: '#d0eff4', 200: '#a1dfe9',
+              300: '#64ccda', 400: '#3abeca', 500: '#28a8b5',
+              600: '#228798', 700: '#1d6d7d', 800: '#195462', 900: '#163f4a',
+            },
+            navy: '#2c4a7c',
+            brandGreen: '#6db33f',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            sans:    ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-family: 'Inter', system-ui, sans-serif; }
+
+    .nav-scrolled {
+      box-shadow: 0 4px 24px -4px rgba(22,63,74,0.12), 0 1px 4px -1px rgba(22,63,74,0.06);
+    }
+    .nav-link { position: relative; }
+    .nav-link::after {
+      content: ''; position: absolute; bottom: -3px; left: 0;
+      width: 0; height: 2px; background: #3abeca;
+      transition: width 0.22s ease; border-radius: 9999px;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    .page-hero {
+      background-color: #1d6d7d;
+      background-image:
+        radial-gradient(ellipse 70% 60% at 10% 20%, rgba(58,190,202,0.38) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 70% at 90% 80%, rgba(44,74,124,0.5) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 30% at 55% 40%, rgba(109,179,63,0.12) 0%, transparent 60%);
+    }
+
+    .btn-primary {
+      transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease, background-color 0.15s ease;
+    }
+    .btn-primary:hover  { transform: translateY(-2px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    #mobile-menu       { display: none; }
+    #mobile-menu.open  { display: block; }
+
+    /* ── Form inputs ── */
+    .form-input {
+      transition: box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3abeca;
+      box-shadow: 0 0 0 3px rgba(58,190,202,0.18);
+    }
+    .form-input.error {
+      border-color: #f87171;
+      box-shadow: 0 0 0 3px rgba(248,113,113,0.15);
+    }
+
+    /* ── Step indicator ── */
+    .step-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700;
+      transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .step-dot.active {
+      background: #3abeca; color: white;
+      box-shadow: 0 4px 14px -3px rgba(58,190,202,0.5);
+      transform: scale(1.1);
+    }
+    .step-dot.done {
+      background: #6db33f; color: white;
+      box-shadow: 0 4px 12px -3px rgba(109,179,63,0.4);
+    }
+    .step-dot.pending {
+      background: #f0fafb; color: #94a3b8;
+      border: 2px solid rgba(58,190,202,0.2);
+    }
+    .step-line {
+      flex: 1; height: 2px;
+      background: linear-gradient(to right, #d0eff4, #f0fafb);
+      transition: background 0.4s ease;
+    }
+    .step-line.done { background: linear-gradient(to right, #6db33f, #3abeca); }
+
+    /* ── Step panels ── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    /* ── Checkbox / radio cards ── */
+    .option-card {
+      cursor: pointer;
+      border: 2px solid rgba(58,190,202,0.2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .option-card:hover { border-color: #3abeca; background: #f0fafb; }
+    .option-card input:checked + .option-label { color: #1d6d7d; }
+    .option-card:has(input:checked) {
+      border-color: #3abeca;
+      background: #f0fafb;
+      box-shadow: 0 0 0 3px rgba(58,190,202,0.15);
+    }
+    .option-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+    /* ── Progress bar ── */
+    #progress-bar {
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── Fade in ── */
+    @media (prefers-reduced-motion: no-preference) {
+      .fade-in {
+        opacity: 0; transform: translateY(18px);
+        transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34,1.2,0.64,1);
+      }
+      .fade-in.visible { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Footer ── */
+    .footer-bg {
+      background-color: #163f4a;
+      background-image: radial-gradient(ellipse 55% 65% at 85% 15%, rgba(58,190,202,0.14) 0%, transparent 60%);
+    }
+
+    /* ── Process steps ── */
+    .process-step {
+      position: relative;
+    }
+    .process-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 2px;
+      height: calc(100% + 8px);
+      background: linear-gradient(to bottom, rgba(58,190,202,0.3), rgba(58,190,202,0.05));
+    }
+  </style>
+</head>
+
+<body class="bg-white text-gray-800 font-sans antialiased">
+
+  <!-- ══ NAV ══ -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white" style="transition: box-shadow 0.3s ease;">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <a href="index.html" class="flex-shrink-0" aria-label="Continuum ABA home">
+          <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-14 w-auto object-contain">
+        </a>
+        <div class="hidden md:flex items-center gap-7">
+          <a href="index.html#about"    class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">About</a>
+          <a href="index.html#services" class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">Services</a>
+          <a href="faq.html"            class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">FAQ</a>
+          <a href="intake.html"         class="nav-link text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">Get Started</a>
+          <a href="resources.html"      class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">Resources</a>
+          <a href="intake.html"
+             class="btn-primary ml-2 inline-flex items-center px-5 py-2.5 bg-teal-400 hover:bg-teal-500
+                    text-white text-sm font-semibold rounded-xl focus-visible:outline-none
+                    focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
+             style="box-shadow:0 3px 12px -2px rgba(58,190,202,0.45);">
+            Start Intake
+          </a>
+        </div>
+        <button id="menu-toggle"
+                class="md:hidden p-2 rounded-lg text-gray-600 hover:text-teal-500 hover:bg-teal-50
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                style="transition:color 0.15s ease,background-color 0.15s ease;"
+                aria-label="Open navigation menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="md:hidden border-t border-gray-100 bg-white shadow-lg">
+      <div class="px-6 py-5 flex flex-col gap-5">
+        <a href="index.html#about"    class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">About</a>
+        <a href="index.html#services" class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">Services</a>
+        <a href="faq.html"            class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">FAQ</a>
+        <a href="intake.html"         class="text-teal-500 font-semibold">Get Started</a>
+        <a href="resources.html"      class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">Resources</a>
+        <a href="intake.html"
+           class="btn-primary inline-flex items-center justify-center px-5 py-3
+                  bg-teal-400 hover:bg-teal-500 text-white font-semibold rounded-xl">
+          Start Intake
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ══ PAGE HERO ══ -->
+  <section class="page-hero pt-32 pb-20 px-6">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                  bg-white/10 border border-white/20 text-white/80 text-sm font-medium mb-6">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        New Family Intake
+      </div>
+      <h1 class="font-display text-4xl md:text-5xl lg:text-6xl text-white leading-[1.1] tracking-tight mb-5">
+        Let's Get to Know Your Family
+      </h1>
+      <p class="text-white/70 text-lg leading-[1.8] max-w-2xl mx-auto">
+        This form takes about 5 minutes to complete. Once submitted, we'll review your information
+        and reach out within 2 business days to schedule a free consultation call.
+      </p>
+    </div>
+  </section>
+
+  <!-- Wave -->
+  <div class="bg-white" style="margin-top:-2px;">
+    <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full block" style="background:#1d6d7d;">
+      <path d="M0 60L1440 60L1440 18C1200 52 960 4 720 18C480 32 240 60 0 28L0 60Z" fill="white"/>
+    </svg>
+  </div>
+
+
+  <!-- ══ HOW IT WORKS ══ -->
+  <section class="py-16 bg-white">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+      <div class="text-center mb-12 fade-in">
+        <p class="text-teal-500 text-xs font-bold tracking-widest uppercase mb-3">What happens next</p>
+        <h2 class="font-display text-3xl md:text-4xl text-gray-900 tracking-tight">Your Path to Getting Started</h2>
+      </div>
+      <div class="grid md:grid-cols-4 gap-0 md:gap-6 fade-in">
+
+        <!-- Step 1 -->
+        <div class="process-step flex md:flex-col gap-5 md:gap-3 pb-8 md:pb-0 pl-12 md:pl-0">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
+               style="background:#3abeca; box-shadow:0 4px 14px -3px rgba(58,190,202,0.5);">1</div>
+          <div class="md:text-center md:pt-2">
+            <h3 class="font-semibold text-gray-900 text-sm mb-1">Submit This Form</h3>
+            <p class="text-gray-500 text-xs leading-relaxed">Tell us about your child and what you're hoping to work on. 5 minutes, no commitment.</p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="process-step flex md:flex-col gap-5 md:gap-3 pb-8 md:pb-0 pl-12 md:pl-0">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
+               style="background:#28a8b5; box-shadow:0 4px 14px -3px rgba(40,168,181,0.5);">2</div>
+          <div class="md:text-center md:pt-2">
+            <h3 class="font-semibold text-gray-900 text-sm mb-1">We Review &amp; Reach Out</h3>
+            <p class="text-gray-500 text-xs leading-relaxed">We'll read your intake and contact you within 2 business days to schedule a consultation.</p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="process-step flex md:flex-col gap-5 md:gap-3 pb-8 md:pb-0 pl-12 md:pl-0">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
+               style="background:#2c4a7c; box-shadow:0 4px 14px -3px rgba(44,74,124,0.4);">3</div>
+          <div class="md:text-center md:pt-2">
+            <h3 class="font-semibold text-gray-900 text-sm mb-1">Free Consultation</h3>
+            <p class="text-gray-500 text-xs leading-relaxed">A relaxed 30-minute call to discuss your child's needs, answer questions, and see if we're a good fit.</p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="process-step flex md:flex-col gap-5 md:gap-3 pl-12 md:pl-0">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
+               style="background:#6db33f; box-shadow:0 4px 14px -3px rgba(109,179,63,0.4);">4</div>
+          <div class="md:text-center md:pt-2">
+            <h3 class="font-semibold text-gray-900 text-sm mb-1">Assessment &amp; Program</h3>
+            <p class="text-gray-500 text-xs leading-relaxed">We conduct a formal assessment and build an individualized program tailored to your child.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ MULTI-STEP FORM ══ -->
+  <section class="py-12 pb-24" style="background-color:#f0fafb;">
+    <div class="max-w-2xl mx-auto px-6 lg:px-8">
+
+      <!-- Progress bar -->
+      <div class="mb-8 fade-in">
+        <div class="flex items-center justify-between mb-4 relative">
+          <!-- Lines -->
+          <div class="absolute left-0 right-0 top-[18px] flex px-[18px]" aria-hidden="true">
+            <div id="line-1-2" class="step-line"></div>
+            <div id="line-2-3" class="step-line"></div>
+            <div id="line-3-4" class="step-line"></div>
+          </div>
+
+          <!-- Dots -->
+          <div class="flex items-center justify-between w-full relative z-10">
+            <div class="flex flex-col items-center gap-1.5">
+              <div class="step-dot active" id="dot-1">1</div>
+              <span class="text-xs font-medium text-teal-600">Caregiver</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5">
+              <div class="step-dot pending" id="dot-2">2</div>
+              <span class="text-xs font-medium text-gray-400" id="label-2">Child</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5">
+              <div class="step-dot pending" id="dot-3">3</div>
+              <span class="text-xs font-medium text-gray-400" id="label-3">Services</span>
+            </div>
+            <div class="flex flex-col items-center gap-1.5">
+              <div class="step-dot pending" id="dot-4">4</div>
+              <span class="text-xs font-medium text-gray-400" id="label-4">Funding</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Form card -->
+      <div class="bg-white rounded-2xl overflow-hidden fade-in"
+           style="box-shadow: 0 16px 48px -8px rgba(22,63,74,0.12), 0 4px 16px -4px rgba(22,63,74,0.07);">
+
+        <!-- Top accent bar -->
+        <div class="h-1.5 w-full" style="background: linear-gradient(to right, #3abeca, #2c4a7c, #6db33f);"></div>
+
+        <form id="intake-form" novalidate>
+          <div class="p-8 md:p-10">
+
+            <!-- ── STEP 1: Caregiver Info ── -->
+            <div class="step-panel active" id="step-1">
+              <div class="mb-8">
+                <p class="text-teal-500 text-xs font-bold tracking-widest uppercase mb-1">Step 1 of 4</p>
+                <h2 class="font-display text-2xl text-gray-900">About You</h2>
+                <p class="text-gray-400 text-sm mt-1">Tell us a bit about the caregiver or person submitting this form.</p>
+              </div>
+
+              <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="cg-first-name" class="block text-sm font-medium text-gray-700 mb-1.5">First Name <span class="text-red-400">*</span></label>
+                    <input type="text" id="cg-first-name" name="cg_first_name" required
+                           class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                           placeholder="Jane">
+                  </div>
+                  <div>
+                    <label for="cg-last-name" class="block text-sm font-medium text-gray-700 mb-1.5">Last Name <span class="text-red-400">*</span></label>
+                    <input type="text" id="cg-last-name" name="cg_last_name" required
+                           class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                           placeholder="Smith">
+                  </div>
+                </div>
+
+                <div>
+                  <label for="cg-relationship" class="block text-sm font-medium text-gray-700 mb-1.5">Relationship to Child <span class="text-red-400">*</span></label>
+                  <select id="cg-relationship" name="cg_relationship" required
+                          class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white appearance-none">
+                    <option value="" disabled selected>Select relationship…</option>
+                    <option>Parent</option>
+                    <option>Guardian</option>
+                    <option>Grandparent</option>
+                    <option>Other caregiver</option>
+                    <option>Self (adult client)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="cg-email" class="block text-sm font-medium text-gray-700 mb-1.5">Email Address <span class="text-red-400">*</span></label>
+                  <input type="email" id="cg-email" name="cg_email" required
+                         class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                         placeholder="jane@example.com">
+                </div>
+
+                <div>
+                  <label for="cg-phone" class="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+                  <input type="tel" id="cg-phone" name="cg_phone"
+                         class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                         placeholder="(613) 555-0100">
+                </div>
+
+                <div>
+                  <label for="cg-location" class="block text-sm font-medium text-gray-700 mb-1.5">General Location / Community <span class="text-red-400">*</span></label>
+                  <input type="text" id="cg-location" name="cg_location" required
+                         class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                         placeholder="e.g. Perth, Smiths Falls, Ottawa…">
+                  <p class="text-gray-400 text-xs mt-1.5">Helps us determine if we can serve your area.</p>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ── STEP 2: Child Info ── -->
+            <div class="step-panel" id="step-2">
+              <div class="mb-8">
+                <p class="text-teal-500 text-xs font-bold tracking-widest uppercase mb-1">Step 2 of 4</p>
+                <h2 class="font-display text-2xl text-gray-900">About Your Child</h2>
+                <p class="text-gray-400 text-sm mt-1">Share some background on the child who would be receiving services.</p>
+              </div>
+
+              <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="child-first-name" class="block text-sm font-medium text-gray-700 mb-1.5">Child's First Name <span class="text-red-400">*</span></label>
+                    <input type="text" id="child-first-name" name="child_first_name" required
+                           class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                           placeholder="First name">
+                  </div>
+                  <div>
+                    <label for="child-age" class="block text-sm font-medium text-gray-700 mb-1.5">Child's Age <span class="text-red-400">*</span></label>
+                    <input type="number" id="child-age" name="child_age" min="1" max="25" required
+                           class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white"
+                           placeholder="Age">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2.5">Diagnosis Status <span class="text-red-400">*</span></label>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="option-card relative block">
+                      <input type="radio" name="diagnosis_status" value="formal_autism" required>
+                      <div class="option-label">
+                        <span class="text-sm font-semibold text-gray-800 block">Formal autism diagnosis</span>
+                        <span class="text-xs text-gray-500">Diagnosis in hand from a registered professional</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="radio" name="diagnosis_status" value="assessment_in_progress">
+                      <div class="option-label">
+                        <span class="text-sm font-semibold text-gray-800 block">Assessment in progress</span>
+                        <span class="text-xs text-gray-500">Awaiting results or referral is in place</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="radio" name="diagnosis_status" value="no_diagnosis">
+                      <div class="option-label">
+                        <span class="text-sm font-semibold text-gray-800 block">No formal diagnosis</span>
+                        <span class="text-xs text-gray-500">Exploring options before or without diagnosis</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="radio" name="diagnosis_status" value="other_diagnosis">
+                      <div class="option-label">
+                        <span class="text-sm font-semibold text-gray-800 block">Other / unsure</span>
+                        <span class="text-xs text-gray-500">I'll share more details in comments</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2.5">Which skill areas are you most hoping to work on? <span class="text-xs text-gray-400 font-normal">(select all that apply)</span></label>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    <label class="option-card relative block">
+                      <input type="checkbox" name="skill_areas" value="communication">
+                      <div class="option-label text-sm font-medium text-gray-700">Communication</div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="checkbox" name="skill_areas" value="social_skills">
+                      <div class="option-label text-sm font-medium text-gray-700">Social Skills</div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="checkbox" name="skill_areas" value="daily_living">
+                      <div class="option-label text-sm font-medium text-gray-700">Daily Living</div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="checkbox" name="skill_areas" value="emotional_regulation">
+                      <div class="option-label text-sm font-medium text-gray-700">Emotional Regulation</div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="checkbox" name="skill_areas" value="executive_functioning">
+                      <div class="option-label text-sm font-medium text-gray-700">Executive Function</div>
+                    </label>
+                    <label class="option-card relative block">
+                      <input type="checkbox" name="skill_areas" value="behaviour_support">
+                      <div class="option-label text-sm font-medium text-gray-700">Behaviour Support</div>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="child-background" class="block text-sm font-medium text-gray-700 mb-1.5">Anything else you'd like us to know about your child?</label>
+                  <textarea id="child-background" name="child_background" rows="3"
+                            class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white resize-none"
+                            placeholder="Previous therapy history, current challenges, strengths, school placement, etc."></textarea>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ── STEP 3: Services ── -->
+            <div class="step-panel" id="step-3">
+              <div class="mb-8">
+                <p class="text-teal-500 text-xs font-bold tracking-widest uppercase mb-1">Step 3 of 4</p>
+                <h2 class="font-display text-2xl text-gray-900">Services &amp; Availability</h2>
+                <p class="text-gray-400 text-sm mt-1">Tell us what type of support you're looking for and when you're available.</p>
+              </div>
+
+              <div class="space-y-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2.5">Which services are you interested in? <span class="text-xs text-gray-400 font-normal">(select all that apply)</span></label>
+                  <div class="space-y-2.5">
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" name="services" value="individual_sessions" class="mt-0.5 flex-shrink-0">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Individual Sessions</span>
+                        <span class="text-xs text-gray-500">One-on-one ABA sessions in home or community</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" name="services" value="social_groups" class="mt-0.5 flex-shrink-0">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Social Groups</span>
+                        <span class="text-xs text-gray-500">Small peer groups focused on social skills</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" name="services" value="caregiver_coaching" class="mt-0.5 flex-shrink-0">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Caregiver Coaching</span>
+                        <span class="text-xs text-gray-500">Training and strategies for parents and caregivers</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" name="services" value="remote_services" class="mt-0.5 flex-shrink-0">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Remote / Telehealth</span>
+                        <span class="text-xs text-gray-500">Video-based sessions and coaching</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="checkbox" name="services" value="not_sure" class="mt-0.5 flex-shrink-0">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Not sure yet</span>
+                        <span class="text-xs text-gray-500">I'd like to discuss options during the consultation</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2.5">Preferred days for sessions <span class="text-xs text-gray-400 font-normal">(select all that apply)</span></label>
+                  <div class="flex flex-wrap gap-2">
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="checkbox" name="preferred_days" value="monday">
+                      <span class="option-label text-sm font-medium text-gray-700">Monday</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="checkbox" name="preferred_days" value="tuesday">
+                      <span class="option-label text-sm font-medium text-gray-700">Tuesday</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="checkbox" name="preferred_days" value="wednesday">
+                      <span class="option-label text-sm font-medium text-gray-700">Wednesday</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="checkbox" name="preferred_days" value="thursday">
+                      <span class="option-label text-sm font-medium text-gray-700">Thursday</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="checkbox" name="preferred_days" value="friday">
+                      <span class="option-label text-sm font-medium text-gray-700">Friday</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="checkbox" name="preferred_days" value="flexible">
+                      <span class="option-label text-sm font-medium text-gray-700">Flexible</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2.5">Preferred time of day</label>
+                  <div class="flex flex-wrap gap-2">
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="radio" name="preferred_time" value="morning">
+                      <span class="option-label text-sm font-medium text-gray-700">Morning</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="radio" name="preferred_time" value="afternoon">
+                      <span class="option-label text-sm font-medium text-gray-700">Afternoon</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="radio" name="preferred_time" value="after_school">
+                      <span class="option-label text-sm font-medium text-gray-700">After school</span>
+                    </label>
+                    <label class="option-card relative py-2 px-4 cursor-pointer">
+                      <input type="radio" name="preferred_time" value="flexible">
+                      <span class="option-label text-sm font-medium text-gray-700">Flexible</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ── STEP 4: Funding ── -->
+            <div class="step-panel" id="step-4">
+              <div class="mb-8">
+                <p class="text-teal-500 text-xs font-bold tracking-widest uppercase mb-1">Step 4 of 4</p>
+                <h2 class="font-display text-2xl text-gray-900">Funding &amp; Final Notes</h2>
+                <p class="text-gray-400 text-sm mt-1">Help us understand your funding situation so we can point you in the right direction.</p>
+              </div>
+
+              <div class="space-y-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2.5">Funding situation <span class="text-red-400">*</span></label>
+                  <div class="space-y-2.5">
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="funding" value="oap_childhood_budget" required>
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">OAP Childhood Budget confirmed</span>
+                        <span class="text-xs text-gray-500">We have OAP funding and are ready to use it</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="funding" value="oap_waitlist">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">On OAP waitlist</span>
+                        <span class="text-xs text-gray-500">Registered and waiting for funding to be confirmed</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="funding" value="not_yet_registered">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Not yet registered with OAP</span>
+                        <span class="text-xs text-gray-500">We'd like help understanding how to access funding</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="funding" value="private_pay">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Private pay / insurance</span>
+                        <span class="text-xs text-gray-500">Paying out of pocket or through insurance benefits</span>
+                      </div>
+                    </label>
+                    <label class="option-card relative flex items-start gap-3 cursor-pointer">
+                      <input type="radio" name="funding" value="unsure">
+                      <div>
+                        <span class="text-sm font-semibold text-gray-800 block">Not sure / need guidance</span>
+                        <span class="text-xs text-gray-500">I'd like to talk through options</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="hear-about-us" class="block text-sm font-medium text-gray-700 mb-1.5">How did you hear about Continuum ABA?</label>
+                  <select id="hear-about-us" name="hear_about_us"
+                          class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white appearance-none">
+                    <option value="" disabled selected>Select an option…</option>
+                    <option>Google search</option>
+                    <option>Facebook</option>
+                    <option>Instagram</option>
+                    <option>Referred by another family</option>
+                    <option>Referred by a professional</option>
+                    <option>OAP provider directory</option>
+                    <option>Word of mouth</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label for="additional-notes" class="block text-sm font-medium text-gray-700 mb-1.5">Anything else you'd like us to know?</label>
+                  <textarea id="additional-notes" name="additional_notes" rows="4"
+                            class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 text-sm bg-white resize-none"
+                            placeholder="Questions, specific concerns, timeline urgency, anything at all…"></textarea>
+                </div>
+
+                <!-- Privacy note -->
+                <div class="flex gap-3 p-4 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 text-xs leading-relaxed">
+                  <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                  <span>
+                    Your information is kept strictly confidential and used only to prepare for your consultation.
+                    We will never share your details with third parties.
+                    By submitting this form you consent to Continuum ABA contacting you about our services.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- ── Navigation buttons ── -->
+            <div class="mt-10 flex items-center justify-between gap-4">
+              <button type="button" id="btn-back"
+                      class="hidden items-center gap-2 px-5 py-2.5 rounded-xl
+                             border-2 border-gray-200 text-gray-600 font-semibold text-sm
+                             hover:border-teal-300 hover:text-teal-600"
+                      style="transition: border-color 0.15s ease, color 0.15s ease;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back
+              </button>
+              <div class="ml-auto flex items-center gap-3">
+                <span id="step-counter" class="text-xs text-gray-400 font-medium">Step 1 of 4</span>
+                <button type="button" id="btn-next"
+                        class="btn-primary inline-flex items-center gap-2 px-6 py-3
+                               bg-teal-400 hover:bg-teal-500 text-white font-semibold text-sm rounded-xl
+                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                        style="box-shadow:0 4px 14px -3px rgba(58,190,202,0.45);">
+                  Continue
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+                <button type="submit" id="btn-submit"
+                        class="btn-primary hidden items-center gap-2 px-6 py-3
+                               bg-brandGreen hover:bg-green-600 text-white font-semibold text-sm rounded-xl
+                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+                        style="background:#6db33f; box-shadow:0 4px 14px -3px rgba(109,179,63,0.45);">
+                  Submit Intake
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </div><!-- /p-8 -->
+        </form>
+
+
+        <!-- ── Success state ── -->
+        <div id="form-success" class="hidden p-10 text-center">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
+               style="background:#6db33f; box-shadow:0 8px 24px -4px rgba(109,179,63,0.4);">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <h3 class="font-display text-2xl text-gray-900 mb-3">Intake Received!</h3>
+          <p class="text-gray-500 text-sm leading-relaxed max-w-sm mx-auto mb-8">
+            Thank you for reaching out. We've received your intake form and will be in touch within
+            <strong>2 business days</strong> to schedule your free consultation call.
+          </p>
+          <div class="rounded-xl p-5 text-left" style="background:#f0fafb;">
+            <p class="text-xs font-bold text-teal-600 uppercase tracking-wider mb-3">While you wait</p>
+            <ul class="space-y-2 text-sm text-gray-600">
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span>Browse our <a href="faq.html" class="text-teal-600 underline">FAQ page</a> for answers to common questions</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span>Explore our <a href="resources.html" class="text-teal-600 underline">Resources page</a> for OAP and local support links</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span>Follow us on Instagram <a href="https://www.instagram.com/continuum.aba" target="_blank" rel="noopener noreferrer" class="text-teal-600 underline">@continuum.aba</a> for updates</span>
+              </li>
+            </ul>
+          </div>
+          <a href="index.html"
+             class="btn-primary mt-6 inline-flex items-center gap-2 px-6 py-3
+                    bg-teal-400 hover:bg-teal-500 text-white font-semibold text-sm rounded-xl"
+             style="box-shadow:0 4px 14px -3px rgba(58,190,202,0.45);">
+            Back to Home
+          </a>
+        </div>
+
+
+        <!-- ── Error state ── -->
+        <div id="form-error" class="hidden mx-8 mb-8 p-4 rounded-xl bg-red-50 border border-red-100 text-center">
+          <p class="text-red-600 text-sm font-medium">Something went wrong sending your form. Please try again or email us directly at <a href="mailto:continuumaba@gmail.com" class="underline">continuumaba@gmail.com</a>.</p>
+        </div>
+
+      </div><!-- /card -->
+    </div>
+  </section>
+
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="footer-bg py-14">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-10 mb-10">
+        <div class="text-center md:text-left">
+          <div class="mb-3">
+            <span class="text-white font-display text-2xl font-bold tracking-tight">Continuum</span>
+            <span class="text-teal-400 font-display text-2xl font-bold tracking-tight"> ABA</span>
+          </div>
+          <p class="text-white/45 text-sm italic">Growing skills. Building confidence.</p>
+          <p class="text-white/30 text-xs mt-1">Serving Lanark County, Ontario</p>
+        </div>
+        <nav class="flex flex-wrap justify-center gap-x-7 gap-y-3">
+          <a href="index.html#about"    class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">About</a>
+          <a href="index.html#services" class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">Services</a>
+          <a href="faq.html"            class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">FAQ</a>
+          <a href="intake.html"         class="text-teal-400 text-sm font-medium">Get Started</a>
+          <a href="resources.html"      class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">Resources</a>
+          <a href="index.html#contact"  class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">Contact</a>
+        </nav>
+        <div class="flex items-center gap-3">
+          <a href="https://www.instagram.com/continuum.aba" target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+             class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-teal-400"
+             style="transition:background-color 0.2s ease;">
+            <svg class="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </a>
+          <a href="https://www.facebook.com/ContinuumABA" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+             class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-teal-400"
+             style="transition:background-color 0.2s ease;">
+            <svg class="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <div class="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/30">
+        <p>&copy; 2024 Continuum ABA. All rights reserved.</p>
+        <p>continuumaba.com &middot; continuumaba@gmail.com</p>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ══ JS ══ -->
+  <script>
+    // Nav shadow
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('nav-scrolled', window.scrollY > 24);
+    }, { passive: true });
+
+    // Mobile menu
+    document.getElementById('menu-toggle').addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.toggle('open');
+    });
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+      link.addEventListener('click', () => document.getElementById('mobile-menu').classList.remove('open'));
+    });
+
+    // Scroll fade-in
+    const fadeObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObserver.unobserve(e.target); } });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
+
+    // ── Multi-step form logic ──
+    const TOTAL_STEPS = 4;
+    let currentStep = 1;
+
+    const panels      = document.querySelectorAll('.step-panel');
+    const dots        = [null, ...Array.from({length:4}, (_,i) => document.getElementById(`dot-${i+1}`))];
+    const lines       = [null, document.getElementById('line-1-2'), document.getElementById('line-2-3'), document.getElementById('line-3-4')];
+    const stepLabels  = [null, ...Array.from({length:4}, (_,i) => document.getElementById(`label-${i+1}`))];
+    const btnBack     = document.getElementById('btn-back');
+    const btnNext     = document.getElementById('btn-next');
+    const btnSubmit   = document.getElementById('btn-submit');
+    const stepCounter = document.getElementById('step-counter');
+
+    function updateUI() {
+      // Panels
+      panels.forEach((p, i) => p.classList.toggle('active', i + 1 === currentStep));
+
+      // Dots
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        dots[i].classList.remove('active', 'done', 'pending');
+        if (i < currentStep)       { dots[i].classList.add('done');   dots[i].innerHTML = '✓'; }
+        else if (i === currentStep) { dots[i].classList.add('active'); dots[i].textContent = i; }
+        else                        { dots[i].classList.add('pending'); dots[i].textContent = i; }
+      }
+
+      // Lines
+      for (let i = 1; i <= 3; i++) {
+        lines[i].classList.toggle('done', i < currentStep);
+      }
+
+      // Step labels color
+      const labelColors = ['text-teal-600','text-gray-400'];
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        if (stepLabels[i]) {
+          stepLabels[i].className = `text-xs font-medium ${i <= currentStep ? 'text-teal-600' : 'text-gray-400'}`;
+        }
+      }
+
+      // Buttons
+      btnBack.classList.toggle('hidden', currentStep === 1);
+      btnBack.classList.toggle('inline-flex', currentStep > 1);
+      btnNext.classList.toggle('hidden', currentStep === TOTAL_STEPS);
+      btnSubmit.classList.toggle('hidden', currentStep !== TOTAL_STEPS);
+      btnSubmit.classList.toggle('inline-flex', currentStep === TOTAL_STEPS);
+
+      stepCounter.textContent = `Step ${currentStep} of ${TOTAL_STEPS}`;
+
+      // Scroll form into view
+      document.querySelector('.step-panel.active').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function validateStep(step) {
+      const panel = document.getElementById(`step-${step}`);
+      const required = panel.querySelectorAll('[required]');
+      let valid = true;
+      required.forEach(input => {
+        if (input.type === 'radio') {
+          const group = panel.querySelectorAll(`[name="${input.name}"]`);
+          const checked = Array.from(group).some(r => r.checked);
+          if (!checked) {
+            valid = false;
+            // Highlight the group container
+            input.closest('.space-y-2\\.5, .grid') && input.closest('.space-y-2\\.5, .grid').querySelectorAll('.option-card').forEach(card => {
+              card.style.borderColor = '#f87171';
+            });
+          }
+        } else {
+          if (!input.value.trim()) {
+            input.classList.add('error');
+            valid = false;
+          } else {
+            input.classList.remove('error');
+          }
+        }
+      });
+      return valid;
+    }
+
+    btnNext.addEventListener('click', () => {
+      if (!validateStep(currentStep)) return;
+      if (currentStep < TOTAL_STEPS) { currentStep++; updateUI(); }
+    });
+
+    btnBack.addEventListener('click', () => {
+      if (currentStep > 1) { currentStep--; updateUI(); }
+    });
+
+    // Clear error styling on input
+    document.querySelectorAll('.form-input').forEach(input => {
+      input.addEventListener('input', () => input.classList.remove('error'));
+    });
+    document.querySelectorAll('.option-card input').forEach(input => {
+      input.addEventListener('change', () => {
+        // Clear border highlights on sibling cards
+        const group = input.closest('.space-y-2\\.5, .grid, .flex');
+        if (group) group.querySelectorAll('.option-card').forEach(c => c.style.borderColor = '');
+      });
+    });
+
+    // Form submit
+    const FORMSPREE_ID = 'mqegrrod'; // reuse same Formspree form
+    document.getElementById('intake-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!validateStep(4)) return;
+
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Submitting…';
+
+      // Collect all form data
+      const fd = new FormData(this);
+      const payload = { _subject: 'New Intake Form — Continuum ABA' };
+      fd.forEach((val, key) => {
+        if (payload[key]) {
+          payload[key] = Array.isArray(payload[key]) ? [...payload[key], val] : [payload[key], val];
+        } else {
+          payload[key] = val;
+        }
+      });
+
+      try {
+        const res = await fetch('https://formspree.io/f/' + FORMSPREE_ID, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          document.getElementById('intake-form').classList.add('hidden');
+          document.getElementById('form-error').classList.add('hidden');
+          document.getElementById('form-success').classList.remove('hidden');
+        } else {
+          throw new Error('Server error ' + res.status);
+        }
+      } catch(err) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = 'Submit Intake <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+        document.getElementById('form-error').classList.remove('hidden');
+      }
+    });
+
+    updateUI();
+  </script>
+
+</body>
+</html>
