@@ -146,18 +146,7 @@
     }
 
     /* ── Process steps ── */
-    .process-step {
-      position: relative;
-    }
-    .process-step:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      width: 2px;
-      height: calc(100% + 8px);
-      background: linear-gradient(to bottom, rgba(58,190,202,0.3), rgba(58,190,202,0.05));
-    }
+    .process-step { /* no pseudo-elements — lines handled inline */ }
   </style>
 </head>
 
@@ -248,43 +237,61 @@
         <p class="text-teal-500 text-xs font-bold tracking-widest uppercase mb-3">What happens next</p>
         <h2 class="font-display text-3xl md:text-4xl text-gray-900 tracking-tight">Your Path to Getting Started</h2>
       </div>
-      <div class="grid md:grid-cols-4 gap-0 md:gap-6 fade-in">
+      <div class="grid md:grid-cols-4 gap-6 fade-in">
 
         <!-- Step 1 -->
-        <div class="process-step flex md:flex-col gap-5 md:gap-3 pb-8 md:pb-0 pl-12 md:pl-0">
-          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
-               style="background:#3abeca; box-shadow:0 4px 14px -3px rgba(58,190,202,0.5);">1</div>
-          <div class="md:text-center md:pt-2">
+        <div class="process-step flex md:flex-col items-start md:items-center gap-4 md:gap-3 md:text-center">
+          <div class="flex items-center w-full md:w-full flex-shrink-0 md:flex-shrink">
+            <!-- no left line on first step -->
+            <div class="hidden md:block flex-1"></div>
+            <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white"
+                 style="background:#F7941D; box-shadow:0 4px 14px -3px rgba(247,148,29,0.5);">1</div>
+            <div class="hidden md:block flex-1 h-0.5" style="background:linear-gradient(to right,rgba(247,148,29,0.4),rgba(58,190,202,0.3));"></div>
+          </div>
+          <div class="pt-0.5">
             <h3 class="font-semibold text-gray-900 text-sm mb-1">Submit This Form</h3>
             <p class="text-gray-500 text-xs leading-relaxed">Tell us about your child and what you're hoping to work on. 5 minutes, no commitment.</p>
           </div>
         </div>
 
         <!-- Step 2 -->
-        <div class="process-step flex md:flex-col gap-5 md:gap-3 pb-8 md:pb-0 pl-12 md:pl-0">
-          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
-               style="background:#28a8b5; box-shadow:0 4px 14px -3px rgba(40,168,181,0.5);">2</div>
-          <div class="md:text-center md:pt-2">
+        <div class="process-step flex md:flex-col items-start md:items-center gap-4 md:gap-3 md:text-center">
+          <div class="flex items-center w-full flex-shrink-0 md:flex-shrink">
+            <div class="hidden md:block flex-1 h-0.5" style="background:linear-gradient(to right,rgba(58,190,202,0.3),rgba(40,168,181,0.5));"></div>
+            <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white"
+                 style="background:#28a8b5; box-shadow:0 4px 14px -3px rgba(40,168,181,0.5);">2</div>
+            <div class="hidden md:block flex-1 h-0.5" style="background:linear-gradient(to right,rgba(40,168,181,0.5),rgba(44,74,124,0.35));"></div>
+          </div>
+          <div class="pt-0.5">
             <h3 class="font-semibold text-gray-900 text-sm mb-1">We Review &amp; Reach Out</h3>
             <p class="text-gray-500 text-xs leading-relaxed">We'll read your intake and contact you within 2 business days to schedule a consultation.</p>
           </div>
         </div>
 
         <!-- Step 3 -->
-        <div class="process-step flex md:flex-col gap-5 md:gap-3 pb-8 md:pb-0 pl-12 md:pl-0">
-          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
-               style="background:#2c4a7c; box-shadow:0 4px 14px -3px rgba(44,74,124,0.4);">3</div>
-          <div class="md:text-center md:pt-2">
+        <div class="process-step flex md:flex-col items-start md:items-center gap-4 md:gap-3 md:text-center">
+          <div class="flex items-center w-full flex-shrink-0 md:flex-shrink">
+            <div class="hidden md:block flex-1 h-0.5" style="background:linear-gradient(to right,rgba(44,74,124,0.35),rgba(44,74,124,0.5));"></div>
+            <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white"
+                 style="background:#2c4a7c; box-shadow:0 4px 14px -3px rgba(44,74,124,0.4);">3</div>
+            <div class="hidden md:block flex-1 h-0.5" style="background:linear-gradient(to right,rgba(44,74,124,0.5),rgba(109,179,63,0.35));"></div>
+          </div>
+          <div class="pt-0.5">
             <h3 class="font-semibold text-gray-900 text-sm mb-1">Free Consultation</h3>
             <p class="text-gray-500 text-xs leading-relaxed">A relaxed 30-minute call to discuss your child's needs, answer questions, and see if we're a good fit.</p>
           </div>
         </div>
 
         <!-- Step 4 -->
-        <div class="process-step flex md:flex-col gap-5 md:gap-3 pl-12 md:pl-0">
-          <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white absolute left-0 md:static md:mx-auto"
-               style="background:#6db33f; box-shadow:0 4px 14px -3px rgba(109,179,63,0.4);">4</div>
-          <div class="md:text-center md:pt-2">
+        <div class="process-step flex md:flex-col items-start md:items-center gap-4 md:gap-3 md:text-center">
+          <div class="flex items-center w-full flex-shrink-0 md:flex-shrink">
+            <div class="hidden md:block flex-1 h-0.5" style="background:linear-gradient(to right,rgba(109,179,63,0.35),rgba(109,179,63,0.5));"></div>
+            <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white"
+                 style="background:#6db33f; box-shadow:0 4px 14px -3px rgba(109,179,63,0.4);">4</div>
+            <!-- no right line on last step -->
+            <div class="hidden md:block flex-1"></div>
+          </div>
+          <div class="pt-0.5">
             <h3 class="font-semibold text-gray-900 text-sm mb-1">Assessment &amp; Program</h3>
             <p class="text-gray-500 text-xs leading-relaxed">We conduct a formal assessment and build an individualized program tailored to your child.</p>
           </div>
