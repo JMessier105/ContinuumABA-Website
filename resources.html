@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parent Resources — Continuum ABA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal: {
+              50:  '#f0fafb', 100: '#d0eff4', 200: '#a1dfe9',
+              300: '#64ccda', 400: '#3abeca', 500: '#28a8b5',
+              600: '#228798', 700: '#1d6d7d', 800: '#195462', 900: '#163f4a',
+            },
+            navy: '#2c4a7c',
+            brandGreen: '#6db33f',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            sans:    ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-family: 'Inter', system-ui, sans-serif; }
+
+    .nav-scrolled {
+      box-shadow: 0 4px 24px -4px rgba(22,63,74,0.12), 0 1px 4px -1px rgba(22,63,74,0.06);
+    }
+    .nav-link { position: relative; }
+    .nav-link::after {
+      content: ''; position: absolute; bottom: -3px; left: 0;
+      width: 0; height: 2px; background: #3abeca;
+      transition: width 0.22s ease; border-radius: 9999px;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    .page-hero {
+      background-color: #1d6d7d;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 5% 20%,  rgba(58,190,202,0.4) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 70% at 95% 80%, rgba(44,74,124,0.5)  0%, transparent 55%);
+    }
+
+    .resource-card {
+      transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.28s ease;
+    }
+    .resource-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px -6px rgba(22,63,74,0.14), 0 4px 12px -2px rgba(22,63,74,0.08);
+    }
+
+    .btn-primary {
+      transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease, background-color 0.15s ease;
+    }
+    .btn-primary:hover  { transform: translateY(-2px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    #mobile-menu       { display: none; }
+    #mobile-menu.open  { display: block; }
+  </style>
+</head>
+
+<body class="bg-white text-gray-800 font-sans antialiased">
+
+  <!-- ══ NAV ══ -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white" style="transition: box-shadow 0.3s ease;">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        <a href="index.html" class="flex-shrink-0" aria-label="Continuum ABA home">
+          <img src="Brand_assets/Continuum ABA Logo.jpg" alt="Continuum ABA" class="h-14 w-auto object-contain">
+        </a>
+        <div class="hidden md:flex items-center gap-7">
+          <a href="index.html#about"    class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">About</a>
+          <a href="index.html#skills"   class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">What We Build</a>
+          <a href="index.html#services" class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">Services</a>
+          <a href="resources.html"      class="nav-link text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">Resources</a>
+          <a href="index.html#contact"  class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium" style="transition:color 0.15s ease;">Contact</a>
+          <a href="index.html#contact"
+             class="btn-primary ml-2 inline-flex items-center px-5 py-2.5 bg-teal-400 hover:bg-teal-500
+                    text-white text-sm font-semibold rounded-xl focus-visible:outline-none
+                    focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
+             style="box-shadow:0 3px 12px -2px rgba(58,190,202,0.45);">
+            Get in Contact
+          </a>
+        </div>
+        <button id="menu-toggle"
+                class="md:hidden p-2 rounded-lg text-gray-600 hover:text-teal-500 hover:bg-teal-50
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                style="transition:color 0.15s ease,background-color 0.15s ease;"
+                aria-label="Open navigation menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="md:hidden border-t border-gray-100 bg-white shadow-lg">
+      <div class="px-6 py-5 flex flex-col gap-5">
+        <a href="index.html#about"    class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">About</a>
+        <a href="index.html#skills"   class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">What We Build</a>
+        <a href="index.html#services" class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">Services</a>
+        <a href="resources.html"      class="text-teal-500 font-semibold">Resources</a>
+        <a href="index.html#contact"  class="text-gray-700 hover:text-teal-500 font-medium" style="transition:color 0.15s ease;">Contact</a>
+        <a href="index.html#contact"
+           class="btn-primary inline-flex items-center justify-center px-5 py-3
+                  bg-teal-400 hover:bg-teal-500 text-white font-semibold rounded-xl">
+          Get in Contact
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ══ PAGE HERO ══ -->
+  <section class="page-hero pt-32 pb-20 px-6">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                  bg-white/10 border border-white/20 text-white/80 text-sm font-medium mb-6">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        Educational Resources
+      </div>
+      <h1 class="font-display text-4xl md:text-5xl lg:text-6xl text-white leading-[1.1] tracking-tight mb-5">
+        Community &amp; Support Resources for Families
+      </h1>
+      <p class="text-white/70 text-lg leading-[1.8] max-w-2xl mx-auto">
+        Navigating autism support can feel overwhelming. Below you'll find Facebook communities,
+        local Lanark County resources, and province-wide organizations to help you and your family
+        feel connected and informed.
+      </p>
+    </div>
+  </section>
+
+  <!-- Wave -->
+  <div class="bg-white" style="margin-top:-2px;">
+    <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" class="w-full block" style="background:#1d6d7d;">
+      <path d="M0 60L1440 60L1440 18C1200 52 960 4 720 18C480 32 240 60 0 28L0 60Z" fill="white"/>
+    </svg>
+  </div>
+
+
+  <!-- ══ DISCLAIMER ══ -->
+  <div class="max-w-5xl mx-auto px-6 lg:px-8 pt-10 pb-2">
+    <div class="flex gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm leading-relaxed">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>
+        <strong>Please note:</strong> Group membership, activity levels, and details may change over time.
+        We recommend clicking through to verify each group or organization is currently active before joining.
+        Continuum ABA is not affiliated with any of the groups listed below.
+      </span>
+    </div>
+  </div>
+
+
+  <!-- ══ SECTION 1: LOCAL / LANARK COUNTY ══ -->
+  <section class="py-20 bg-white">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+
+      <div class="flex items-center gap-3 mb-10">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+             style="background-color:#2c4a7c; box-shadow:0 4px 12px -2px rgba(44,74,124,0.35);">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="font-display text-3xl text-gray-900 leading-tight">Lanark County &amp; Eastern Ontario</h2>
+          <p class="text-gray-500 text-sm mt-0.5">Local services and directories serving the Lanark region</p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+
+        <!-- eMentalHealth Lanark -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start gap-4">
+            <div class="w-11 h-11 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900 mb-1">eMentalHealth — Lanark County Directory</h3>
+              <p class="text-gray-500 text-sm leading-relaxed mb-4">
+                A curated directory of autism and ASD services, support groups, and mental health resources
+                specifically for Lanark County, including Perth, Smiths Falls, and Carleton Place.
+              </p>
+              <a href="https://www.ementalhealth.ca/Lanark-County/Autism-and-Autism-Spectrum-Disorders/index.php?m=heading&ID=29"
+                 target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+                 style="transition:color 0.15s ease;">
+                View directory
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kids Inclusive -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start gap-4">
+            <div class="w-11 h-11 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900 mb-1">Kids Inclusive — OAP Services</h3>
+              <p class="text-gray-500 text-sm leading-relaxed mb-4">
+                The Ontario Autism Program (OAP) service provider for Lanark, Leeds &amp; Grenville,
+                Frontenac, Hastings, and surrounding counties. First point of contact for OAP-funded services.
+              </p>
+              <div class="flex flex-wrap gap-4">
+                <a href="https://www.kidsinclusive.ca"
+                   target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+                   style="transition:color 0.15s ease;">
+                  kidsinclusive.ca
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                </a>
+                <span class="text-gray-400 text-sm">613-544-3400 ext. 23175</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Champlain Healthline -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start gap-4">
+            <div class="w-11 h-11 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900 mb-1">Champlain Healthline — Autism Directory</h3>
+              <p class="text-gray-500 text-sm leading-relaxed mb-4">
+                Regional health directory covering the Champlain area (Ottawa Valley and surrounding region),
+                listing autism support groups, organizations, and services near Lanark County.
+              </p>
+              <a href="https://www.champlainhealthline.ca/listservices.aspx?id=10195"
+                 target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+                 style="transition:color 0.15s ease;">
+                Search the directory
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- South East Healthline -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start gap-4">
+            <div class="w-11 h-11 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900 mb-1">South East Healthline — Autism Services</h3>
+              <p class="text-gray-500 text-sm leading-relaxed mb-4">
+                Covers Lanark, Leeds &amp; Grenville and surrounding South East Ontario counties.
+                Lists local autism support groups, advocacy organizations, and family programs.
+              </p>
+              <a href="https://www.southeasthealthline.ca/listservices.aspx?id=10195"
+                 target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+                 style="transition:color 0.15s ease;">
+                Search the directory
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ SECTION 2: FACEBOOK GROUPS ══ -->
+  <section class="py-20" style="background-color:#f0fafb;">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+
+      <div class="flex items-center gap-3 mb-10">
+        <div class="w-10 h-10 rounded-xl bg-teal-400 flex items-center justify-center flex-shrink-0"
+             style="box-shadow:0 4px 12px -2px rgba(58,190,202,0.4);">
+          <!-- Facebook icon -->
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="font-display text-3xl text-gray-900 leading-tight">Facebook Support Groups</h2>
+          <p class="text-gray-500 text-sm mt-0.5">Online communities open to Ontario families — join from anywhere</p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+
+        <!-- Autism Parents Support Group Ontario -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-teal-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <h3 class="font-semibold text-gray-900 leading-snug">Autism Parents Support Group for Families in Ontario</h3>
+            <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-teal-50 text-teal-600 text-xs font-semibold border border-teal-100">Province-wide</span>
+          </div>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            A private Facebook group for parents and caregivers of children with autism across Ontario.
+            Members share experiences, resources, tips, and emotional support. Open to all Ontario families.
+          </p>
+          <a href="https://www.facebook.com/groups/622361154509069/"
+             target="_blank" rel="noopener noreferrer"
+             class="btn-primary inline-flex items-center gap-2 px-4 py-2 bg-teal-400 hover:bg-teal-500
+                    text-white text-sm font-semibold rounded-xl focus-visible:outline-none
+                    focus-visible:ring-2 focus-visible:ring-teal-400"
+             style="box-shadow:0 3px 10px -2px rgba(58,190,202,0.4);">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            View on Facebook
+          </a>
+        </div>
+
+        <!-- Autism Support Group for Parents in Ontario -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-teal-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <h3 class="font-semibold text-gray-900 leading-snug">Autism Support Group for Parents in Ontario</h3>
+            <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-teal-50 text-teal-600 text-xs font-semibold border border-teal-100">Province-wide</span>
+          </div>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            A Facebook community dedicated to connecting Ontario parents and caregivers raising autistic children.
+            A space to ask questions, share strategies, and find solidarity with families who understand.
+          </p>
+          <a href="https://www.facebook.com/groups/AutismSupportOntario/"
+             target="_blank" rel="noopener noreferrer"
+             class="btn-primary inline-flex items-center gap-2 px-4 py-2 bg-teal-400 hover:bg-teal-500
+                    text-white text-sm font-semibold rounded-xl focus-visible:outline-none
+                    focus-visible:ring-2 focus-visible:ring-teal-400"
+             style="box-shadow:0 3px 10px -2px rgba(58,190,202,0.4);">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            View on Facebook
+          </a>
+        </div>
+
+        <!-- Ontario Autism Coalition -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-teal-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <h3 class="font-semibold text-gray-900 leading-snug">Ontario Autism Coalition</h3>
+            <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-navy/10 text-navy text-xs font-semibold" style="color:#2c4a7c;background:rgba(44,74,124,0.08);">Advocacy</span>
+          </div>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            A parent-led advocacy group pushing for improved autism services and funding across Ontario.
+            Stay informed on OAP policy changes, funding announcements, and how to advocate for your child's services.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <a href="https://www.facebook.com/groups/ontarioautismcoalition/"
+               target="_blank" rel="noopener noreferrer"
+               class="btn-primary inline-flex items-center gap-2 px-4 py-2 bg-teal-400 hover:bg-teal-500
+                      text-white text-sm font-semibold rounded-xl focus-visible:outline-none
+                      focus-visible:ring-2 focus-visible:ring-teal-400"
+               style="box-shadow:0 3px 10px -2px rgba(58,190,202,0.4);">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              Facebook Group
+            </a>
+            <a href="https://www.facebook.com/ONTAutism/"
+               target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-1.5 px-4 py-2 border border-teal-200 text-teal-600 hover:bg-teal-50 text-sm font-semibold rounded-xl"
+               style="transition:background-color 0.15s ease;">
+              Official Page
+            </a>
+          </div>
+        </div>
+
+        <!-- Ottawa Parent Support Group -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-teal-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <h3 class="font-semibold text-gray-900 leading-snug">Autism Parent Support Group — Ottawa &amp; Area</h3>
+            <span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold border border-green-100">Closest to Lanark</span>
+          </div>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            Based in Ottawa and serving Eastern Ontario — the closest major regional Facebook group to Lanark County.
+            Families from Perth, Smiths Falls, and Carleton Place are welcome. Active discussion of local Ottawa Valley resources.
+          </p>
+          <a href="https://www.facebook.com/groups/431683703563382/"
+             target="_blank" rel="noopener noreferrer"
+             class="btn-primary inline-flex items-center gap-2 px-4 py-2 bg-teal-400 hover:bg-teal-500
+                    text-white text-sm font-semibold rounded-xl focus-visible:outline-none
+                    focus-visible:ring-2 focus-visible:ring-teal-400"
+             style="box-shadow:0 3px 10px -2px rgba(58,190,202,0.4);">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            View on Facebook
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ SECTION 3: PROVINCIAL ORGANIZATIONS ══ -->
+  <section class="py-20 bg-white">
+    <div class="max-w-5xl mx-auto px-6 lg:px-8">
+
+      <div class="flex items-center gap-3 mb-10">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+             style="background-color:#6db33f; box-shadow:0 4px 12px -2px rgba(109,179,63,0.4);">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="font-display text-3xl text-gray-900 leading-tight">Provincial Organizations</h2>
+          <p class="text-gray-500 text-sm mt-0.5">Established organizations offering support, advocacy, and programs across Ontario</p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <!-- Autism Ontario -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <h3 class="font-semibold text-gray-900 mb-2">Autism Ontario</h3>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            Ontario's largest autism organization. Offers chapter-based parent support groups, family events,
+            the CARES caregiver program, and advocacy. Free to access — no diagnosis required to join most programs.
+          </p>
+          <a href="https://www.autismontario.com"
+             target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+             style="transition:color 0.15s ease;">
+            autismontario.com
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Autism Canada -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <h3 class="font-semibold text-gray-900 mb-2">Autism Canada</h3>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            National organization providing education, resources, and advocacy for autistic individuals
+            and their families. Offers research-informed articles and a resource library for parents.
+          </p>
+          <a href="https://www.autismcanada.org"
+             target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+             style="transition:color 0.15s ease;">
+            autismcanada.org
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Kinark Autism Services -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <h3 class="font-semibold text-gray-900 mb-2">Kinark Autism Services</h3>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            Free foundational family services for families registered in the Ontario Autism Program (OAP),
+            including caregiver coaching, family consultation, and transition support.
+          </p>
+          <a href="https://www.kinarkautismservices.ca"
+             target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+             style="transition:color 0.15s ease;">
+            kinarkautismservices.ca
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- End The Wait Ontario -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <h3 class="font-semibold text-gray-900 mb-2">End The Wait Ontario</h3>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            A parent-built directory of free autism support groups across Ontario.
+            Searchable by region — useful for finding groups closest to Lanark County
+            that aren't easily found through Google.
+          </p>
+          <a href="https://www.endthewaitontario.com/free-autism-support-groups-ontario"
+             target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+             style="transition:color 0.15s ease;">
+            Browse the directory
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- OAP — Ontario Government -->
+        <div class="resource-card bg-white rounded-2xl p-6 border border-gray-100"
+             style="box-shadow:0 4px 16px -2px rgba(22,63,74,0.08);">
+          <h3 class="font-semibold text-gray-900 mb-2">Ontario Autism Program (OAP)</h3>
+          <p class="text-gray-500 text-sm leading-relaxed mb-5">
+            The Government of Ontario's core autism funding program. Learn about eligibility,
+            how to register, funding amounts, and urgent response services available to your family.
+          </p>
+          <a href="https://www.ontario.ca/page/ontario-autism-program-urgent-response-services"
+             target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 text-sm font-semibold"
+             style="transition:color 0.15s ease;">
+            ontario.ca — OAP
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══ CTA ══ -->
+  <section class="py-20" style="background-color:#f0fafb;">
+    <div class="max-w-2xl mx-auto px-6 lg:px-8 text-center">
+      <h2 class="font-display text-3xl md:text-4xl text-gray-900 tracking-tight mb-4">
+        Know a group we should add?
+      </h2>
+      <p class="text-gray-600 text-lg leading-relaxed mb-8">
+        If you're aware of a local Lanark County group or Ontario-wide community
+        that would benefit other families, we'd love to hear about it.
+      </p>
+      <a href="index.html#contact"
+         class="btn-primary inline-flex items-center gap-2 px-7 py-3.5
+                bg-teal-400 hover:bg-teal-500 text-white font-semibold rounded-xl text-base
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
+         style="box-shadow:0 8px 24px -4px rgba(58,190,202,0.4);">
+        Get in Contact
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+
+  <!-- ══ FOOTER ══ -->
+  <footer style="background-color:#163f4a; background-image:radial-gradient(ellipse 55% 65% at 85% 15%, rgba(58,190,202,0.14) 0%, transparent 60%);" class="py-14">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-10 mb-10">
+        <div class="text-center md:text-left">
+          <div class="mb-3">
+            <span class="text-white font-display text-2xl font-bold tracking-tight">Continuum</span>
+            <span class="text-teal-400 font-display text-2xl font-bold tracking-tight"> ABA</span>
+          </div>
+          <p class="text-white/45 text-sm italic">Growing skills. Building confidence.</p>
+          <p class="text-white/30 text-xs mt-1">Serving Lanark County, Ontario</p>
+        </div>
+        <nav class="flex flex-wrap justify-center gap-x-7 gap-y-3">
+          <a href="index.html#about"    class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">About</a>
+          <a href="index.html#skills"   class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">What We Build</a>
+          <a href="index.html#services" class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">Services</a>
+          <a href="resources.html"      class="text-teal-400 text-sm font-medium">Resources</a>
+          <a href="index.html#contact"  class="text-white/55 hover:text-white text-sm" style="transition:color 0.15s ease;">Contact</a>
+        </nav>
+        <div class="flex items-center gap-3">
+          <a href="https://www.instagram.com/continuum.aba" target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+             class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-teal-400"
+             style="transition:background-color 0.2s ease;">
+            <svg class="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </a>
+          <a href="https://www.facebook.com/ContinuumABA" target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+             class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-teal-400"
+             style="transition:background-color 0.2s ease;">
+            <svg class="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <div class="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/30">
+        <p>&copy; 2024 Continuum ABA. All rights reserved.</p>
+        <p>continuumaba.com &middot; continuumaba@gmail.com</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('nav-scrolled', window.scrollY > 24);
+    }, { passive: true });
+    document.getElementById('menu-toggle').addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.toggle('open');
+    });
+    document.querySelectorAll('#mobile-menu a').forEach(link => {
+      link.addEventListener('click', () => document.getElementById('mobile-menu').classList.remove('open'));
+    });
+  </script>
+
+</body>
+</html>

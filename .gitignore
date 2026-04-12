@@ -1,0 +1,6 @@
+# Dev tools — not needed for deployment
+serve.mjs
+screenshot.mjs
+CLAUDE.md
+temporary screenshots/
+node_modules/
