@@ -237,17 +237,15 @@
   <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white"
        style="transition: box-shadow 0.3s ease;">
     <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="flex items-center justify-between h-40">
+      <div class="flex items-center justify-end h-20">
 
-        <!-- Logo -->
-        <a href="#" class="flex-shrink-0 flex items-center" aria-label="Continuum ABA home">
-          <img src="Brand_assets/continuum aba logo final2.png"
-               alt="Continuum ABA — Growing skills. Building confidence."
-               style="height: 160px; width: auto; object-fit: contain; min-width: 400px;">
-        </a>
-
-        <!-- Desktop links -->
+        <!-- Desktop links with logo inline on the left of the link group -->
         <div class="hidden md:flex items-center gap-7">
+          <a href="#" aria-label="Continuum ABA home" class="mr-2">
+            <img src="Brand_assets/continuum aba logo final2.png"
+                 alt="Continuum ABA"
+                 style="height: 64px; width: 200px; object-fit: contain;">
+          </a>
           <a href="#about"       class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">About</a>
           <a href="#skills"      class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">What We Build</a>
           <a href="#services"    class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Services</a>
@@ -297,7 +295,7 @@
 
 
   <!-- ══════════════════════ HERO ══════════════════════ -->
-  <section class="relative hero-bg grain min-h-screen flex items-start pt-40 overflow-hidden" style="background-color:#163f4a;">
+  <section class="relative hero-bg grain min-h-screen flex items-start pt-20 overflow-hidden" style="background-color:#163f4a;">
 
     <!-- Wavy canvas background -->
     <canvas id="hero-canvas"></canvas>
