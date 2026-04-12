@@ -228,6 +228,44 @@
       50%       { opacity: 0.6; transform: scale(1.4); }
     }
     .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+    /* ── Brand-glow CTA border ── */
+    .brand-glow-btn {
+      position: relative;
+      z-index: 0;
+      isolation: isolate;
+    }
+    .brand-glow-btn::before,
+    .brand-glow-btn::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 14px;
+      background: linear-gradient(
+        45deg,
+        #3abeca,
+        #6db33f,
+        #2c4a7c,
+        #64ccda,
+        #3abeca,
+        #6db33f,
+        #2c8fa0,
+        #2c4a7c,
+        #3abeca
+      );
+      background-size: 400%;
+      animation: brand-spin 8s linear infinite;
+      z-index: -1;
+    }
+    .brand-glow-btn::after {
+      filter: blur(10px);
+      opacity: 0.6;
+    }
+    @keyframes brand-spin {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 400% 50%; }
+      100% { background-position: 0% 50%; }
+    }
   </style>
 </head>
 
@@ -342,8 +380,8 @@
 
         <div class="flex flex-wrap gap-4">
           <a href="#contact"
-             class="btn-primary inline-flex items-center gap-2 px-7 py-3.5
-                    bg-white text-teal-700 font-semibold rounded-xl text-base
+             class="brand-glow-btn btn-primary inline-flex items-center gap-2 px-7 py-3.5
+                    bg-white text-teal-800 font-semibold rounded-xl text-base
                     hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2
                     focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-teal-600"
              style="box-shadow: 0 6px 24px rgba(0,0,0,0.18);">
