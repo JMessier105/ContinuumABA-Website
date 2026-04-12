@@ -1280,6 +1280,12 @@
               if(nx>=0&&nx<W&&ny>=0&&ny<H&&!bg[n]&&isNearWhite(n)){bg[n]=1;q.push(n);}
             }
           }
+          // Pass 2: remove enclosed pure-white areas (O, A, B counters)
+          // that flood-fill can't reach from the edges
+          for(let i=0;i<d.length;i+=4){
+            if(d[i+3]===0) continue; // already transparent
+            if(d[i]>245 && d[i+1]>245 && d[i+2]>245) d[i+3]=0;
+          }
           // Feather edges
           for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
             const p=y*W+x; if(bg[p])continue;
