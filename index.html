@@ -1311,26 +1311,37 @@
       ctx.filter = `blur(${BLUR_PX}px)`;
     }
 
-    function drawWaves(n) {
+    // Wave bands: [yCenter as fraction of h, amplitude, noiseOffset]
+    const BANDS = [
+      [0.18, 80,  0.0 ],   // upper — sits behind logo
+      [0.35, 100, 1.5 ],   // upper-mid
+      [0.52, 110, 3.0 ],   // mid
+      [0.68, 95,  4.5 ],   // lower-mid
+      [0.84, 75,  6.0 ],   // lower
+    ];
+
+    function drawWaves() {
       nt += SPEED;
-      for (let i = 0; i < n; i++) {
+      BANDS.forEach(([center, amp, offset], i) => {
         ctx.beginPath();
         ctx.lineWidth   = WAVE_W;
         ctx.strokeStyle = WAVE_COLORS[i % WAVE_COLORS.length];
         for (let x = 0; x <= w; x += 4) {
-          const y = noise(x / 900, 0.35 * i, nt) * 120;
-          ctx.lineTo(x, y + h * 0.5);
+          const y = noise(x / 900, offset + 0.3 * i, nt) * amp;
+          ctx.lineTo(x, y + h * center);
         }
         ctx.stroke();
         ctx.closePath();
-      }
+      });
     }
 
     function render() {
-      ctx.globalAlpha = WAVE_OPA;
+      // Fill fully opaque so transparent PNG areas always show teal — never a checker
+      ctx.globalAlpha = 1;
       ctx.fillStyle   = BG_FILL;
       ctx.fillRect(0, 0, w, h);
-      drawWaves(5);
+      ctx.globalAlpha = WAVE_OPA;
+      drawWaves();
       rafId = requestAnimationFrame(render);
     }
 
