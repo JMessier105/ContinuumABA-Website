@@ -135,6 +135,8 @@
 
     /* ── Skill badges ── */
     .skill-badge {
+      position: relative;
+      overflow: visible;
       transition:
         transform         0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
         background-color  0.2s ease,
@@ -149,6 +151,72 @@
     }
     .skill-badge:hover .skill-icon { color: white; }
     .skill-badge:hover .skill-icon-wrap { background-color: rgba(255,255,255,0.2); }
+
+    /* ── Skill hover cards ── */
+    .skill-examples {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      width: 210px;
+      background: #fff;
+      border: 1px solid rgba(58,190,202,0.25);
+      border-radius: 14px;
+      padding: 14px 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 50;
+      box-shadow: 0 12px 32px -6px rgba(22,63,74,0.18);
+      text-align: left;
+    }
+    .skill-examples::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      border-left: 1px solid rgba(58,190,202,0.25);
+      border-top: 1px solid rgba(58,190,202,0.25);
+    }
+    .skill-badge:hover .skill-examples {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .skill-examples .examples-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #3abeca;
+      margin-bottom: 8px;
+    }
+    .skill-examples ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .skill-examples ul li {
+      font-size: 12px;
+      color: #374151;
+      padding: 3px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .skill-examples ul li::before {
+      content: '✓';
+      color: #3abeca;
+      font-weight: 700;
+      font-size: 11px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
 
     /* ── Contact cards ── */
     .contact-card {
@@ -571,6 +639,15 @@
             </svg>
           </div>
           <h3 class="font-semibold text-gray-900 text-sm leading-snug">Social Skills</h3>
+          <div class="skill-examples">
+            <div class="examples-title">Examples</div>
+            <ul>
+              <li>Taking turns & sharing</li>
+              <li>Reading social cues</li>
+              <li>Making & keeping friends</li>
+              <li>Group play & cooperation</li>
+            </ul>
+          </div>
         </div>
 
         <!-- Daily Living Skills -->
@@ -587,6 +664,15 @@
             </svg>
           </div>
           <h3 class="font-semibold text-gray-900 text-sm leading-snug">Daily Living Skills</h3>
+          <div class="skill-examples">
+            <div class="examples-title">Examples</div>
+            <ul>
+              <li>Getting dressed independently</li>
+              <li>Brushing teeth & hygiene</li>
+              <li>Meal prep & feeding skills</li>
+              <li>Toileting & self-care</li>
+            </ul>
+          </div>
         </div>
 
         <!-- Emotional Regulation -->
@@ -603,6 +689,15 @@
             </svg>
           </div>
           <h3 class="font-semibold text-gray-900 text-sm leading-snug">Emotional Regulation</h3>
+          <div class="skill-examples">
+            <div class="examples-title">Examples</div>
+            <ul>
+              <li>Identifying feelings</li>
+              <li>Calming strategies</li>
+              <li>Tolerating frustration</li>
+              <li>Coping with change</li>
+            </ul>
+          </div>
         </div>
 
         <!-- Communication -->
@@ -619,6 +714,15 @@
             </svg>
           </div>
           <h3 class="font-semibold text-gray-900 text-sm leading-snug">Communication</h3>
+          <div class="skill-examples">
+            <div class="examples-title">Examples</div>
+            <ul>
+              <li>Requesting needs & wants</li>
+              <li>Expanding vocabulary</li>
+              <li>AAC & alternative supports</li>
+              <li>Back-and-forth conversation</li>
+            </ul>
+          </div>
         </div>
 
         <!-- Executive Functioning -->
@@ -635,6 +739,15 @@
             </svg>
           </div>
           <h3 class="font-semibold text-gray-900 text-sm leading-snug">Executive Functioning</h3>
+          <div class="skill-examples">
+            <div class="examples-title">Examples</div>
+            <ul>
+              <li>Starting tasks independently</li>
+              <li>Planning & sequencing</li>
+              <li>Flexible thinking</li>
+              <li>Organization & follow-through</li>
+            </ul>
+          </div>
         </div>
 
       </div>
