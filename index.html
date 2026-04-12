@@ -1250,32 +1250,71 @@
 
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-    // ── Remove white background from hero logo ───────────────────────────
+    // ── Remove white background from hero logo (flood-fill + feathering) ──
     (function stripLogoBackground() {
       const img = document.getElementById('hero-logo');
       if (!img) return;
+
       function process(src) {
-        const off  = document.createElement('canvas');
-        const octx = off.getContext('2d');
-        const tmp  = new Image();
+        const tmp = new Image();
         tmp.crossOrigin = 'anonymous';
         tmp.onload = () => {
-          off.width  = tmp.naturalWidth;
-          off.height = tmp.naturalHeight;
-          octx.drawImage(tmp, 0, 0);
-          const id = octx.getImageData(0, 0, off.width, off.height);
+          const W = tmp.naturalWidth, H = tmp.naturalHeight;
+          const off = document.createElement('canvas');
+          off.width = W; off.height = H;
+          const ctx = off.getContext('2d');
+          ctx.drawImage(tmp, 0, 0);
+          const id = ctx.getImageData(0, 0, W, H);
           const d  = id.data;
-          for (let i = 0; i < d.length; i += 4) {
-            const r = d[i], g = d[i+1], b = d[i+2];
-            // Remove near-white pixels (background) — keeps gray text & all logo colours
-            if (r > 240 && g > 240 && b > 240) d[i+3] = 0;
+
+          // Step 1: flood-fill from every edge pixel to find connected background
+          const bg = new Uint8Array(W * H);
+          const q  = [];
+          const isNearWhite = p => d[p*4] > 215 && d[p*4+1] > 215 && d[p*4+2] > 215;
+          const seed = (x, y) => {
+            const p = y * W + x;
+            if (!bg[p] && isNearWhite(p)) { bg[p] = 1; q.push(p); }
+          };
+          for (let x = 0; x < W; x++) { seed(x, 0); seed(x, H - 1); }
+          for (let y = 1; y < H - 1; y++) { seed(0, y); seed(W - 1, y); }
+
+          let head = 0;
+          while (head < q.length) {
+            const p = q[head++];
+            const x = p % W, y = (p / W) | 0;
+            d[p * 4 + 3] = 0; // fully transparent
+            const ns = [p - 1, p + 1, p - W, p + W];
+            for (const n of ns) {
+              const nx = n % W, ny = (n / W) | 0;
+              if (nx >= 0 && nx < W && ny >= 0 && ny < H && !bg[n] && isNearWhite(n)) {
+                bg[n] = 1; q.push(n);
+              }
+            }
           }
-          octx.putImageData(id, 0, 0);
+
+          // Step 2: feather logo edges — smooth alpha on pixels adjacent to background
+          for (let y = 1; y < H - 1; y++) {
+            for (let x = 1; x < W - 1; x++) {
+              const p = y * W + x;
+              if (bg[p]) continue;
+              const adjBg = bg[p-1] || bg[p+1] || bg[p-W] || bg[p+W];
+              if (!adjBg) continue;
+              const i = p * 4;
+              const brightness = (d[i] + d[i+1] + d[i+2]) / 3;
+              if (brightness > 170) {
+                // Ramp alpha: 170 brightness = full opaque → 255 = transparent
+                d[i + 3] = Math.round((1 - (brightness - 170) / 85) * 255);
+              }
+            }
+          }
+
+          ctx.putImageData(id, 0, 0);
           img.src = off.toDataURL('image/png');
         };
         tmp.onerror = () => {};
         tmp.src = src;
       }
+
       if (img.complete && img.naturalWidth) process(img.src);
       else img.addEventListener('load', () => process(img.src), { once: true });
     })();
