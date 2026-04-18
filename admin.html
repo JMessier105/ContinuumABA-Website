@@ -411,9 +411,9 @@
         <div class="px-5 sm:px-6 pb-6 pt-2">
           <button onclick="emailEstimate()" id="btn-email-estimate"
             class="btn-primary w-full py-4 text-base flex items-center justify-center gap-2">
-            📧 Email This Estimate to Continuum ABA
+            📧 Send This Estimate to Continuum ABA
           </button>
-          <p class="text-xs text-center mt-2" style="color:#94a3b8">Opens your email app with all details pre-filled</p>
+          <p id="fee-send-status" class="text-xs text-center mt-2" style="color:#94a3b8">We'll be in touch within 2 business days.</p>
         </div>
       </div>
     </div>
@@ -1244,19 +1244,18 @@ function calcFees() {
   document.getElementById('first-week-row').classList.toggle('hidden', !enrollSelected);
 }
 
-function emailEstimate() {
+async function emailEstimate() {
   const clientName  = document.getElementById('fee-client-name').value.trim() || '(not provided)';
   const caregiver   = document.getElementById('fee-caregiver').value.trim()   || '(not provided)';
   const phone       = document.getElementById('fee-phone').value.trim()        || '(not provided)';
   const replyEmail  = document.getElementById('fee-email').value.trim()        || '';
 
-  // Build hours summary
   const dayLines = DAYS.map(d => {
     const raw = parseFloat(document.getElementById('hrs-'+d).value) || 0;
     if (raw <= 0) return null;
     const buffered = raw + BUFFER_HRS;
     const cost = (buffered * THERAPIST_RATE) + (buffered * BCBA_PCT * BCBA_RATE);
-    return `  ${d}: ${fmtH(raw)} (${fmtH(buffered)} w/ buffer) — ${fmt(cost)}`;
+    return `${d}: ${fmtH(raw)} (${fmtH(buffered)} w/ buffer) — ${fmt(cost)}`;
   }).filter(Boolean);
 
   const totalTherapistHrs = DAYS.reduce((sum,d)=>{
@@ -1271,43 +1270,54 @@ function emailEstimate() {
   const enrollCost     = enrollSelected ? ENROLL_BCBA_HRS * BCBA_RATE : 0;
   const firstWeekTotal = weeklyTotal + enrollCost;
 
-  const subject = `Fee Estimate Request — ${clientName}`;
-  const body = [
-    'Hello Continuum ABA,',
-    '',
-    'Please find my fee estimate details below. I would like to start a conversation about enrolment.',
-    '',
-    '─────────────────────────',
-    'CONTACT INFORMATION',
-    '─────────────────────────',
-    `Client Name:    ${clientName}`,
-    `Caregiver Name: ${caregiver}`,
-    `Phone:          ${phone}`,
-    `Email:          ${replyEmail || '(not provided)'}`,
-    '',
-    '─────────────────────────',
-    'REQUESTED SERVICE HOURS',
-    '─────────────────────────',
-    ...(dayLines.length ? dayLines : ['  No hours entered']),
-    '',
-    '─────────────────────────',
-    'FEE BREAKDOWN',
-    '─────────────────────────',
-    `Therapist cost (${fmtH(totalTherapistHrs)} × $75/hr):       ${fmt(therapistCost)}`,
-    `BCBA daily cost (${fmtH(totalBCBADailyHrs)} × $150/hr):    ${fmt(bcbaDailyCost)}`,
-    `Weekly BCBA requirement (2 hrs × $150):  $300.00`,
-    `─────────────────────────────────────────`,
-    `Weekly Ongoing Total:                    ${fmt(weeklyTotal)}`,
+  const feeBreakdown = [
+    `Therapist cost (${fmtH(totalTherapistHrs)} hrs × $75/hr): ${fmt(therapistCost)}`,
+    `BCBA daily cost (${fmtH(totalBCBADailyHrs)} hrs × $150/hr): ${fmt(bcbaDailyCost)}`,
+    `Weekly BCBA requirement (2 hrs × $150): $300.00`,
+    `Weekly Ongoing Total: ${fmt(weeklyTotal)}`,
     enrollSelected ? `First Time Enrolment (one-time, 5 hrs BCBA): ${fmt(enrollCost)}` : null,
-    enrollSelected ? `First Week Total:                            ${fmt(firstWeekTotal)}` : null,
-    '',
-    'Looking forward to hearing from you.',
-    '',
-    `${caregiver !== '(not provided)' ? caregiver : 'Prospective Client'}`,
-  ].filter(l => l !== null).join('\n');
+    enrollSelected ? `First Week Total: ${fmt(firstWeekTotal)}` : null,
+  ].filter(Boolean).join('\n');
 
-  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.location.href = mailto;
+  const btn = document.getElementById('btn-email-estimate');
+  const status = document.getElementById('fee-send-status');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  btn.style.opacity = '0.75';
+
+  try {
+    const res = await fetch('https://formspree.io/f/mqegrrod', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        'Subject':       `Fee Estimate Request — ${clientName}`,
+        'Client Name':   clientName,
+        'Caregiver Name': caregiver,
+        'Phone':         phone,
+        'Email':         replyEmail || '(not provided)',
+        '_replyto':      replyEmail || CONTACT_EMAIL,
+        'Service Hours': dayLines.length ? dayLines.join('\n') : 'No hours entered',
+        'Fee Breakdown': feeBreakdown,
+        'First Time Enrolment': enrollSelected ? 'Yes' : 'No',
+      }),
+    });
+
+    if (res.ok) {
+      btn.textContent = '✅ Estimate Sent!';
+      btn.style.background = 'linear-gradient(135deg,#6db33f,#4a8a2a)';
+      btn.style.opacity = '1';
+      status.textContent = 'We\'ll be in touch within 2 business days.';
+      status.style.color = '#6db33f';
+    } else {
+      throw new Error('error');
+    }
+  } catch {
+    btn.disabled = false;
+    btn.textContent = '📧 Send This Estimate to Continuum ABA';
+    btn.style.opacity = '1';
+    status.textContent = '❌ Something went wrong — please try again.';
+    status.style.color = '#be123c';
+  }
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
