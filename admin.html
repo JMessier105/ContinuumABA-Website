@@ -144,6 +144,26 @@
 </head>
 <body class="min-h-screen">
 
+<!-- ══ ADMIN GATE ══ -->
+<div id="screen-gate" class="screen-overlay" style="z-index:200">
+  <div class="screen-card" style="max-width:360px">
+    <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-12 object-contain mx-auto mb-5" style="max-width:170px" />
+    <div class="text-3xl mb-2">🔑</div>
+    <h1 class="text-lg font-black mb-1" style="color:var(--dark)">Admin Access</h1>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Enter your admin password to continue.</p>
+    <div class="relative mb-3">
+      <input id="gate-pw" type="password" placeholder="Admin password" autocomplete="current-password"
+        class="w-full border-2 rounded-xl pr-10"
+        style="border-color:#d1e8ec;padding:.7rem 1rem;font-size:.95rem;outline:none;transition:border-color .15s"
+        onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='#d1e8ec'"
+        onkeydown="if(event.key==='Enter')checkGate()" />
+      <button type="button" onclick="togglePw('gate-pw')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+    </div>
+    <p id="gate-err" class="hidden text-xs font-semibold text-center mb-3" style="color:#be123c">Incorrect password. Try again.</p>
+    <button onclick="checkGate()" class="btn-primary w-full py-3 text-base">Continue</button>
+  </div>
+</div>
+
 <!-- ══ SETUP SCREEN ══ -->
 <div id="screen-setup" class="screen-overlay hidden">
   <div class="screen-card">
@@ -538,6 +558,35 @@
 </div>
 
 <script>
+// ─── ADMIN GATE ───────────────────────────────────────────────────────────────
+const GATE_HASH = 'eec32511232822227746b3d9e2b441dc5f8910658edc2c4cad6d3bda5b3dd350';
+
+(function initGate() {
+  if (sessionStorage.getItem('adminGate') === '1') {
+    document.getElementById('screen-gate').classList.add('hidden');
+  } else {
+    setTimeout(() => document.getElementById('gate-pw').focus(), 100);
+  }
+})();
+
+async function checkGate() {
+  const pw = document.getElementById('gate-pw').value;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  if (hex === GATE_HASH) {
+    sessionStorage.setItem('adminGate', '1');
+    document.getElementById('screen-gate').classList.add('hidden');
+    document.getElementById('gate-err').classList.add('hidden');
+  } else {
+    const err = document.getElementById('gate-err');
+    err.classList.remove('hidden');
+    const card = document.querySelector('#screen-gate .screen-card');
+    card.animate([{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:350,easing:'ease-out'});
+    document.getElementById('gate-pw').value = '';
+    document.getElementById('gate-pw').focus();
+  }
+}
+
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const SK = 'continuum_v3';
 const DEFAULT_LOCK_MINS = 5;
