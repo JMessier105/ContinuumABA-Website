@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Continuum ABA — Token Board</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    :root {
+      --teal: #3abeca; --teal-dk: #1d6d7d; --navy: #2c4a7c;
+      --dark: #163f4a; --green: #6db33f; --orange: #F7941D; --bg: #f0fafb;
+    }
+    body { background: var(--bg); }
+
+    /* ── SCREEN OVERLAYS ── */
+    .screen-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--dark);
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .screen-overlay.hidden { display: none; }
+    .screen-card {
+      background: white; border-radius: 1.5rem;
+      box-shadow: 0 32px 80px rgba(22,63,74,0.45);
+      width: 100%; max-width: 400px; padding: 2.5rem 2rem;
+      text-align: center; animation: fadeUp .3s ease;
+      max-height: 95vh; overflow-y: auto;
+    }
+
+    /* ── PAGES ── */
+    .page { display: none; }
+    .page.active { display: block; animation: fadeUp .25s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TOKENS ── */
+    .token-slot {
+      width: clamp(60px,14vw,90px); height: clamp(60px,14vw,90px);
+      border-radius: 50%; border: 3px solid #d1e8ec;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(1.4rem,5vw,2.2rem);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1), background .2s, border-color .2s, box-shadow .2s;
+    }
+    .token-slot.earned {
+      background: linear-gradient(135deg,#fde68a,#F7941D);
+      border-color: #F7941D;
+      box-shadow: 0 6px 18px rgba(247,148,29,.45);
+      transform: scale(1.08);
+    }
+    @keyframes pop {
+      0%  { transform: scale(1); }
+      45% { transform: scale(1.25) rotate(6deg); }
+      70% { transform: scale(.92) rotate(-2deg); }
+      100%{ transform: scale(1.08) rotate(0); }
+    }
+    .pop { animation: pop .45s cubic-bezier(.34,1.56,.64,1); }
+
+    /* ── CONFETTI ── */
+    .confetti-piece {
+      position: fixed; width: 10px; height: 10px; border-radius: 2px;
+      pointer-events: none; z-index: 9999;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── WORDS ── */
+    .word-btn { transition: transform .15s cubic-bezier(.34,1.56,.64,1); touch-action: manipulation; }
+    .word-btn:active { transform: scale(.9); }
+
+    /* ── CLIENT CARDS ── */
+    .client-card { transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s; touch-action: manipulation; }
+    .client-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(58,190,202,.18); }
+    .client-card:active { transform: scale(.96); }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      background: linear-gradient(135deg,var(--teal),var(--teal-dk));
+      color: white; font-weight: 700; border-radius: 1rem;
+      box-shadow: 0 4px 14px rgba(58,190,202,.35);
+      transition: transform .15s, box-shadow .15s, filter .15s; touch-action: manipulation;
+    }
+    .btn-primary:hover  { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(58,190,202,.45); }
+    .btn-primary:active { transform: scale(.95); }
+    .btn-danger  { background: #fff1f2; color: #be123c; font-weight: 600; border-radius: 1rem; transition: background .15s, transform .1s; }
+    .btn-danger:hover   { background: #ffe4e6; }
+    .btn-danger:active  { transform: scale(.95); }
+    .btn-muted   { background: #e8f5f7; color: var(--dark); font-weight: 600; border-radius: 1rem; transition: background .15s, transform .1s; }
+    .btn-muted:hover    { background: #d0eff4; }
+    .btn-muted:active   { transform: scale(.95); }
+
+    nav { background: var(--dark); }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(22,63,74,.55); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: white; border-radius: 1.5rem;
+      box-shadow: 0 24px 60px rgba(22,63,74,.25);
+      width: 100%; max-width: 440px; padding: 2rem;
+      animation: fadeUp .25s ease; max-height: 90vh; overflow-y: auto;
+    }
+
+    input[type=text], input[type=number], input[type=password], select {
+      width: 100%; padding: .75rem 1rem;
+      border: 2px solid #d0eff4; border-radius: .75rem;
+      font-size: 1rem; color: var(--dark); outline: none;
+      transition: border-color .2s; background: white;
+    }
+    input:focus, select:focus { border-color: var(--teal); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-8px); }
+      40%     { transform: translateX(8px); }
+      60%     { transform: translateX(-6px); }
+      80%     { transform: translateX(6px); }
+    }
+    .shake { animation: shake .4s ease; }
+
+    .hipaa-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 6px; padding: 2px 7px;
+      font-size: 10px; font-weight: 700; color: rgba(255,255,255,.7);
+      letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .pulsing { animation: pulse 1s ease-in-out infinite; }
+
+    @media (max-width:480px) { .modal-box { padding: 1.25rem; } .screen-card { padding: 1.75rem 1.25rem; } }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ══ SETUP SCREEN ══ -->
+<div id="screen-setup" class="screen-overlay hidden">
+  <div class="screen-card">
+    <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-14 object-contain mx-auto mb-5" style="max-width:190px" />
+    <div class="text-4xl mb-3">🔐</div>
+    <h1 class="text-xl font-black mb-1" style="color:var(--dark)">Secure Setup</h1>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Create a master password. All client data is encrypted locally — nothing leaves this device.</p>
+    <div class="text-left space-y-3">
+      <div class="relative">
+        <input id="setup-pw" type="password" placeholder="Create master password" autocomplete="new-password" />
+        <button type="button" onclick="togglePw('setup-pw')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+      </div>
+      <div id="pw-strength-wrap" class="hidden px-1">
+        <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div id="pw-strength-bar" style="height:100%;width:0%;border-radius:9999px;transition:width .3s,background .3s"></div></div>
+        <p id="pw-strength-lbl" class="text-xs mt-1"></p>
+      </div>
+      <div class="relative">
+        <input id="setup-pw2" type="password" placeholder="Confirm master password" autocomplete="new-password" />
+        <button type="button" onclick="togglePw('setup-pw2')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+      </div>
+      <p id="setup-err" class="hidden text-xs font-semibold text-center" style="color:#be123c"></p>
+    </div>
+    <button onclick="doSetup()" class="btn-primary w-full py-3 mt-5 text-base">Create Secure Access</button>
+    <p class="text-xs mt-4" style="color:#94a3b8">🛡 PHIPA-compliant: AES-256 encrypted storage, auto-lock, access controls.</p>
+  </div>
+</div>
+
+<!-- ══ LOCK SCREEN ══ -->
+<div id="screen-lock" class="screen-overlay hidden">
+  <div class="screen-card">
+    <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-14 object-contain mx-auto mb-4" style="max-width:180px" />
+    <div class="text-4xl mb-2">🔒</div>
+    <h1 class="text-xl font-black mb-1" style="color:var(--dark)">Session Locked</h1>
+    <p id="lock-last" class="text-xs mb-5" style="color:var(--teal-dk)"></p>
+    <div id="lock-wrap" class="relative mb-2">
+      <input id="lock-pw" type="password" placeholder="Enter master password" autocomplete="current-password" />
+      <button type="button" onclick="togglePw('lock-pw')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+    </div>
+    <p id="lock-err" class="hidden text-xs font-semibold mb-3 text-center" style="color:#be123c">Incorrect password. Try again.</p>
+    <button onclick="doUnlock()" class="btn-primary w-full py-3 text-base">Unlock</button>
+    <p class="text-xs mt-4" style="color:#94a3b8">🛡 PHIPA-protected — all data is encrypted at rest.</p>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══ -->
+<div id="app-shell" class="hidden">
+
+  <nav class="sticky top-0 z-40 shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <button onclick="navigate('home')" class="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-lg p-1">
+        <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-14 sm:h-16 object-contain" style="max-width:220px" />
+      </button>
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <span id="lock-countdown" class="hidden text-xs font-bold px-2 py-1 rounded-lg pulsing" style="background:rgba(247,148,29,.2);color:#F7941D"></span>
+        <span class="hipaa-badge">🛡 PHIPA</span>
+        <button onclick="navigate('words')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
+          <span>💬</span><span class="hidden sm:inline">Common Words</span><span class="sm:hidden">Words</span>
+        </button>
+        <button onclick="navigate('fees')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
+          <span>💰</span><span class="hidden sm:inline">Fee Estimator</span><span class="sm:hidden">Fees</span>
+        </button>
+        <button onclick="openSecurityModal()" title="Security Settings" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">⚙️</button>
+        <button onclick="lockApp()" title="Lock session" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">🔒</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight" style="color:var(--dark)">My Clients</h1>
+          <p class="text-sm sm:text-base mt-0.5" style="color:var(--teal-dk)">Select a client to open their token board</p>
+        </div>
+        <button onclick="openAddClientModal()" class="btn-primary flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base">
+          <span class="text-lg font-light">+</span> Add Client
+        </button>
+      </div>
+      <div id="client-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4"></div>
+      <div id="no-clients" class="hidden text-center py-16 sm:py-24">
+        <div class="text-5xl sm:text-6xl mb-4">🌟</div>
+        <p class="text-lg sm:text-xl font-semibold" style="color:var(--dark)">No clients yet</p>
+        <p class="mt-2 text-sm sm:text-base" style="color:var(--teal-dk)">Click "Add Client" to get started</p>
+      </div>
+    </div>
+
+    <!-- TOKEN BOARD -->
+    <div id="page-token-board" class="page">
+      <div class="flex items-center gap-3 mb-5 sm:mb-6">
+        <button onclick="navigate('home')" class="flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-xl btn-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400">← Back</button>
+        <h2 id="tb-client-name" class="text-xl sm:text-2xl font-black truncate" style="color:var(--dark)"></h2>
+        <button onclick="openEditTokenBoardModal()" class="ml-auto p-2 rounded-xl btn-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 text-lg" title="Settings">⚙️</button>
+      </div>
+      <div class="rounded-2xl px-5 py-4 mb-6 flex items-center gap-3 border-2" style="background:#fffbeb;border-color:#fde68a">
+        <span class="text-2xl">🏆</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold uppercase tracking-widest" style="color:#b45309">Working For</p>
+          <p id="tb-reward-name" class="text-base sm:text-lg font-bold truncate" style="color:#92400e"></p>
+        </div>
+        <span id="tb-progress" class="text-sm font-bold whitespace-nowrap" style="color:#b45309"></span>
+      </div>
+      <div id="tb-tokens" class="flex flex-wrap gap-3 sm:gap-4 justify-center mb-8 min-h-[80px]"></div>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button onclick="earnToken()" id="btn-earn" class="btn-primary flex items-center justify-center gap-2 px-6 sm:px-8 py-4 text-lg sm:text-xl">⭐ Earn Token</button>
+        <button onclick="removeToken()" class="btn-muted flex items-center justify-center gap-2 px-5 py-4 text-base sm:text-lg focus-visible:outline-none">↩ Remove</button>
+        <button onclick="resetTokenBoard()" class="btn-danger flex items-center justify-center gap-2 px-5 py-4 text-base sm:text-lg focus-visible:outline-none">🔄 Reset</button>
+      </div>
+      <div id="tb-complete" class="hidden mt-8 text-center rounded-3xl p-6 sm:p-8 border-2" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#6db33f">
+        <div class="text-5xl sm:text-6xl mb-3" id="complete-emoji">🎉</div>
+        <h3 class="text-xl sm:text-2xl font-black" style="color:#166534">Amazing Work!</h3>
+        <p id="tb-complete-msg" class="mt-2 font-semibold text-sm sm:text-base" style="color:#15803d"></p>
+        <button onclick="resetTokenBoard()" class="btn-primary mt-5 px-6 py-3 inline-flex items-center gap-2 text-base">🔄 Start New Board</button>
+      </div>
+    </div>
+
+    <!-- COMMON WORDS -->
+    <div id="page-words" class="page">
+      <div class="mb-5 sm:mb-6">
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight" style="color:var(--dark)">Common Words</h1>
+        <p class="text-sm sm:text-base mt-0.5" style="color:var(--teal-dk)">Tap words to speak them — build a sentence below</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 sm:p-5 mb-6 border-2 shadow-sm" style="border-color:var(--teal)">
+        <p class="text-xs font-bold uppercase tracking-widest mb-2" style="color:var(--teal-dk)">Sentence Builder</p>
+        <div id="sentence-words" class="min-h-[44px] flex flex-wrap gap-1.5 mb-3">
+          <span id="sentence-ph" class="text-slate-400 italic text-sm self-center">Tap words below to build a sentence...</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="speakSentence()" class="btn-primary flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm">🔊 Speak</button>
+          <button onclick="removeLastWord()" class="btn-muted flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm">↩ Undo</button>
+          <button onclick="clearSentence()" class="btn-danger flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm">🗑 Clear</button>
+        </div>
+      </div>
+      <div id="words-container"></div>
+    </div>
+
+    <!-- FEE ESTIMATOR -->
+    <div id="page-fees" class="page">
+      <div class="mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight" style="color:var(--dark)">Fee Estimator</h1>
+        <p class="text-sm sm:text-base mt-0.5" style="color:var(--teal-dk)">Enter desired service hours to calculate your weekly fee</p>
+      </div>
+
+      <!-- ── Contact Info ── -->
+      <div class="bg-white rounded-2xl p-5 sm:p-6 border shadow-sm mb-5" style="border-color:#d0eff4">
+        <h2 class="text-base font-bold mb-4" style="color:var(--dark)">Your Information</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold block mb-1" style="color:var(--dark)">Client Name</label>
+            <input id="fee-client-name" type="text" placeholder="e.g. Alex Smith" oninput="calcFees()" style="padding:.6rem .9rem;font-size:.9rem" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1" style="color:var(--dark)">Caregiver Name</label>
+            <input id="fee-caregiver" type="text" placeholder="e.g. Jane Smith" oninput="calcFees()" style="padding:.6rem .9rem;font-size:.9rem" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1" style="color:var(--dark)">Phone Number</label>
+            <input id="fee-phone" type="text" placeholder="e.g. 416-555-0100" oninput="calcFees()" style="padding:.6rem .9rem;font-size:.9rem" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1" style="color:var(--dark)">Email Address</label>
+            <input id="fee-email" type="text" placeholder="e.g. jane@email.com" oninput="calcFees()" style="padding:.6rem .9rem;font-size:.9rem" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Day Hours Grid ── -->
+      <div class="bg-white rounded-2xl p-5 sm:p-6 border shadow-sm mb-5" style="border-color:#d0eff4">
+        <h2 class="text-base font-bold mb-4" style="color:var(--dark)">Weekly Service Hours</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3" id="day-grid">
+          <!-- populated by JS -->
+        </div>
+        <p class="text-xs mt-3" style="color:#94a3b8">A 30-minute buffer is automatically added to each day's session.</p>
+      </div>
+
+      <!-- ── First Time Enrollment ── -->
+      <div class="mb-5">
+        <button id="btn-enroll" onclick="toggleEnroll()"
+          class="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 font-bold text-base transition-all focus-visible:outline-none"
+          style="border-color:#d0eff4;color:var(--dark);background:white">
+          <span id="enroll-icon" class="text-xl">☐</span>
+          <div class="text-left">
+            <span class="block">First Time Enrolment</span>
+            <span class="text-xs font-normal" style="color:var(--teal-dk)">One-time startup: 5 hrs BCBA = $750.00</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- ── Results ── -->
+      <div id="fee-results" class="bg-white rounded-2xl border shadow-sm overflow-hidden" style="border-color:#d0eff4">
+        <div class="px-5 sm:px-6 py-4 border-b" style="border-color:#f0fafb;background:#f8fdfe">
+          <h2 class="text-base font-bold" style="color:var(--dark)">Fee Breakdown</h2>
+        </div>
+
+        <!-- Per-day table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="fee-table">
+            <thead>
+              <tr style="background:#f0fafb">
+                <th class="text-left px-5 py-2.5 text-xs font-bold uppercase tracking-wider" style="color:var(--teal-dk)">Day</th>
+                <th class="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wider" style="color:var(--teal-dk)">Hours</th>
+                <th class="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wider" style="color:var(--teal-dk)">w/ Buffer</th>
+                <th class="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wider" style="color:var(--teal-dk)">Therapist</th>
+                <th class="text-right px-4 py-2.5 text-xs font-bold uppercase tracking-wider" style="color:var(--teal-dk)">BCBA (15%)</th>
+                <th class="text-right px-5 py-2.5 text-xs font-bold uppercase tracking-wider" style="color:var(--teal-dk)">Day Total</th>
+              </tr>
+            </thead>
+            <tbody id="fee-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Summary -->
+        <div class="px-5 sm:px-6 py-5 space-y-2.5 border-t" style="border-color:#f0fafb">
+          <div class="flex justify-between text-sm">
+            <span style="color:var(--teal-dk)">Therapist hours × $75/hr</span>
+            <span id="sum-therapist" class="font-semibold" style="color:var(--dark)">$0.00</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span style="color:var(--teal-dk)">BCBA daily hours (15%) × $150/hr</span>
+            <span id="sum-bcba-daily" class="font-semibold" style="color:var(--dark)">$0.00</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span style="color:var(--teal-dk)">Weekly BCBA requirement (2 hrs × $150)</span>
+            <span class="font-semibold" style="color:var(--dark)">$300.00</span>
+          </div>
+          <div class="flex justify-between text-base font-bold pt-2 border-t" style="border-color:#e8f2f4">
+            <span style="color:var(--dark)">Weekly Total</span>
+            <span id="sum-weekly" style="color:var(--teal-dk)">$0.00</span>
+          </div>
+          <div id="enroll-row" class="hidden flex justify-between text-sm">
+            <span style="color:var(--orange)">First Time Enrolment (one-time)</span>
+            <span class="font-semibold" style="color:var(--orange)">$750.00</span>
+          </div>
+          <div id="first-week-row" class="hidden flex justify-between text-lg font-black pt-2 border-t" style="border-color:#e8f2f4">
+            <span style="color:var(--dark)">First Week Total</span>
+            <span id="sum-first-week" style="color:var(--orange)">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Email button -->
+        <div class="px-5 sm:px-6 pb-6 pt-2">
+          <button onclick="emailEstimate()" id="btn-email-estimate"
+            class="btn-primary w-full py-4 text-base flex items-center justify-center gap-2">
+            📧 Email This Estimate to Continuum ABA
+          </button>
+          <p class="text-xs text-center mt-2" style="color:#94a3b8">Opens your email app with all details pre-filled</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- end app-shell -->
+
+<!-- ══ MODAL: Add Client ══ -->
+<div id="modal-add-client" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl sm:text-2xl font-black mb-5" style="color:var(--dark)">Add New Client</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Client Name *</label>
+        <input id="input-name" type="text" placeholder="e.g. Alex" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Number of Tokens</label>
+        <input id="input-tokens" type="number" min="1" max="20" value="5" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Reward / Prize</label>
+        <input id="input-reward" type="text" placeholder="e.g. 5 min free time" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2" style="color:var(--dark)">Card Color</label>
+        <div id="color-picker" class="flex gap-2 flex-wrap"></div>
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">
+          Client PIN <span class="font-normal text-xs" style="color:var(--teal-dk)">(optional — extra lock on this board)</span>
+        </label>
+        <div class="relative">
+          <input id="input-pin" type="password" placeholder="Leave blank for no PIN" autocomplete="new-password" />
+          <button type="button" onclick="togglePw('input-pin')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModal('modal-add-client')" class="btn-muted flex-1 py-3 text-sm sm:text-base">Cancel</button>
+      <button onclick="addClient()" class="btn-primary flex-1 py-3 text-sm sm:text-base">Add Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Edit Token Board ══ -->
+<div id="modal-edit-tb" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl sm:text-2xl font-black mb-5" style="color:var(--dark)">Board Settings</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Number of Tokens</label>
+        <input id="edit-tokens" type="number" min="1" max="20" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Reward / Prize</label>
+        <input id="edit-reward" type="text" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2" style="color:var(--dark)">Token Style</label>
+        <div id="emoji-picker" class="flex gap-2 flex-wrap"></div>
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Client PIN</label>
+        <p id="edit-pin-status" class="text-xs mb-2" style="color:var(--teal-dk)"></p>
+        <div class="relative">
+          <input id="edit-pin" type="password" placeholder="New PIN (blank = remove)" autocomplete="new-password" />
+          <button type="button" onclick="togglePw('edit-pin')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-3 mt-6">
+      <button onclick="confirmDeleteClient()" class="btn-danger px-4 py-3 text-sm">Delete Client</button>
+      <div class="flex-1"></div>
+      <button onclick="closeModal('modal-edit-tb')" class="btn-muted px-4 py-3 text-sm">Cancel</button>
+      <button onclick="saveTokenBoardSettings()" class="btn-primary px-5 py-3 text-sm">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Client PIN Entry ══ -->
+<div id="modal-pin" class="modal-backdrop">
+  <div class="modal-box" style="max-width:360px">
+    <div class="text-center mb-5">
+      <div class="text-4xl mb-2">🔒</div>
+      <h2 class="text-xl font-black" style="color:var(--dark)">PIN Required</h2>
+      <p id="pin-label" class="text-sm mt-1" style="color:var(--teal-dk)"></p>
+    </div>
+    <div id="pin-wrap" class="relative">
+      <input id="pin-entry" type="password" placeholder="Enter client PIN" autocomplete="current-password" />
+      <button type="button" onclick="togglePw('pin-entry')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+    </div>
+    <p id="pin-err" class="hidden text-xs font-semibold mt-2 text-center" style="color:#be123c">Incorrect PIN. Try again.</p>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeModal('modal-pin')" class="btn-muted flex-1 py-3 text-sm">Cancel</button>
+      <button onclick="submitPin()" class="btn-primary flex-1 py-3 text-sm">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Security Settings ══ -->
+<div id="modal-security" class="modal-backdrop">
+  <div class="modal-box" style="max-width:420px">
+    <h2 class="text-xl font-black mb-1" style="color:var(--dark)">Security Settings</h2>
+    <p class="text-xs mb-5" style="color:var(--teal-dk)">PHIPA-compliant access controls — AES-256 encrypted storage</p>
+    <div class="space-y-5">
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Auto-Lock After Inactivity</label>
+        <select id="autolock-mins">
+          <option value="2">2 minutes</option>
+          <option value="5" selected>5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2" style="color:var(--dark)">Change Master Password</label>
+        <div class="space-y-2">
+          <div class="relative">
+            <input id="chg-cur" type="password" placeholder="Current password" autocomplete="current-password" />
+            <button type="button" onclick="togglePw('chg-cur')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+          </div>
+          <div class="relative">
+            <input id="chg-new" type="password" placeholder="New password (min 6 chars)" autocomplete="new-password" />
+            <button type="button" onclick="togglePw('chg-new')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+          </div>
+          <div class="relative">
+            <input id="chg-new2" type="password" placeholder="Confirm new password" autocomplete="new-password" />
+            <button type="button" onclick="togglePw('chg-new2')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus-visible:outline-none">👁</button>
+          </div>
+          <p id="chg-err" class="hidden text-xs font-semibold" style="color:#be123c"></p>
+          <p id="chg-ok"  class="hidden text-xs font-semibold" style="color:#16a34a">✓ Password updated successfully.</p>
+          <button onclick="changeMasterPw()" class="btn-primary w-full py-2.5 text-sm">Update Password</button>
+        </div>
+      </div>
+      <div class="pt-3 border-t border-slate-100">
+        <p class="text-xs font-bold mb-2" style="color:#be123c">Danger Zone</p>
+        <button onclick="wipeAllData()" class="btn-danger w-full py-2.5 text-sm">⚠️ Wipe All Data</button>
+        <p class="text-xs mt-1.5" style="color:#94a3b8">Permanently deletes all client data and master password.</p>
+      </div>
+    </div>
+    <button onclick="closeModal('modal-security')" class="btn-muted w-full py-3 mt-5 text-sm">Close</button>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const SK = 'continuum_v3';
+const DEFAULT_LOCK_MINS = 5;
+
+const CARD_COLORS = [
+  {name:'teal',  bg:'#3abeca',border:'#a1dfe9'},
+  {name:'navy',  bg:'#2c4a7c',border:'#c0cbdd'},
+  {name:'green', bg:'#6db33f',border:'#c1e0a4'},
+  {name:'orange',bg:'#F7941D',border:'#fdd9a4'},
+  {name:'dark',  bg:'#163f4a',border:'#9dc4cc'},
+  {name:'violet',bg:'#7c3aed',border:'#ddd6fe'},
+  {name:'rose',  bg:'#e11d48',border:'#fecdd3'},
+  {name:'sky',   bg:'#0284c7',border:'#bae6fd'},
+];
+const TOKEN_EMOJIS = ['⭐','🌟','❤️','🏆','🎯','🦋','🌈','✅','🍎','🐝','🎈','💎'];
+const WORD_CATS = {
+  'Basic':   ['Yes','No','More','Stop','Help','Please','Thank you','Done','Wait','Go','Again','All done'],
+  'Feelings':['Happy','Sad','Angry','Scared','Tired','Hungry','Thirsty','Sick','Good','Bad','Excited','Calm'],
+  'I Want':  ['I want','I need','I like','I see','I hear','I feel','Can I have','Give me','Help me'],
+  'People':  ['I','You','He','She','We','They','Mom','Dad','Friend','Teacher'],
+  'Actions': ['Eat','Drink','Play','Read','Sleep','Walk','Sit','Stand','Come','Look','Listen','Jump'],
+  'Things':  ['Food','Water','Toy','Book','Ball','iPad','Bathroom','Outside','Home','School','Bed','TV'],
+};
+const CAT_COLORS = [
+  {bg:'#e8f9fc',border:'#a1dfe9',text:'#163f4a'},
+  {bg:'#f5f3ff',border:'#ddd6fe',text:'#4c1d95'},
+  {bg:'#fff6ec',border:'#fdd9a4',text:'#7c2d12'},
+  {bg:'#eef9ee',border:'#bbf7d0',text:'#14532d'},
+  {bg:'#eef1f8',border:'#c0cbdd',text:'#1e3a5f'},
+  {bg:'#fff1f2',border:'#fecdd3',text:'#9f1239'},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {clients:[], settings:{lockMins:DEFAULT_LOCK_MINS}};
+let sentence = [];
+let currentClientId = null;
+let selectedColor = CARD_COLORS[0];
+let selectedEmoji = '⭐';
+let cryptoKey = null;
+let lockTimer = null;
+let countdownId = null;
+let pendingClientId = null;
+
+// ─── CRYPTO ──────────────────────────────────────────────────────────────────
+const b64enc = b => btoa(String.fromCharCode(...new Uint8Array(b)));
+const b64dec = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function deriveKey(pw, salt) {
+  const raw = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), {name:'PBKDF2'}, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'},
+    raw, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+  );
+}
+
+async function hashPin(pin) {
+  if (!pin) return '';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('continuum_pin_' + pin));
+  return b64enc(buf);
+}
+
+async function persist() {
+  if (!cryptoKey) return;
+  const stored = JSON.parse(localStorage.getItem(SK) || '{}');
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({name:'AES-GCM', iv}, cryptoKey,
+    new TextEncoder().encode(JSON.stringify(state)));
+  localStorage.setItem(SK, JSON.stringify({
+    salt: stored.salt,
+    iv:   b64enc(iv),
+    data: b64enc(new Uint8Array(enc)),
+    lastAccess: new Date().toISOString()
+  }));
+}
+
+async function tryDecrypt(pw) {
+  const raw = localStorage.getItem(SK);
+  if (!raw) return false;
+  const s = JSON.parse(raw);
+  if (!s.salt || !s.iv || !s.data) return false;
+  try {
+    const key = await deriveKey(pw, b64dec(s.salt));
+    const dec = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64dec(s.iv)}, key, b64dec(s.data));
+    state = JSON.parse(new TextDecoder().decode(dec));
+    if (!state.settings) state.settings = {lockMins:DEFAULT_LOCK_MINS};
+    cryptoKey = key;
+    return true;
+  } catch { return false; }
+}
+
+// ─── LOCK / SESSION ──────────────────────────────────────────────────────────
+function showScreen(which) {
+  document.getElementById('screen-setup').classList.toggle('hidden', which !== 'setup');
+  document.getElementById('screen-lock').classList.toggle('hidden',  which !== 'lock');
+  document.getElementById('app-shell').classList.toggle('hidden',    which !== 'app');
+}
+
+function lockApp() {
+  clearTimeout(lockTimer);
+  clearInterval(countdownId);
+  state = {clients:[], settings:{lockMins:DEFAULT_LOCK_MINS}};
+  cryptoKey = null;
+  const raw = localStorage.getItem(SK);
+  document.getElementById('lock-err').classList.add('hidden');
+  document.getElementById('lock-pw').value = '';
+  if (raw) {
+    const s = JSON.parse(raw);
+    if (s.lastAccess) {
+      const d = new Date(s.lastAccess);
+      document.getElementById('lock-last').textContent =
+        'Last access: ' + d.toLocaleDateString() + ' at ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    }
+  }
+  showScreen('lock');
+  setTimeout(() => document.getElementById('lock-pw').focus(), 150);
+}
+
+async function doUnlock() {
+  const pw = document.getElementById('lock-pw').value;
+  if (!pw) return;
+  const ok = await tryDecrypt(pw);
+  if (ok) {
+    showScreen('app');
+    navigate('home');
+    startAutoLock();
+  } else {
+    const w = document.getElementById('lock-wrap');
+    w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+    document.getElementById('lock-err').classList.remove('hidden');
+    document.getElementById('lock-pw').value = '';
+    document.getElementById('lock-pw').focus();
+  }
+}
+
+async function doSetup() {
+  const pw  = document.getElementById('setup-pw').value;
+  const pw2 = document.getElementById('setup-pw2').value;
+  const err = document.getElementById('setup-err');
+  err.classList.add('hidden');
+  if (!pw || pw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.remove('hidden'); return; }
+  if (pw !== pw2)            { err.textContent = 'Passwords do not match.'; err.classList.remove('hidden'); return; }
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  cryptoKey  = await deriveKey(pw, salt);
+  state = {clients:[], settings:{lockMins:DEFAULT_LOCK_MINS}};
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({name:'AES-GCM', iv}, cryptoKey,
+    new TextEncoder().encode(JSON.stringify(state)));
+  localStorage.setItem(SK, JSON.stringify({
+    salt: b64enc(salt), iv: b64enc(iv),
+    data: b64enc(new Uint8Array(enc)),
+    lastAccess: new Date().toISOString()
+  }));
+  showScreen('app');
+  navigate('home');
+  startAutoLock();
+}
+
+function startAutoLock() {
+  clearTimeout(lockTimer);
+  clearInterval(countdownId);
+  const mins = (state.settings && state.settings.lockMins) || DEFAULT_LOCK_MINS;
+  const ms   = mins * 60 * 1000;
+  let remaining = ms;
+  const countEl = document.getElementById('lock-countdown');
+  countdownId = setInterval(() => {
+    remaining -= 1000;
+    if (remaining <= 60000) {
+      countEl.classList.remove('hidden');
+      countEl.textContent = '🔒 ' + Math.ceil(remaining/1000) + 's';
+    } else {
+      countEl.classList.add('hidden');
+    }
+  }, 1000);
+  lockTimer = setTimeout(lockApp, ms);
+}
+
+function resetAutoLock() {
+  if (!cryptoKey) return;
+  clearTimeout(lockTimer);
+  clearInterval(countdownId);
+  startAutoLock();
+  document.getElementById('lock-countdown').classList.add('hidden');
+}
+
+['click','keydown','touchstart'].forEach(ev =>
+  document.addEventListener(ev, resetAutoLock, {passive:true})
+);
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function navigate(page, id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  if (page === 'home') {
+    document.getElementById('page-home').classList.add('active');
+    renderClientGrid();
+  } else if (page === 'token-board') {
+    currentClientId = id;
+    document.getElementById('page-token-board').classList.add('active');
+    renderTokenBoard();
+  } else if (page === 'words') {
+    document.getElementById('page-words').classList.add('active');
+    renderWords();
+  } else if (page === 'fees') {
+    document.getElementById('page-fees').classList.add('active');
+    buildDayGrid();
+    calcFees();
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─── HOME ────────────────────────────────────────────────────────────────────
+function renderClientGrid() {
+  const grid = document.getElementById('client-grid');
+  const none = document.getElementById('no-clients');
+  if (!state.clients.length) { grid.innerHTML=''; none.classList.remove('hidden'); return; }
+  none.classList.add('hidden');
+  grid.innerHTML = state.clients.map(c => {
+    const col = CARD_COLORS.find(x => x.name===c.colorName)||CARD_COLORS[0];
+    const pct = Math.round((c.earnedTokens/c.totalTokens)*100);
+    const locked = !!c.pinHash;
+    return `
+      <div class="client-card bg-white rounded-2xl p-4 sm:p-5 shadow-sm border cursor-pointer relative"
+           style="border-color:${col.border}" onclick="tryOpenClient('${c.id}')">
+        ${locked?`<span class="absolute top-3 right-3 text-base" title="PIN protected">🔒</span>`:''}
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl font-black mb-3"
+             style="background:${col.bg}">${c.name.charAt(0).toUpperCase()}</div>
+        <h3 class="font-bold text-sm sm:text-base truncate" style="color:var(--dark)">${c.name}</h3>
+        <p class="text-xs sm:text-sm mt-0.5 mb-2.5" style="color:var(--teal-dk)">${c.earnedTokens}/${c.totalTokens} tokens</p>
+        <div class="h-2 rounded-full overflow-hidden" style="background:#e8f2f4">
+          <div class="h-full rounded-full" style="width:${pct}%;background:${col.bg}"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openAddClientModal() {
+  ['input-name','input-reward','input-pin'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('input-name').style.borderColor='';
+  document.getElementById('input-tokens').value='5';
+  selectedColor=CARD_COLORS[0];
+  renderColorPicker();
+  openModal('modal-add-client');
+  setTimeout(()=>document.getElementById('input-name').focus(),120);
+}
+
+function renderColorPicker() {
+  document.getElementById('color-picker').innerHTML = CARD_COLORS.map(c=>`
+    <button onclick="selectColor('${c.name}')" title="${c.name}"
+      class="w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all focus-visible:outline-none"
+      style="background:${c.bg};outline:${selectedColor.name===c.name?'3px solid #163f4a':'none'};outline-offset:2px;transform:${selectedColor.name===c.name?'scale(1.15)':'scale(1)'}">
+    </button>`).join('');
+}
+
+function selectColor(name) {
+  selectedColor=CARD_COLORS.find(c=>c.name===name)||CARD_COLORS[0];
+  renderColorPicker();
+}
+
+async function addClient() {
+  const nameEl = document.getElementById('input-name');
+  const name   = nameEl.value.trim();
+  if (!name) { nameEl.style.borderColor='#e11d48'; nameEl.focus(); return; }
+  const total   = Math.min(Math.max(parseInt(document.getElementById('input-tokens').value)||5,1),20);
+  const reward  = document.getElementById('input-reward').value.trim() || 'Amazing job!';
+  const pinHash = await hashPin(document.getElementById('input-pin').value);
+  state.clients.push({id:Date.now().toString(), name, colorName:selectedColor.name,
+    totalTokens:total, earnedTokens:0, reward, tokenEmoji:'⭐', pinHash});
+  await persist();
+  closeModal('modal-add-client');
+  renderClientGrid();
+}
+
+// ─── CLIENT PIN ──────────────────────────────────────────────────────────────
+function tryOpenClient(id) {
+  const c = state.clients.find(x=>x.id===id);
+  if (!c) return;
+  if (c.pinHash) {
+    pendingClientId=id;
+    document.getElementById('pin-label').textContent = c.name + "'s board";
+    document.getElementById('pin-entry').value='';
+    document.getElementById('pin-err').classList.add('hidden');
+    openModal('modal-pin');
+    setTimeout(()=>document.getElementById('pin-entry').focus(),120);
+  } else {
+    navigate('token-board',id);
+  }
+}
+
+async function submitPin() {
+  const c = state.clients.find(x=>x.id===pendingClientId);
+  if (!c) return;
+  const hash = await hashPin(document.getElementById('pin-entry').value);
+  if (hash===c.pinHash) {
+    closeModal('modal-pin');
+    navigate('token-board',pendingClientId);
+    pendingClientId=null;
+  } else {
+    const w=document.getElementById('pin-wrap');
+    w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+    document.getElementById('pin-err').classList.remove('hidden');
+    document.getElementById('pin-entry').value='';
+    document.getElementById('pin-entry').focus();
+  }
+}
+
+// ─── TOKEN BOARD ─────────────────────────────────────────────────────────────
+function getClient() { return state.clients.find(c=>c.id===currentClientId); }
+
+function renderTokenBoard() {
+  const c=getClient(); if (!c){navigate('home');return;}
+  const col=CARD_COLORS.find(x=>x.name===c.colorName)||CARD_COLORS[0];
+  document.getElementById('tb-client-name').textContent=c.name;
+  document.getElementById('tb-reward-name').textContent=c.reward;
+  document.getElementById('tb-progress').textContent=`${c.earnedTokens} / ${c.totalTokens}`;
+  const wrap=document.getElementById('tb-tokens'); wrap.innerHTML='';
+  for (let i=0;i<c.totalTokens;i++){
+    const earned=i<c.earnedTokens;
+    const s=document.createElement('div');
+    s.className='token-slot'+(earned?' earned':'');
+    s.id='ts-'+i;
+    if (!earned) s.style.borderColor=col.bg+'55';
+    s.textContent=earned?c.tokenEmoji:'';
+    wrap.appendChild(s);
+  }
+  const done=c.earnedTokens>=c.totalTokens;
+  document.getElementById('tb-complete').classList.toggle('hidden',!done);
+  if (done){
+    document.getElementById('tb-complete-msg').textContent=`You earned: ${c.reward} 🎉`;
+    document.getElementById('complete-emoji').textContent=c.tokenEmoji||'🎉';
+  }
+  const btn=document.getElementById('btn-earn');
+  btn.disabled=done; btn.style.opacity=done?'0.45':''; btn.style.cursor=done?'not-allowed':'';
+}
+
+async function earnToken() {
+  const c=getClient(); if (!c||c.earnedTokens>=c.totalTokens) return;
+  c.earnedTokens++;
+  await persist(); renderTokenBoard();
+  const s=document.getElementById('ts-'+(c.earnedTokens-1));
+  if (s){s.classList.remove('pop');void s.offsetWidth;s.classList.add('pop');}
+  if (c.earnedTokens>=c.totalTokens){launchConfetti();speak('Amazing! You earned your reward!');}
+  else speak('Token '+c.earnedTokens+'!');
+}
+
+async function removeToken() {
+  const c=getClient(); if (!c||c.earnedTokens<=0) return;
+  c.earnedTokens--; await persist(); renderTokenBoard();
+}
+
+async function resetTokenBoard() {
+  const c=getClient(); if (!c) return;
+  c.earnedTokens=0; await persist(); renderTokenBoard();
+}
+
+function openEditTokenBoardModal() {
+  const c=getClient(); if (!c) return;
+  selectedEmoji=c.tokenEmoji||'⭐';
+  document.getElementById('edit-tokens').value=c.totalTokens;
+  document.getElementById('edit-reward').value=c.reward;
+  document.getElementById('edit-pin').value='';
+  document.getElementById('edit-pin-status').textContent=c.pinHash
+    ?'🔒 PIN set — enter new to change, blank to remove.'
+    :'🔓 No PIN — enter one to add protection.';
+  renderEmojiPicker();
+  openModal('modal-edit-tb');
+}
+
+function renderEmojiPicker() {
+  document.getElementById('emoji-picker').innerHTML=TOKEN_EMOJIS.map(e=>`
+    <button onclick="selectEmoji('${e}')"
+      class="w-9 h-9 sm:w-10 sm:h-10 text-lg sm:text-xl rounded-xl transition-all focus-visible:outline-none"
+      style="background:${selectedEmoji===e?'#d0eff4':'#f0fafb'};outline:${selectedEmoji===e?'2px solid var(--teal)':'none'};outline-offset:1px">
+      ${e}
+    </button>`).join('');
+}
+
+function selectEmoji(e){selectedEmoji=e;renderEmojiPicker();}
+
+async function saveTokenBoardSettings() {
+  const c=getClient(); if (!c) return;
+  c.totalTokens=Math.min(Math.max(parseInt(document.getElementById('edit-tokens').value)||5,1),20);
+  c.reward=document.getElementById('edit-reward').value.trim()||c.reward;
+  c.tokenEmoji=selectedEmoji;
+  c.earnedTokens=Math.min(c.earnedTokens,c.totalTokens);
+  c.pinHash=await hashPin(document.getElementById('edit-pin').value);
+  await persist();
+  closeModal('modal-edit-tb');
+  renderTokenBoard();
+}
+
+async function confirmDeleteClient() {
+  const c=getClient(); if (!c) return;
+  if (!confirm(`Delete ${c.name}? This cannot be undone.`)) return;
+  state.clients=state.clients.filter(x=>x.id!==c.id);
+  await persist();
+  closeModal('modal-edit-tb');
+  navigate('home');
+}
+
+// ─── SECURITY SETTINGS ───────────────────────────────────────────────────────
+function openSecurityModal() {
+  const mins=(state.settings&&state.settings.lockMins)||DEFAULT_LOCK_MINS;
+  document.getElementById('autolock-mins').value=String(mins);
+  ['chg-cur','chg-new','chg-new2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('chg-err').classList.add('hidden');
+  document.getElementById('chg-ok').classList.add('hidden');
+  openModal('modal-security');
+}
+
+document.getElementById('autolock-mins').addEventListener('change', async function() {
+  if (!state.settings) state.settings={};
+  state.settings.lockMins=parseInt(this.value)||DEFAULT_LOCK_MINS;
+  await persist();
+  startAutoLock();
+});
+
+async function changeMasterPw() {
+  const cur=document.getElementById('chg-cur').value;
+  const nw =document.getElementById('chg-new').value;
+  const nw2=document.getElementById('chg-new2').value;
+  const err=document.getElementById('chg-err');
+  const ok =document.getElementById('chg-ok');
+  err.classList.add('hidden'); ok.classList.add('hidden');
+  if (!cur||!nw)       {err.textContent='All fields are required.';err.classList.remove('hidden');return;}
+  if (nw.length<6)     {err.textContent='New password must be at least 6 characters.';err.classList.remove('hidden');return;}
+  if (nw!==nw2)        {err.textContent='New passwords do not match.';err.classList.remove('hidden');return;}
+  // verify current
+  const raw=localStorage.getItem(SK); if (!raw) return;
+  const s=JSON.parse(raw);
+  try {
+    const testKey=await deriveKey(cur,b64dec(s.salt));
+    await crypto.subtle.decrypt({name:'AES-GCM',iv:b64dec(s.iv)},testKey,b64dec(s.data));
+  } catch {
+    err.textContent='Current password is incorrect.';err.classList.remove('hidden');return;
+  }
+  // re-encrypt with new password + new salt
+  const newSalt=crypto.getRandomValues(new Uint8Array(16));
+  cryptoKey=await deriveKey(nw,newSalt);
+  const iv2=crypto.getRandomValues(new Uint8Array(12));
+  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv2},cryptoKey,
+    new TextEncoder().encode(JSON.stringify(state)));
+  localStorage.setItem(SK,JSON.stringify({
+    salt:b64enc(newSalt),iv:b64enc(iv2),
+    data:b64enc(new Uint8Array(enc)),lastAccess:new Date().toISOString()
+  }));
+  ['chg-cur','chg-new','chg-new2'].forEach(id=>document.getElementById(id).value='');
+  ok.classList.remove('hidden');
+}
+
+function wipeAllData() {
+  if (!confirm('⚠️ Permanently delete ALL client data and the master password?\n\nThis CANNOT be undone.')) return;
+  localStorage.removeItem(SK);
+  cryptoKey=null;
+  showScreen('setup');
+  setTimeout(()=>document.getElementById('setup-pw').focus(),150);
+}
+
+// ─── CONFETTI ────────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const colors=['#3abeca','#F7941D','#6db33f','#fde68a','#2c4a7c','#e11d48'];
+  for (let i=0;i<70;i++){
+    const el=document.createElement('div'); el.className='confetti-piece';
+    el.style.cssText=`left:${Math.random()*100}vw;top:${-10+Math.random()*-40}px;`+
+      `background:${colors[Math.floor(Math.random()*colors.length)]};`+
+      `width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;`+
+      `border-radius:${Math.random()>.5?'50%':'2px'};`+
+      `animation-duration:${1.5+Math.random()*2.5}s;animation-delay:${Math.random()*.8}s;`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend',()=>el.remove());
+  }
+}
+
+// ─── COMMON WORDS ────────────────────────────────────────────────────────────
+function renderWords() {
+  document.getElementById('words-container').innerHTML=Object.keys(WORD_CATS).map((cat,i)=>{
+    const col=CAT_COLORS[i%CAT_COLORS.length];
+    return `<div class="mb-5 sm:mb-6">
+      <h3 class="text-xs font-black uppercase tracking-widest mb-2 sm:mb-3" style="color:var(--teal-dk)">${cat}</h3>
+      <div class="flex flex-wrap gap-1.5 sm:gap-2">
+        ${WORD_CATS[cat].map(w=>`
+          <button class="word-btn px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border-2 font-semibold text-xs sm:text-sm focus-visible:outline-none"
+            style="background:${col.bg};border-color:${col.border};color:${col.text}"
+            data-word="${w.replace(/"/g,'&quot;')}"
+            onclick="addWord(this.dataset.word)">${w}</button>`).join('')}
+      </div></div>`;
+  }).join('');
+}
+
+function addWord(w){sentence.push(w);renderSentence();speak(w);}
+
+function renderSentence() {
+  const div=document.getElementById('sentence-words');
+  const ph=document.getElementById('sentence-ph');
+  if (!sentence.length){
+    if(!ph)div.insertAdjacentHTML('beforeend','<span id="sentence-ph" class="text-slate-400 italic text-sm self-center">Tap words below to build a sentence...</span>');
+    else ph.style.display='';
+    div.querySelectorAll('.sw-chip').forEach(e=>e.remove());
+    return;
+  }
+  if(ph)ph.style.display='none';
+  div.querySelectorAll('.sw-chip').forEach(e=>e.remove());
+  sentence.forEach((w,i)=>{
+    const chip=document.createElement('span');
+    chip.className='sw-chip flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs sm:text-sm font-semibold';
+    chip.style.cssText='background:#e8f9fc;border:1.5px solid #a1dfe9;color:var(--dark)';
+    chip.innerHTML=`${w} <button onclick="removeWordAt(${i})" style="color:var(--teal);line-height:1;font-size:1.1em" class="focus-visible:outline-none">&times;</button>`;
+    div.appendChild(chip);
+  });
+}
+
+function removeWordAt(i){sentence.splice(i,1);renderSentence();}
+function removeLastWord(){if(sentence.length){sentence.pop();renderSentence();}}
+function speakSentence(){if(sentence.length)speak(sentence.join(' '));}
+function clearSentence(){sentence=[];renderSentence();}
+
+// ─── SPEECH ──────────────────────────────────────────────────────────────────
+function speak(text){
+  if(!('speechSynthesis' in window))return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=0.9;u.pitch=1.05;
+  window.speechSynthesis.speak(u);
+}
+
+// ─── MODALS ──────────────────────────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-backdrop').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(m=>closeModal(m.id));
+});
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function togglePw(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
+
+// Password strength on setup screen
+document.getElementById('setup-pw').addEventListener('input',function(){
+  const wrap=document.getElementById('pw-strength-wrap');
+  const bar=document.getElementById('pw-strength-bar');
+  const lbl=document.getElementById('pw-strength-lbl');
+  if(!this.value){wrap.classList.add('hidden');return;}
+  wrap.classList.remove('hidden');
+  let s=0;
+  if(this.value.length>=8)s++;
+  if(this.value.length>=12)s++;
+  if(/[A-Z]/.test(this.value))s++;
+  if(/[0-9]/.test(this.value))s++;
+  if(/[^A-Za-z0-9]/.test(this.value))s++;
+  const lvls=[
+    {w:'20%',bg:'#e11d48',t:'Very weak'},
+    {w:'40%',bg:'#F7941D',t:'Weak'},
+    {w:'60%',bg:'#eab308',t:'Fair'},
+    {w:'80%',bg:'#6db33f',t:'Strong'},
+    {w:'100%',bg:'#3abeca',t:'Very strong'},
+  ];
+  const l=lvls[Math.min(s,4)];
+  bar.style.width=l.w;bar.style.background=l.bg;
+  lbl.textContent=l.t;lbl.style.color=l.bg;
+});
+
+// Enter key bindings
+document.getElementById('lock-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doUnlock();});
+document.getElementById('setup-pw2').addEventListener('keydown',e=>{if(e.key==='Enter')doSetup();});
+document.getElementById('pin-entry').addEventListener('keydown',e=>{if(e.key==='Enter')submitPin();});
+['input-name','input-tokens','input-reward','input-pin'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')addClient();});
+});
+
+// ─── FEE ESTIMATOR ───────────────────────────────────────────────────────────
+const BCBA_RATE       = 150;
+const THERAPIST_RATE  = 75;
+const BCBA_PCT        = 0.15;   // 15% of buffered hours per day
+const BUFFER_HRS      = 0.5;    // 30-min buffer per day block
+const WEEKLY_BCBA     = 2;      // mandatory 2 BCBA hrs/week
+const ENROLL_BCBA_HRS = 5;      // first-time startup
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const CONTACT_EMAIL   = 'vanloon_gerry@hotmail.com';
+
+let enrollSelected = false;
+
+function buildDayGrid() {
+  document.getElementById('day-grid').innerHTML = DAYS.map((d,i) => {
+    const isWeekend = i >= 5;
+    return `
+      <div class="rounded-2xl p-4 border-2 text-center" style="border-color:${isWeekend?'#fdd9a4':'#d0eff4'};background:${isWeekend?'#fffbeb':'#f8fdfe'}">
+        <p class="text-xs font-black uppercase tracking-wider mb-2" style="color:${isWeekend?'#b45309':'var(--teal-dk)'}">${d.slice(0,3)}</p>
+        <input id="hrs-${d}" type="number" min="0" max="12" step="0.5" placeholder="0"
+          oninput="calcFees()"
+          style="width:100%;padding:.5rem;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid ${isWeekend?'#fde68a':'#d0eff4'};border-radius:.6rem;background:white;outline:none;color:var(--dark)" />
+        <p class="text-xs mt-1.5" style="color:#94a3b8">hrs</p>
+      </div>`;
+  }).join('');
+}
+
+function toggleEnroll() {
+  enrollSelected = !enrollSelected;
+  const btn = document.getElementById('btn-enroll');
+  document.getElementById('enroll-icon').textContent = enrollSelected ? '☑' : '☐';
+  btn.style.background    = enrollSelected ? '#f0fafb' : 'white';
+  btn.style.borderColor   = enrollSelected ? 'var(--teal)' : '#d0eff4';
+  btn.style.color         = enrollSelected ? 'var(--teal-dk)' : 'var(--dark)';
+  calcFees();
+}
+
+function fmt(n)  { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmtH(n) { return n % 1 === 0 ? n + ' hr' + (n!==1?'s':'') : n.toFixed(1) + ' hrs'; }
+
+function calcFees() {
+  let totalTherapistHrs = 0;
+  let totalBCBADailyHrs = 0;
+  const tbody = document.getElementById('fee-tbody');
+  tbody.innerHTML = '';
+
+  DAYS.forEach(d => {
+    const raw = parseFloat(document.getElementById('hrs-'+d).value) || 0;
+    if (raw <= 0) return;
+    const buffered      = raw + BUFFER_HRS;
+    const therapistHrs  = buffered;
+    const bcbaHrs       = buffered * BCBA_PCT;
+    const therapistCost = therapistHrs * THERAPIST_RATE;
+    const bccaCost      = bcbaHrs * BCBA_RATE;
+    const dayTotal      = therapistCost + bccaCost;
+
+    totalTherapistHrs += therapistHrs;
+    totalBCBADailyHrs += bcbaHrs;
+
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr class="border-t" style="border-color:#f0fafb">
+        <td class="px-5 py-3 font-semibold" style="color:var(--dark)">${d}</td>
+        <td class="px-4 py-3 text-right text-slate-500">${fmtH(raw)}</td>
+        <td class="px-4 py-3 text-right text-slate-500">${fmtH(buffered)}</td>
+        <td class="px-4 py-3 text-right" style="color:var(--dark)">${fmt(therapistCost)}</td>
+        <td class="px-4 py-3 text-right" style="color:var(--dark)">${fmt(bccaCost)}</td>
+        <td class="px-5 py-3 text-right font-bold" style="color:var(--teal-dk)">${fmt(dayTotal)}</td>
+      </tr>`);
+  });
+
+  const therapistCostTotal  = totalTherapistHrs * THERAPIST_RATE;
+  const bcbaDailyCostTotal  = totalBCBADailyHrs * BCBA_RATE;
+  const weeklyBCBACost      = WEEKLY_BCBA * BCBA_RATE;
+  const weeklyTotal         = therapistCostTotal + bcbaDailyCostTotal + weeklyBCBACost;
+  const enrollCost          = enrollSelected ? ENROLL_BCBA_HRS * BCBA_RATE : 0;
+  const firstWeekTotal      = weeklyTotal + enrollCost;
+
+  document.getElementById('sum-therapist').textContent  = fmt(therapistCostTotal);
+  document.getElementById('sum-bcba-daily').textContent = fmt(bcbaDailyCostTotal);
+  document.getElementById('sum-weekly').textContent     = fmt(weeklyTotal);
+  document.getElementById('sum-first-week').textContent = fmt(firstWeekTotal);
+
+  document.getElementById('enroll-row').classList.toggle('hidden', !enrollSelected);
+  document.getElementById('first-week-row').classList.toggle('hidden', !enrollSelected);
+}
+
+function emailEstimate() {
+  const clientName  = document.getElementById('fee-client-name').value.trim() || '(not provided)';
+  const caregiver   = document.getElementById('fee-caregiver').value.trim()   || '(not provided)';
+  const phone       = document.getElementById('fee-phone').value.trim()        || '(not provided)';
+  const replyEmail  = document.getElementById('fee-email').value.trim()        || '';
+
+  // Build hours summary
+  const dayLines = DAYS.map(d => {
+    const raw = parseFloat(document.getElementById('hrs-'+d).value) || 0;
+    if (raw <= 0) return null;
+    const buffered = raw + BUFFER_HRS;
+    const cost = (buffered * THERAPIST_RATE) + (buffered * BCBA_PCT * BCBA_RATE);
+    return `  ${d}: ${fmtH(raw)} (${fmtH(buffered)} w/ buffer) — ${fmt(cost)}`;
+  }).filter(Boolean);
+
+  const totalTherapistHrs = DAYS.reduce((sum,d)=>{
+    const r=parseFloat(document.getElementById('hrs-'+d).value)||0;
+    return r>0?sum+(r+BUFFER_HRS):sum;
+  },0);
+  const totalBCBADailyHrs = totalTherapistHrs * BCBA_PCT;
+  const therapistCost  = totalTherapistHrs * THERAPIST_RATE;
+  const bcbaDailyCost  = totalBCBADailyHrs * BCBA_RATE;
+  const weeklyBCBACost = WEEKLY_BCBA * BCBA_RATE;
+  const weeklyTotal    = therapistCost + bcbaDailyCost + weeklyBCBACost;
+  const enrollCost     = enrollSelected ? ENROLL_BCBA_HRS * BCBA_RATE : 0;
+  const firstWeekTotal = weeklyTotal + enrollCost;
+
+  const subject = `Fee Estimate Request — ${clientName}`;
+  const body = [
+    'Hello Continuum ABA,',
+    '',
+    'Please find my fee estimate details below. I would like to start a conversation about enrolment.',
+    '',
+    '─────────────────────────',
+    'CONTACT INFORMATION',
+    '─────────────────────────',
+    `Client Name:    ${clientName}`,
+    `Caregiver Name: ${caregiver}`,
+    `Phone:          ${phone}`,
+    `Email:          ${replyEmail || '(not provided)'}`,
+    '',
+    '─────────────────────────',
+    'REQUESTED SERVICE HOURS',
+    '─────────────────────────',
+    ...(dayLines.length ? dayLines : ['  No hours entered']),
+    '',
+    '─────────────────────────',
+    'FEE BREAKDOWN',
+    '─────────────────────────',
+    `Therapist cost (${fmtH(totalTherapistHrs)} × $75/hr):       ${fmt(therapistCost)}`,
+    `BCBA daily cost (${fmtH(totalBCBADailyHrs)} × $150/hr):    ${fmt(bcbaDailyCost)}`,
+    `Weekly BCBA requirement (2 hrs × $150):  $300.00`,
+    `─────────────────────────────────────────`,
+    `Weekly Ongoing Total:                    ${fmt(weeklyTotal)}`,
+    enrollSelected ? `First Time Enrolment (one-time, 5 hrs BCBA): ${fmt(enrollCost)}` : null,
+    enrollSelected ? `First Week Total:                            ${fmt(firstWeekTotal)}` : null,
+    '',
+    'Looking forward to hearing from you.',
+    '',
+    `${caregiver !== '(not provided)' ? caregiver : 'Prospective Client'}`,
+  ].filter(l => l !== null).join('\n');
+
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailto;
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(function init(){
+  const raw=localStorage.getItem(SK);
+  if (!raw) {
+    showScreen('setup');
+    setTimeout(()=>document.getElementById('setup-pw').focus(),150);
+  } else {
+    const s=JSON.parse(raw);
+    if(s.lastAccess){
+      const d=new Date(s.lastAccess);
+      document.getElementById('lock-last').textContent=
+        'Last access: '+d.toLocaleDateString()+' at '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    }
+    showScreen('lock');
+    setTimeout(()=>document.getElementById('lock-pw').focus(),150);
+  }
+})();
+</script>
+</body>
+</html>
