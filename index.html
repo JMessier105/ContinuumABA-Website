@@ -1527,5 +1527,66 @@
     render();
   </script>
 
+  <!-- ── Sticky Ambient Player — Steps to Giant Leaps ── -->
+  <audio id="ambient-audio" src="Brand_assets/Steps to giant leaps.m4a" loop preload="none"></audio>
+  <div id="ambient-player"
+       style="position:fixed; bottom:24px; right:24px; z-index:9999;
+              background:#163f4a; border:1px solid rgba(255,255,255,0.15);
+              border-radius:16px; padding:12px 16px; display:flex; align-items:center; gap:12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,180,160,0.15);
+              backdrop-filter:blur(16px); min-width:220px; cursor:default;
+              transition: opacity 0.3s ease, transform 0.3s ease;">
+    <!-- Play/pause -->
+    <button id="ambient-btn"
+            onclick="(function(){
+              var a=document.getElementById('ambient-audio');
+              var icon=document.getElementById('ambient-icon');
+              if(a.paused){
+                a.play();
+                icon.innerHTML='<rect x=\'6\' y=\'4\' width=\'4\' height=\'16\' rx=\'1\'/><rect x=\'14\' y=\'4\' width=\'4\' height=\'16\' rx=\'1\'/>';
+              } else {
+                a.pause();
+                icon.innerHTML='<polygon points=\'5,3 19,12 5,21\'/>';
+              }
+            })();event.stopPropagation();"
+            style="width:38px; height:38px; border-radius:50%; background:rgba(58,190,202,0.2);
+                   border:1px solid rgba(58,190,202,0.4); color:#3abeca; cursor:pointer; flex-shrink:0;
+                   display:flex; align-items:center; justify-content:center;
+                   transition: background 0.2s ease;"
+            onmouseover="this.style.background='rgba(58,190,202,0.35)';"
+            onmouseout="this.style.background='rgba(58,190,202,0.2)';">
+      <svg id="ambient-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+    </button>
+    <!-- Info -->
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:12px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        Steps to Giant Leaps
+      </div>
+      <div style="font-size:10px; color:rgba(255,255,255,0.45); margin-top:1px;">Continuum ABA · Original</div>
+      <!-- Progress bar -->
+      <div style="margin-top:6px; height:2px; background:rgba(255,255,255,0.12); border-radius:99px; overflow:hidden;">
+        <div id="ambient-progress" style="height:100%; width:0%; background:#3abeca; border-radius:99px;
+             transition: width 1s linear;"></div>
+      </div>
+    </div>
+    <!-- Dismiss -->
+    <button onclick="document.getElementById('ambient-player').style.display='none';document.getElementById('ambient-audio').pause();"
+            style="color:rgba(255,255,255,0.3); background:none; border:none; cursor:pointer; padding:2px; line-height:1;
+                   font-size:16px; transition: color 0.15s ease;"
+            onmouseover="this.style.color='rgba(255,255,255,0.7)';"
+            onmouseout="this.style.color='rgba(255,255,255,0.3)';">&#x2715;</button>
+  </div>
+  <script>
+    (function(){
+      var audio = document.getElementById('ambient-audio');
+      var progress = document.getElementById('ambient-progress');
+      audio.addEventListener('timeupdate', function(){
+        if(audio.duration) progress.style.width = (audio.currentTime / audio.duration * 100) + '%';
+      });
+    })();
+  </script>
+
 </body>
 </html>
