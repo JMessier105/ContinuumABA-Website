@@ -160,15 +160,22 @@
         color             0.2s ease,
         box-shadow        0.2s ease;
     }
-    .skill-badge:hover {
-      transform: translateY(-4px) scale(1.03);
-      background-color: #3abeca;
-      color: white;
-      box-shadow: 0 8px 24px -4px rgba(58,190,202,0.4);
-      z-index: 20;
+    @media (hover: hover) {
+      .skill-badge:hover {
+        transform: translateY(-4px) scale(1.03);
+        background-color: #3abeca;
+        color: white;
+        box-shadow: 0 8px 24px -4px rgba(58,190,202,0.4);
+        z-index: 20;
+      }
+      .skill-badge:hover .skill-icon { color: white; }
+      .skill-badge:hover .skill-icon-wrap { background-color: rgba(255,255,255,0.2); }
+      .skill-badge:hover .skill-examples {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0);
+      }
     }
-    .skill-badge:hover .skill-icon { color: white; }
-    .skill-badge:hover .skill-icon-wrap { background-color: rgba(255,255,255,0.2); }
 
     /* ── Skill hover cards ── */
     .skill-examples {
@@ -199,11 +206,6 @@
       background: #fff;
       border-left: 1px solid rgba(58,190,202,0.25);
       border-top: 1px solid rgba(58,190,202,0.25);
-    }
-    .skill-badge:hover .skill-examples {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateX(-50%) translateY(0);
     }
     .skill-examples .examples-title {
       font-size: 10px;
