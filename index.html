@@ -236,6 +236,35 @@
       margin-top: 1px;
     }
 
+    /* ── Skill badge active (tap on mobile) ── */
+    .skill-badge.active {
+      transform: translateY(-4px) scale(1.03);
+      background-color: #3abeca;
+      color: white;
+      box-shadow: 0 8px 24px -4px rgba(58,190,202,0.4);
+      z-index: 20;
+    }
+    .skill-badge.active .skill-icon { color: white; }
+    .skill-badge.active .skill-icon-wrap { background-color: rgba(255,255,255,0.2); }
+    .skill-badge.active .skill-examples {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    @media (max-width: 639px) {
+      .skill-examples {
+        position: fixed;
+        left: 50%;
+        top: var(--popup-top, 300px);
+        transform: translateX(-50%) translateY(6px);
+        width: min(260px, 90vw);
+        z-index: 100;
+      }
+      .skill-badge.active .skill-examples {
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
     /* ── Contact cards ── */
     .contact-card {
       transition:
@@ -1497,6 +1526,25 @@
 
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
+    // Skill badge tap-to-show on mobile
+    document.querySelectorAll('.skill-badge').forEach(badge => {
+      badge.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        document.querySelectorAll('.skill-badge').forEach(b => b.classList.remove('active'));
+        if (!isActive) {
+          if (window.innerWidth < 640) {
+            const rect = this.getBoundingClientRect();
+            this.style.setProperty('--popup-top', (rect.bottom + 12) + 'px');
+          }
+          this.classList.add('active');
+        }
+      });
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.skill-badge')) {
+        document.querySelectorAll('.skill-badge').forEach(b => b.classList.remove('active'));
+      }
+    });
 
   </script>
 
