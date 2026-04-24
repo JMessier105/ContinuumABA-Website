@@ -82,7 +82,7 @@
       width: 100%;
       height: 100%;
       z-index: 0;
-      background: #163f4a;
+      background: #0e7898;
     }
 
     /* Ensure transparent PNG logo never shows checker — always shows teal */
@@ -92,11 +92,11 @@
 
     /* ── Hero gradient ── */
     .hero-bg {
-      background-color: #1d6d7d;
+      background-color: #0e7898;
       background-image:
-        radial-gradient(ellipse 90% 70% at 5% 15%,  rgba(58,190,202,0.45) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 80% at 95% 85%, rgba(44,74,124,0.55)  0%, transparent 55%),
-        radial-gradient(ellipse 45% 35% at 55% 45%, rgba(109,179,63,0.18) 0%, transparent 65%);
+        radial-gradient(ellipse 90% 70% at 5% 15%,  rgba(94,215,232,0.38) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 95% 85%, rgba(44,74,124,0.35)  0%, transparent 55%),
+        radial-gradient(ellipse 45% 35% at 55% 45%, rgba(109,179,63,0.12) 0%, transparent 65%);
     }
 
     /* ── AccessOAP gradient ── */
@@ -411,7 +411,7 @@
 
 
   <!-- ══════════════════════ HERO ══════════════════════ -->
-  <section class="relative hero-bg grain min-h-screen flex items-start pt-20 overflow-hidden" style="background-color:#163f4a;">
+  <section class="relative hero-bg grain min-h-screen flex items-start pt-20 overflow-hidden" style="background-color:#0e7898;">
 
     <!-- Wavy canvas background -->
     <canvas id="hero-canvas"></canvas>
@@ -427,12 +427,12 @@
 
         <!-- Hero logo — transparent PNG, full content width -->
         <div class="mb-8">
-          <img src="Brand_assets/continuum logo no padding.png"
+          <img src="Brand_assets/continuum logo hero.png"
                id="hero-logo"
                alt="Continuum ABA"
                class="block h-auto object-contain w-full"
                style="max-width: 560px;
-                      filter: drop-shadow(0 4px 24px rgba(0,0,0,0.4));
+                      filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
                       background: transparent;">
         </div>
 
@@ -441,7 +441,7 @@
                     bg-white/10 backdrop-blur-sm border border-white/20
                     text-white/85 text-sm font-medium mb-8">
           <span class="pulse-dot w-2 h-2 rounded-full bg-brandGreen"></span>
-          Currently serving Lanark County, Perth, Smiths Falls & Carleton Place
+          Serving Lanark County, Perth, Smiths Falls & Carleton Place + Remote Services Ontario-wide
         </div>
 
         <h1 class="font-display text-5xl md:text-6xl lg:text-[4.25rem] text-white leading-[1.08]
@@ -528,11 +528,11 @@
           <p class="text-gray-600 text-lg leading-[1.8] mb-5">
             Continuum ABA is a neurodivergent-affirming clinic supporting children,
             youth, and families using the principles of Applied Behaviour Analysis.
-            We believe every learner has strengths — our role is to build on them.
+            We believe every learner has strengths. Our role is to build on them.
           </p>
           <p class="text-gray-600 text-lg leading-[1.8] mb-10">
             We specialize in building meaningful, real-life skills that make a real
-            difference — from communication and social connections to emotional
+            difference: from communication and social connections to emotional
             regulation. Our approach is collaborative, respectful, and grounded in
             evidence.
           </p>
@@ -729,7 +729,7 @@
             <ul>
               <li>Requesting needs & wants</li>
               <li>Expanding vocabulary</li>
-              <li>AAC & alternative supports</li>
+              <li>Augmentative and Alternative Communication (AAC) & other supports</li>
               <li>Back-and-forth conversation</li>
             </ul>
           </div>
@@ -836,7 +836,7 @@
           </div>
           <h3 class="font-display text-2xl text-gray-900 mb-3">Social Groups</h3>
           <p class="text-gray-600 leading-[1.75] mb-7">
-            Small-group programs designed to build social connections and practice
+            Small-group programs (typically 4–6 participants) designed to build social connections and practice
             real-world skills in a safe, fun, and peer-supported environment.
           </p>
           <ul class="space-y-2.5">
@@ -875,15 +875,16 @@
           <h3 class="font-display text-2xl text-gray-900 mb-3">Caregiver Coaching</h3>
           <p class="text-gray-600 leading-[1.75] mb-7">
             We partner with families to extend learning into everyday life.
-            Caregivers gain practical tools and strategies to support their
-            child's goals at home and in the community.
+            Caregivers share their biggest challenges and help shape the personalized
+            goals we work toward together, so support fits your family, not just the classroom.
+            You'll gain practical tools and strategies to use at home and in the community.
           </p>
           <ul class="space-y-2.5">
             <li class="flex items-center gap-2.5 text-teal-600 text-sm font-medium">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
               </svg>
-              Home skill generalization
+              Applying skills at home and in daily life
             </li>
             <li class="flex items-center gap-2.5 text-teal-600 text-sm font-medium">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1004,13 +1005,13 @@
           Help Shape Our Services
         </h2>
         <p class="text-gray-600 text-lg leading-[1.8] mb-4">
-          Continuum ABA is committed to being responsive to the Lanark County community.
-          We want to hear from families, caregivers, and community members about what
+          Continuum ABA is committed to being responsive to the neurodivergent community across Ontario.
+          We want to hear from individuals, families, caregivers, and community members about what
           services matter most.
         </p>
         <p class="text-gray-500 text-base leading-[1.75] mb-10">
           Your voice will help shape the services we offer. Please take a few minutes
-          to fill out our feedback survey — anonymous responses are welcome.
+          to fill out our feedback survey. Anonymous responses are welcome.
         </p>
 
         <a href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=DQSIkWdsW0yxEjajBLZtrQAAAAAAAAAAAAO__alPyDFUNTg5VlJCT0lWQ0pJQUE3NkcyUkkwU1hQRy4u&origin=QRCode"
@@ -1115,21 +1116,22 @@
             </h3>
             <div class="space-y-4 text-gray-600 leading-[1.75] text-sm">
               <p>Some paths feel less like choices and more like a calling you finally stop putting off.</p>
-              <p>For Jess, that calling has always centred on children — the quiet thrill of watching a child
+              <p>For Jess, that calling has always centred on children: the quiet thrill of watching a child
                 reach a milestone they've been working toward, or seeing a family discover a rhythm that finally
                 feels sustainable. A parent's confidence growing alongside their child's. Those moments don't get old.</p>
-              <p>What became impossible to ignore, though, was the gap. Families across Lanark County and the
-                surrounding communities were navigating real challenges with too few local supports to lean on.
-                Waitlists grew. Children went without. And the families who needed the most help were often the
-                ones waiting the longest to receive it.</p>
-              <p>Continuum ABA exists to help close that gap — to bring individualized, evidence-based therapy
-                to more families across the region, and to help grow the local capacity that communities like
-                this one deserve. Because every learner is different, every program here is built from the
+              <p>What became impossible to ignore, though, was the gap. Families across Lanark County, rural Ontario, and the
+                province more broadly were navigating real challenges with too few local supports to lean on.
+                In rural communities, distance adds another layer: fewer providers, limited transportation, longer drives.
+                But the gap exists across all of Ontario. Waitlists grew. Individuals went without. And the families who needed
+                the most help were often the ones waiting the longest to receive it.</p>
+              <p>Continuum ABA exists to help close that gap, bringing individualized, evidence-based therapy
+                to more families across the province, and helping grow the local and virtual capacity that communities
+                deserve. Because every learner is different, every program here is built from the
                 ground up around the child it serves. That kind of flexibility isn't just possible at Continuum;
                 it's the whole point.</p>
               <p class="text-teal-600 font-medium pt-1">
                 It starts with the kids. It grows with the families.<br>
-                And it's built to show up — every step of the way.
+                And it's built to show up, every step of the way.
               </p>
             </div>
           </div>
@@ -1612,7 +1614,7 @@
       '#2c4a7c',   // navy
       '#6db33f',   // brand green (subtle accent)
     ];
-    const BG_FILL    = '#163f4a';   // dark teal base
+    const BG_FILL    = '#0e7898';   // lighter teal base
     const BLUR_PX    = 12;
     const WAVE_W     = 60;
     const WAVE_OPA   = 0.42;
