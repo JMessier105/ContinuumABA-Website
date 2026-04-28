@@ -139,6 +139,18 @@
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     .pulsing { animation: pulse 1s ease-in-out infinite; }
 
+    /* ── BUBBLE POPPER ── */
+    @keyframes bubble-float  { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-10px) scale(1.03)} }
+    @keyframes bubble-grow   { 0%{transform:scale(0);opacity:0} 65%{transform:scale(1.14);opacity:1} 100%{transform:scale(1);opacity:1} }
+    @keyframes bubble-pop    { 0%{transform:scale(1);opacity:1} 40%{transform:scale(1.4);opacity:.9} 100%{transform:scale(0);opacity:0} }
+    @keyframes particle-fly  { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }
+    @keyframes milestone-in  { 0%{transform:translate(-50%,-50%) scale(0) rotate(-6deg);opacity:0} 70%{transform:translate(-50%,-50%) scale(1.1) rotate(2deg);opacity:1} 100%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1} }
+    @keyframes milestone-out { 0%{transform:translate(-50%,-50%) scale(1);opacity:1} 100%{transform:translate(-50%,-50%) scale(0);opacity:0} }
+    .bbl { position:absolute; border-radius:50%; cursor:pointer; border:2px solid rgba(255,255,255,.75); user-select:none; -webkit-tap-highlight-color:transparent; will-change:transform; }
+    #bubble-field { position:relative; border-radius:1.5rem; overflow:hidden; touch-action:none;
+      background:linear-gradient(135deg,#dbeafe 0%,#e0fdf4 35%,#fdf4ff 65%,#fff7ed 100%);
+      box-shadow:inset 0 2px 16px rgba(0,0,0,.06); }
+
     @media (max-width:480px) { .modal-box { padding: 1.25rem; } .screen-card { padding: 1.75rem 1.25rem; } }
   </style>
 </head>
@@ -225,9 +237,9 @@
         <button onclick="navigate('fees')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
           <span>💰</span><span class="hidden sm:inline">Fee Estimator</span><span class="sm:hidden">Fees</span>
         </button>
-        <a href="bubbles.html" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
+        <button onclick="navigate('bubbles')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
           <span>🫧</span><span class="hidden sm:inline">Bubbles</span>
-        </a>
+        </button>
         <a href="https://continuumaba.com" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
           <span>🌐</span><span class="hidden sm:inline">Main Site</span>
         </a>
@@ -419,6 +431,19 @@
           <p id="fee-send-status" class="text-xs text-center mt-2" style="color:#94a3b8">We'll be in touch within 2 business days.</p>
         </div>
       </div>
+    </div>
+
+    <!-- BUBBLE POPPER -->
+    <div id="page-bubbles" class="page">
+      <div class="flex items-center justify-between mb-4">
+        <button onclick="navigate('home')" class="flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-xl btn-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400">← Back</button>
+        <div class="text-center">
+          <div id="bubble-pop-count" class="text-3xl font-black" style="color:var(--dark)">0</div>
+          <div class="text-xs font-semibold uppercase tracking-widest" style="color:var(--teal-dk)">pops</div>
+        </div>
+        <button onclick="initBubbles()" class="flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-xl btn-muted">↺ Reset</button>
+      </div>
+      <div id="bubble-field" style="height:72vh;"></div>
     </div>
 
   </main>
@@ -798,6 +823,9 @@ function navigate(page, id) {
     document.getElementById('page-fees').classList.add('active');
     buildDayGrid();
     calcFees();
+  } else if (page === 'bubbles') {
+    document.getElementById('page-bubbles').classList.add('active');
+    initBubbles();
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1340,6 +1368,104 @@ async function emailEstimate() {
     setTimeout(()=>document.getElementById('lock-pw').focus(),150);
   }
 })();
+
+// ─── BUBBLE POPPER ────────────────────────────────────────────────────────────
+const BUBBLE_COLORS = [
+  { c1:'rgba(58,190,202,.6)',  c2:'rgba(58,190,202,.2)',  solid:'#3abeca', freq:523  },
+  { c1:'rgba(99,102,241,.6)', c2:'rgba(99,102,241,.2)',  solid:'#6366f1', freq:587  },
+  { c1:'rgba(236,72,153,.6)', c2:'rgba(236,72,153,.2)',  solid:'#ec4899', freq:659  },
+  { c1:'rgba(249,115,22,.6)', c2:'rgba(249,115,22,.2)',  solid:'#f97316', freq:784  },
+  { c1:'rgba(34,197,94,.6)',  c2:'rgba(34,197,94,.2)',   solid:'#22c55e', freq:880  },
+  { c1:'rgba(234,179,8,.6)',  c2:'rgba(234,179,8,.2)',   solid:'#eab308', freq:1047 },
+  { c1:'rgba(239,68,68,.6)',  c2:'rgba(239,68,68,.2)',   solid:'#ef4444', freq:1175 },
+  { c1:'rgba(168,85,247,.6)', c2:'rgba(168,85,247,.2)',  solid:'#a855f7', freq:1319 },
+  { c1:'rgba(20,184,166,.6)', c2:'rgba(20,184,166,.2)',  solid:'#14b8a6', freq:1568 },
+];
+let bubblePopCount = 0;
+let bubbleAudioCtx = null;
+
+function getBubbleAudio() {
+  if (!bubbleAudioCtx) bubbleAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if (bubbleAudioCtx.state==='suspended') bubbleAudioCtx.resume();
+  return bubbleAudioCtx;
+}
+function playBubblePop(freq) {
+  try {
+    const ctx=getBubbleAudio(), o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='triangle';
+    o.frequency.setValueAtTime(freq,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freq*.55,ctx.currentTime+.18);
+    g.gain.setValueAtTime(.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.22);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime+.23);
+    const o2=ctx.createOscillator(), g2=ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.type='sine'; o2.frequency.setValueAtTime(freq*2,ctx.currentTime);
+    g2.gain.setValueAtTime(.08,ctx.currentTime);
+    g2.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.12);
+    o2.start(ctx.currentTime); o2.stop(ctx.currentTime+.13);
+  } catch(_){}
+}
+function spawnBubbleParticles(field,x,y,color) {
+  for(let i=0;i<8;i++){
+    const angle=(i/8)*Math.PI*2, dist=28+Math.random()*28;
+    const p=document.createElement('div');
+    p.style.cssText=`position:absolute;left:${x}px;top:${y}px;width:${6+Math.random()*5}px;height:${6+Math.random()*5}px;border-radius:50%;background:${color};pointer-events:none;transform:translate(-50%,-50%);--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:particle-fly .5s ease-out forwards;`;
+    field.appendChild(p);
+    setTimeout(()=>p.remove(),550);
+  }
+}
+function makeBubble(field,x,y,size,col,delayMs){
+  const el=document.createElement('div');
+  el.className='bbl';
+  const fd=(2.4+Math.random()*2.2).toFixed(2), fDelay=(Math.random()*3).toFixed(2);
+  el.style.cssText=`left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:radial-gradient(circle at 33% 30%,rgba(255,255,255,.78) 0%,${col.c1} 55%,${col.c2} 100%);box-shadow:inset -3px -3px 8px rgba(0,0,0,.07),0 4px 16px ${col.c2};animation:bubble-grow .55s cubic-bezier(.34,1.56,.64,1) ${delayMs}ms both,bubble-float ${fd}s ease-in-out ${fDelay}s infinite;`;
+  el.addEventListener('pointerdown',function(e){
+    e.preventDefault();
+    if(el.dataset.popped) return;
+    el.dataset.popped='1';
+    playBubblePop(col.freq);
+    spawnBubbleParticles(field,x+size/2,y+size/2,col.solid);
+    el.style.animation='bubble-pop .28s cubic-bezier(.34,1.56,.64,1) forwards';
+    bubblePopCount++;
+    document.getElementById('bubble-pop-count').textContent=bubblePopCount;
+    const milestones={10:'🎉',25:'⭐',50:'🏆',75:'🌈',100:'🦄',150:'🔥',200:'👑'};
+    if(milestones[bubblePopCount]) showBubbleMilestone(bubblePopCount,milestones[bubblePopCount]);
+    const regrow=700+Math.random()*600;
+    setTimeout(()=>{
+      el.style.animation=`bubble-grow .55s cubic-bezier(.34,1.56,.64,1) both,bubble-float ${fd}s ease-in-out ${fDelay}s infinite`;
+      delete el.dataset.popped;
+    },regrow);
+  });
+  field.appendChild(el);
+}
+function initBubbles(){
+  bubblePopCount=0;
+  document.getElementById('bubble-pop-count').textContent='0';
+  const field=document.getElementById('bubble-field');
+  field.innerHTML='';
+  const W=field.offsetWidth, H=field.offsetHeight||window.innerHeight*.65;
+  const cell=window.innerWidth<500?70:85;
+  const cols=Math.max(3,Math.floor(W/cell)), rows=Math.max(3,Math.floor(H/cell));
+  const cW=W/cols, cH=H/rows;
+  let i=0;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const size=22+Math.floor(Math.random()*40), pad=6;
+    const x=c*cW+pad+Math.random()*Math.max(0,cW-size-pad*2);
+    const y=r*cH+pad+Math.random()*Math.max(0,cH-size-pad*2);
+    const col=BUBBLE_COLORS[Math.floor(Math.random()*BUBBLE_COLORS.length)];
+    makeBubble(field,x,y,size,col,i*25); i++;
+  }
+}
+function showBubbleMilestone(n,emoji){
+  const field=document.getElementById('bubble-field');
+  const el=document.createElement('div');
+  el.style.cssText=`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:white;border-radius:24px;padding:20px 36px;text-align:center;font-weight:900;font-size:2rem;color:var(--dark);pointer-events:none;z-index:20;box-shadow:0 12px 40px rgba(0,0,0,.18);animation:milestone-in .45s cubic-bezier(.34,1.56,.64,1) forwards;`;
+  el.innerHTML=`<div style="font-size:3rem;margin-bottom:6px">${emoji}</div>${n} pops!`;
+  field.appendChild(el);
+  setTimeout(()=>{el.style.animation='milestone-out .3s ease forwards';setTimeout(()=>el.remove(),350);},1800);
+}
 </script>
 </body>
 </html>
