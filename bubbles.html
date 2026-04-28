@@ -131,16 +131,17 @@
   <div id="field"></div>
 
   <script>
+    // Pentatonic scale C5–G6 — every note sounds good together
     const COLORS = [
-      { c1: 'rgba(58,190,202,0.6)',  c2: 'rgba(58,190,202,0.2)',  solid: '#3abeca' },
-      { c1: 'rgba(99,102,241,0.6)',  c2: 'rgba(99,102,241,0.2)',  solid: '#6366f1' },
-      { c1: 'rgba(236,72,153,0.6)',  c2: 'rgba(236,72,153,0.2)',  solid: '#ec4899' },
-      { c1: 'rgba(249,115,22,0.6)',  c2: 'rgba(249,115,22,0.2)',  solid: '#f97316' },
-      { c1: 'rgba(34,197,94,0.6)',   c2: 'rgba(34,197,94,0.2)',   solid: '#22c55e' },
-      { c1: 'rgba(234,179,8,0.6)',   c2: 'rgba(234,179,8,0.2)',   solid: '#eab308' },
-      { c1: 'rgba(239,68,68,0.6)',   c2: 'rgba(239,68,68,0.2)',   solid: '#ef4444' },
-      { c1: 'rgba(168,85,247,0.6)',  c2: 'rgba(168,85,247,0.2)',  solid: '#a855f7' },
-      { c1: 'rgba(20,184,166,0.6)',  c2: 'rgba(20,184,166,0.2)',  solid: '#14b8a6' },
+      { c1: 'rgba(58,190,202,0.6)',  c2: 'rgba(58,190,202,0.2)',  solid: '#3abeca', freq: 523  }, // C5  teal
+      { c1: 'rgba(99,102,241,0.6)',  c2: 'rgba(99,102,241,0.2)',  solid: '#6366f1', freq: 587  }, // D5  indigo
+      { c1: 'rgba(236,72,153,0.6)',  c2: 'rgba(236,72,153,0.2)',  solid: '#ec4899', freq: 659  }, // E5  pink
+      { c1: 'rgba(249,115,22,0.6)',  c2: 'rgba(249,115,22,0.2)',  solid: '#f97316', freq: 784  }, // G5  orange
+      { c1: 'rgba(34,197,94,0.6)',   c2: 'rgba(34,197,94,0.2)',   solid: '#22c55e', freq: 880  }, // A5  green
+      { c1: 'rgba(234,179,8,0.6)',   c2: 'rgba(234,179,8,0.2)',   solid: '#eab308', freq: 1047 }, // C6  yellow
+      { c1: 'rgba(239,68,68,0.6)',   c2: 'rgba(239,68,68,0.2)',   solid: '#ef4444', freq: 1175 }, // D6  red
+      { c1: 'rgba(168,85,247,0.6)',  c2: 'rgba(168,85,247,0.2)',  solid: '#a855f7', freq: 1319 }, // E6  purple
+      { c1: 'rgba(20,184,166,0.6)',  c2: 'rgba(20,184,166,0.2)',  solid: '#14b8a6', freq: 1568 }, // G6  teal2
     ];
 
     let popCount = 0;
@@ -152,21 +153,32 @@
       return audioCtx;
     }
 
-    function playPop(size) {
+    function playPop(freq) {
       try {
         const ctx  = getAudioCtx();
+        // Main tone
         const osc  = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        const freq = Math.max(180, 700 - size * 6);
+        osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.28, ctx.currentTime + 0.13);
-        gain.gain.setValueAtTime(0.28, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
-        osc.type = 'sine';
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.55, ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
         osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.17);
+        osc.stop(ctx.currentTime + 0.23);
+        // Soft overtone one octave up for shimmer
+        const osc2  = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2, ctx.currentTime);
+        gain2.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc2.start(ctx.currentTime);
+        osc2.stop(ctx.currentTime + 0.13);
       } catch(_) {}
     }
 
@@ -216,7 +228,7 @@
         if (el.dataset.popped) return;
         el.dataset.popped = '1';
 
-        playPop(size);
+        playPop(col.freq);
         spawnParticles(x + size / 2, y + size / 2, col.solid);
 
         el.style.animation = 'bubble-pop 0.28s cubic-bezier(0.34,1.56,0.64,1) forwards';
