@@ -240,6 +240,9 @@
         <button onclick="navigate('bubbles')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
           <span>🫧</span><span class="hidden sm:inline">Bubbles</span>
         </button>
+        <a href="aac-caregiver.html" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
+          <span>🗣️</span><span class="hidden sm:inline">AAC App</span>
+        </a>
         <a href="memory.html" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 whitespace-nowrap">
           <span>🧠</span><span class="hidden sm:inline">Memory</span>
         </a>
@@ -434,6 +437,38 @@
           <p id="fee-send-status" class="text-xs text-center mt-2" style="color:#94a3b8">We'll be in touch within 2 business days.</p>
         </div>
       </div>
+    </div>
+
+    <!-- AAC COMMUNICATION BOARD -->
+    <div id="page-aac" class="page">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4 gap-2">
+        <button onclick="navigate('home')" class="flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-xl btn-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 shrink-0">← Back</button>
+        <h1 class="text-base sm:text-lg font-black text-center truncate" style="color:var(--dark)">🗣️ AAC Communication Board</h1>
+        <button onclick="toggleAacAutoSpeak()" id="aac-autospeak-btn"
+          class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-colors focus-visible:outline-none"
+          style="border-color:var(--teal);color:var(--teal);background:#e8f9fb">🔊 Auto-speak: ON</button>
+      </div>
+
+      <!-- Sentence Bar -->
+      <div class="bg-white rounded-2xl p-3 sm:p-4 mb-4 border-2 shadow-sm" style="border-color:var(--teal)">
+        <p class="text-xs font-bold uppercase tracking-widest mb-2" style="color:var(--teal-dk)">Message</p>
+        <div id="aac-sentence" class="min-h-[48px] flex flex-wrap gap-1.5 items-center mb-3">
+          <span id="aac-ph" class="text-slate-400 italic text-sm">Tap symbols below to build a message...</span>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="aacSpeak()" class="btn-primary flex items-center gap-1.5 px-4 py-2 text-sm">🔊 Speak All</button>
+          <button onclick="aacUndo()" class="btn-muted flex items-center gap-1.5 px-3 py-2 text-sm">↩ Undo</button>
+          <button onclick="aacClear()" class="btn-danger flex items-center gap-1.5 px-3 py-2 text-sm">🗑 Clear</button>
+        </div>
+      </div>
+
+      <!-- Category Tabs -->
+      <div class="flex gap-2 flex-wrap mb-4" id="aac-tabs"></div>
+
+      <!-- Symbol Grid -->
+      <div id="aac-grid" class="grid gap-2 sm:gap-3 pb-6"
+           style="grid-template-columns:repeat(auto-fill,minmax(80px,1fr))"></div>
     </div>
 
     <!-- BUBBLE POPPER -->
@@ -829,6 +864,9 @@ function navigate(page, id) {
   } else if (page === 'bubbles') {
     document.getElementById('page-bubbles').classList.add('active');
     initBubbles();
+  } else if (page === 'aac') {
+    document.getElementById('page-aac').classList.add('active');
+    initAAC();
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1461,6 +1499,190 @@ function initBubbles(){
     makeBubble(field,x,y,size,col,i*25); i++;
   }
 }
+// ─── AAC BOARD ───────────────────────────────────────────────────────────────
+const AAC_CATS = [
+  { id:'core', label:'Core Words', icon:'⭐', color:'#1d6d7d', bg:'#e8f9fb',
+    words:[
+      {w:'I',e:'👤'},{w:'want',e:'🙋'},{w:'need',e:'❗'},{w:'help',e:'🆘'},
+      {w:'more',e:'➕'},{w:'stop',e:'✋'},{w:'go',e:'🚀'},{w:'yes',e:'✅'},
+      {w:'no',e:'❌'},{w:'finished',e:'🏁'},{w:'please',e:'🙏'},{w:'thank you',e:'😊'},
+      {w:'look',e:'👀'},{w:'give',e:'🤲'},{w:'open',e:'📂'},{w:'wait',e:'⏳'},
+      {w:'like',e:'❤️'},{w:"don't like",e:'💔'},{w:'come',e:'👋'},{w:'all done',e:'🙌'},
+      {w:'put',e:'📥'},{w:'get',e:'🫳'},{w:'turn',e:'🔄'},{w:'that',e:'👉'},
+    ]
+  },
+  { id:'feelings', label:'Feelings', icon:'😊', color:'#c2410c', bg:'#fff7ed',
+    words:[
+      {w:'happy',e:'😄'},{w:'sad',e:'😢'},{w:'angry',e:'😠'},{w:'scared',e:'😨'},
+      {w:'tired',e:'😴'},{w:'excited',e:'🤩'},{w:'calm',e:'😌'},{w:'silly',e:'🤪'},
+      {w:'hurt',e:'🤕'},{w:'sick',e:'🤒'},{w:'okay',e:'👍'},{w:'bored',e:'😑'},
+      {w:'confused',e:'😕'},{w:'proud',e:'🥹'},{w:'frustrated',e:'😤'},{w:'love',e:'🥰'},
+    ]
+  },
+  { id:'food', label:'Food & Drink', icon:'🍎', color:'#166534', bg:'#f0fdf4',
+    words:[
+      {w:'eat',e:'🍽️'},{w:'drink',e:'🥤'},{w:'water',e:'💧'},{w:'juice',e:'🧃'},
+      {w:'milk',e:'🥛'},{w:'snack',e:'🍿'},{w:'lunch',e:'🥗'},{w:'dinner',e:'🍽️'},
+      {w:'apple',e:'🍎'},{w:'banana',e:'🍌'},{w:'cookie',e:'🍪'},{w:'pizza',e:'🍕'},
+      {w:'cereal',e:'🥣'},{w:'crackers',e:'🍘'},{w:'hungry',e:'🤤'},{w:'thirsty',e:'😮‍💨'},
+      {w:'chicken',e:'🍗'},{w:'rice',e:'🍚'},{w:'sandwich',e:'🥪'},{w:'fruit',e:'🍇'},
+    ]
+  },
+  { id:'people', label:'People', icon:'👨‍👩‍👧', color:'#6d28d9', bg:'#f5f3ff',
+    words:[
+      {w:'me',e:'👤'},{w:'you',e:'👆'},{w:'mom',e:'👩'},{w:'dad',e:'👨'},
+      {w:'teacher',e:'👩‍🏫'},{w:'friend',e:'🤝'},{w:'doctor',e:'👨‍⚕️'},{w:'therapist',e:'🦸'},
+      {w:'sister',e:'👧'},{w:'brother',e:'👦'},{w:'grandma',e:'👵'},{w:'grandpa',e:'👴'},
+    ]
+  },
+  { id:'places', label:'Places', icon:'📍', color:'#1e40af', bg:'#eff6ff',
+    words:[
+      {w:'home',e:'🏠'},{w:'school',e:'🏫'},{w:'park',e:'🌳'},{w:'store',e:'🏪'},
+      {w:'bathroom',e:'🚻'},{w:'bedroom',e:'🛏️'},{w:'kitchen',e:'🍳'},{w:'outside',e:'🌤️'},
+      {w:'car',e:'🚗'},{w:'gym',e:'🏋️'},{w:'library',e:'📚'},{w:'playground',e:'🛝'},
+    ]
+  },
+  { id:'activities', label:'Activities', icon:'🎮', color:'#9d174d', bg:'#fdf2f8',
+    words:[
+      {w:'play',e:'🎮'},{w:'read',e:'📚'},{w:'draw',e:'✏️'},{w:'music',e:'🎵'},
+      {w:'sleep',e:'😴'},{w:'walk',e:'🚶'},{w:'run',e:'🏃'},{w:'jump',e:'🦘'},
+      {w:'sit',e:'🪑'},{w:'color',e:'🎨'},{w:'sing',e:'🎤'},{w:'watch TV',e:'📺'},
+      {w:'swim',e:'🏊'},{w:'dance',e:'💃'},{w:'build',e:'🧱'},{w:'cook',e:'🧑‍🍳'},
+    ]
+  },
+  { id:'things', label:'Things', icon:'🧸', color:'#92400e', bg:'#fef3c7',
+    words:[
+      {w:'toy',e:'🧸'},{w:'book',e:'📖'},{w:'ball',e:'⚽'},{w:'tablet',e:'📱'},
+      {w:'TV',e:'📺'},{w:'car (toy)',e:'🚗'},{w:'puzzle',e:'🧩'},{w:'blocks',e:'🧱'},
+      {w:'blanket',e:'🛌'},{w:'pencil',e:'✏️'},{w:'headphones',e:'🎧'},{w:'phone',e:'📞'},
+    ]
+  },
+  { id:'descriptors', label:'Describing', icon:'🌈', color:'#0f766e', bg:'#f0fdfa',
+    words:[
+      {w:'big',e:'🔴'},{w:'small',e:'🔵'},{w:'hot',e:'🔥'},{w:'cold',e:'🧊'},
+      {w:'fast',e:'⚡'},{w:'slow',e:'🐢'},{w:'loud',e:'📢'},{w:'quiet',e:'🤫'},
+      {w:'messy',e:'💥'},{w:'clean',e:'✨'},{w:'soft',e:'🧸'},{w:'hard',e:'🪨'},
+      {w:'pretty',e:'🌸'},{w:'yucky',e:'🤢'},{w:'broken',e:'💔'},{w:'new',e:'🆕'},
+    ]
+  },
+];
+
+let aacSentenceWords = [];
+let aacCurrentCat = 'core';
+let aacAutoSpeak = true;
+
+function initAAC() {
+  renderAacTabs();
+  renderAacGrid(aacCurrentCat);
+  renderAacSentence();
+}
+
+function renderAacTabs() {
+  const tabs = document.getElementById('aac-tabs');
+  tabs.innerHTML = AAC_CATS.map(cat => `
+    <button onclick="aacSelectCat('${cat.id}')" id="aac-tab-${cat.id}"
+      class="flex items-center gap-1 px-3 py-1.5 rounded-xl font-semibold text-sm focus-visible:outline-none"
+      style="${aacCurrentCat===cat.id
+        ? `background:${cat.color};color:white;box-shadow:0 3px 10px ${cat.color}44`
+        : `background:${cat.bg};color:${cat.color};border:1.5px solid ${cat.color}44`}">
+      <span>${cat.icon}</span><span class="hidden xs:inline sm:inline">${cat.label}</span>
+    </button>`).join('');
+}
+
+function aacSelectCat(id) {
+  aacCurrentCat = id;
+  renderAacTabs();
+  renderAacGrid(id);
+}
+
+function renderAacGrid(catId) {
+  const cat = AAC_CATS.find(c => c.id === catId);
+  const grid = document.getElementById('aac-grid');
+  grid.innerHTML = cat.words.map(({w, e}) => {
+    const safeWord = w.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<button onclick="aacTap('${safeWord}')"
+      class="flex flex-col items-center justify-center gap-1 rounded-2xl border-2 focus-visible:outline-none select-none"
+      style="background:${cat.bg};border-color:${cat.color}44;min-height:84px;padding:.5rem .25rem;
+             touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+             transition:transform .12s cubic-bezier(.34,1.56,.64,1),box-shadow .12s,border-color .12s"
+      onpointerdown="this.style.transform='scale(.9)';this.style.borderColor='${cat.color}'"
+      onpointerup="this.style.transform='';this.style.borderColor='${cat.color}44'"
+      onpointerleave="this.style.transform='';this.style.borderColor='${cat.color}44'">
+      <span style="font-size:clamp(1.5rem,6vw,2rem);line-height:1">${e}</span>
+      <span style="font-size:clamp(.6rem,2.2vw,.72rem);font-weight:700;color:${cat.color};text-align:center;line-height:1.2;word-break:break-word;max-width:100%;padding:0 2px">${w}</span>
+    </button>`;
+  }).join('');
+}
+
+function aacTap(word) {
+  aacSentenceWords.push(word);
+  renderAacSentence();
+  if (aacAutoSpeak) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.rate = 0.88; u.pitch = 1.05;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function renderAacSentence() {
+  const container = document.getElementById('aac-sentence');
+  if (!aacSentenceWords.length) {
+    container.innerHTML = '<span class="text-slate-400 italic text-sm">Tap symbols below to build a message...</span>';
+    return;
+  }
+  container.innerHTML = aacSentenceWords.map((w, i) =>
+    `<span onclick="aacRemoveWord(${i})"
+       style="background:#e8f9fb;color:var(--dark);font-weight:700;font-size:.85rem;
+              padding:.3rem .65rem;border-radius:.6rem;cursor:pointer;border:1.5px solid #a7dde6;
+              transition:background .1s;user-select:none"
+       onmouseover="this.style.background='#fecaca';this.style.borderColor='#fca5a5'"
+       onmouseout="this.style.background='#e8f9fb';this.style.borderColor='#a7dde6'"
+       title="Tap to remove">${w}</span>`
+  ).join('');
+}
+
+function aacRemoveWord(idx) {
+  aacSentenceWords.splice(idx, 1);
+  renderAacSentence();
+}
+
+function aacSpeak() {
+  if (!aacSentenceWords.length) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(aacSentenceWords.join(' '));
+  u.rate = 0.85; u.pitch = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
+function aacUndo() {
+  if (!aacSentenceWords.length) return;
+  aacSentenceWords.pop();
+  renderAacSentence();
+}
+
+function aacClear() {
+  aacSentenceWords = [];
+  renderAacSentence();
+  window.speechSynthesis.cancel();
+}
+
+function toggleAacAutoSpeak() {
+  aacAutoSpeak = !aacAutoSpeak;
+  const btn = document.getElementById('aac-autospeak-btn');
+  if (aacAutoSpeak) {
+    btn.textContent = '🔊 Auto-speak: ON';
+    btn.style.borderColor = 'var(--teal)';
+    btn.style.color = 'var(--teal)';
+    btn.style.background = '#e8f9fb';
+  } else {
+    btn.textContent = '🔇 Auto-speak: OFF';
+    btn.style.borderColor = '#94a3b8';
+    btn.style.color = '#94a3b8';
+    btn.style.background = '#f1f5f9';
+  }
+}
+
 function showBubbleMilestone(n,emoji){
   const field=document.getElementById('bubble-field');
   const el=document.createElement('div');

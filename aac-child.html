@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Continuum AAC — Child Mode</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    :root { --teal:#3abeca; --teal-dk:#1d6d7d; --navy:#2c4a7c; --dark:#163f4a; --green:#6db33f; --orange:#F7941D; --bg:#f0fafb; }
+    body { background:var(--bg); min-height:100vh; user-select:none; -webkit-user-select:none; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation:fadeUp .28s ease; }
+    .board-card { background:white; border-radius:1.5rem; box-shadow:0 4px 20px rgba(22,63,74,.1); border:2px solid #e0f0f4; cursor:pointer; transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; }
+    .board-card:hover { transform:translateY(-5px); box-shadow:0 14px 36px rgba(22,63,74,.14); }
+    .board-card:active { transform:scale(.96); }
+    .pin-box { width:60px; height:68px; text-align:center; font-size:1.75rem; font-weight:800; border:2px solid #d0eff4; border-radius:.875rem; color:var(--dark); transition:border-color .2s; padding:0; background:white; }
+    .pin-box:focus { border-color:var(--teal); outline:none; }
+    .modal-backdrop { position:fixed; inset:0; z-index:60; background:rgba(22,63,74,.55); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:1.5rem; }
+    .modal-backdrop.open { display:flex; }
+    .modal-box { background:white; border-radius:1.5rem; box-shadow:0 24px 60px rgba(22,63,74,.2); width:100%; max-width:380px; padding:2rem; animation:fadeUp .25s ease; text-align:center; }
+    nav { background:var(--dark); position:sticky; top:0; z-index:30; }
+    .exit-bar { position:fixed; bottom:0; left:0; right:0; z-index:20; padding:.75rem 1rem; background:var(--dark); }
+  </style>
+</head>
+<body class="pb-20">
+
+<!-- NAV -->
+<nav class="shadow-lg">
+  <div class="flex items-center gap-3 px-4 py-3">
+    <div id="child-avatar-nav" class="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"></div>
+    <h1 id="child-name-nav" class="text-white font-black text-base flex-1 truncate"></h1>
+  </div>
+</nav>
+
+<!-- LOADING -->
+<div id="screen-loading" class="flex items-center justify-center min-h-[60vh]">
+  <div class="text-center">
+    <div class="text-5xl mb-4 animate-pulse">🎮</div>
+    <p class="text-base font-bold" style="color:var(--teal-dk)">Loading...</p>
+  </div>
+</div>
+
+<!-- BOARDS SCREEN -->
+<div id="screen-boards" class="hidden px-4 pt-6 max-w-2xl mx-auto">
+  <p class="text-sm font-bold mb-4" style="color:var(--teal-dk)">Choose a board</p>
+  <div id="boards-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 fade-up"></div>
+  <div id="boards-empty" class="hidden text-center py-20">
+    <div class="text-6xl mb-4">📋</div>
+    <p class="text-xl font-bold" style="color:var(--dark)">No boards yet</p>
+    <p id="boards-empty-sub" class="text-sm mt-1" style="color:var(--teal-dk)">Ask a caregiver to add boards</p>
+  </div>
+</div>
+
+<!-- EXIT BAR (fixed bottom) -->
+<div class="exit-bar">
+  <button onclick="openExitModal()" class="w-full py-3 rounded-xl font-black text-white text-base flex items-center justify-center gap-2 transition-opacity active:opacity-80" style="background:var(--orange)">
+    🔒 Exit Child Mode
+  </button>
+</div>
+
+<!-- MODAL: Exit PIN -->
+<div id="modal-exit" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="text-4xl mb-3">🔒</div>
+    <h2 class="text-xl font-black mb-2" style="color:var(--dark)">Exit Child Mode</h2>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Enter the PIN to exit</p>
+    <div class="flex gap-3 justify-center mb-4" id="exit-pin-boxes"></div>
+    <p id="exit-err" class="hidden text-xs font-semibold mb-4" style="color:#be123c">Incorrect PIN — try again</p>
+    <div class="flex gap-3">
+      <button onclick="closeExitModal()" class="flex-1 py-3 text-sm font-bold rounded-xl transition-colors" style="background:#e8f5f7;color:var(--dark)">Cancel</button>
+      <button onclick="submitExit()" class="flex-1 py-3 text-sm font-bold rounded-xl text-white" style="background:linear-gradient(135deg,var(--teal),var(--teal-dk))">Exit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://vkbeenvimujuzclqxvuj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYmVlbnZpbXVqdXpjbHF4dnVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1ODQ3ODAsImV4cCI6MjA5MzE2MDc4MH0.ZgbxhEAI8PEs1OxivWmDiG2sxJsSgUQAQsqmOCZ1MAU';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Block browser back button — intercept with exit modal instead
+history.pushState(null, '', window.location.href);
+window.addEventListener('popstate', () => {
+  history.pushState(null, '', window.location.href);
+  openExitModal();
+});
+
+// Read child session from localStorage
+const cm = JSON.parse(localStorage.getItem('aac_child_mode') || 'null');
+if (!cm) { window.location.href = 'aac-caregiver.html'; throw ''; }
+
+const { childId, childName, emoji, color, pin: childPin } = cm;
+
+// Populate nav
+document.getElementById('child-name-nav').textContent = childName;
+const navAv = document.getElementById('child-avatar-nav');
+navAv.textContent = emoji; navAv.style.background = color;
+
+// Load boards — wait for INITIAL_SESSION event so auth is definitely ready
+(async () => {
+  const session = await new Promise(resolve => {
+    const { data: { subscription } } = db.auth.onAuthStateChange((event, sess) => {
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        subscription.unsubscribe();
+        resolve(sess);
+      }
+    });
+    // Fallback: if event never fires within 3s, try getSession directly
+    setTimeout(async () => {
+      subscription.unsubscribe();
+      const { data: { session: s } } = await db.auth.getSession();
+      resolve(s);
+    }, 3000);
+  });
+
+  document.getElementById('screen-loading').classList.add('hidden');
+  document.getElementById('screen-boards').classList.remove('hidden');
+  const grid = document.getElementById('boards-grid');
+  const empty = document.getElementById('boards-empty');
+
+  if (!session) {
+    document.getElementById('boards-empty-sub').textContent = 'Session expired — ask caregiver to re-launch child mode.';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  const { data: boards, error } = await db.from('boards').select('*')
+    .eq('owner_id', session.user.id)
+    .eq('child_id', childId)
+    .order('created_at');
+
+  if (error) {
+    document.getElementById('boards-empty-sub').textContent = 'Error: ' + error.message;
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  if (!boards?.length) { empty.classList.remove('hidden'); return; }
+
+  grid.innerHTML = boards.map(b => `
+    <div class="board-card p-5 text-center" onclick="openBoard('${b.id}')">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-black mx-auto mb-3 shadow-md"
+        style="background:linear-gradient(135deg,var(--teal),var(--teal-dk))">${b.name.charAt(0).toUpperCase()}</div>
+      <p class="font-black text-base leading-tight" style="color:var(--dark)">${b.name}</p>
+      <p class="text-xs mt-1 font-semibold" style="color:var(--teal-dk)">${gridLabel(b.grid_size)}</p>
+    </div>`).join('');
+})();
+
+function gridLabel(size) {
+  const map = {4:'2×2',6:'2×3',9:'3×3',12:'3×4',16:'4×4',20:'4×5',25:'5×5',30:'5×6',36:'6×6',42:'6×7',49:'7×7'};
+  return (map[size] || size) + ' grid';
+}
+
+function openBoard(boardId) {
+  window.location.href = `aac-board.html?board_id=${boardId}`;
+}
+
+// ── EXIT PIN MODAL ─────────────────────────────────────────────────────────────
+function buildExitPinBoxes() {
+  const container = document.getElementById('exit-pin-boxes');
+  container.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'password'; inp.inputMode = 'numeric'; inp.maxLength = 1; inp.className = 'pin-box';
+    inp.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+      if (e.target.value && i < 3) container.children[i + 1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) container.children[i - 1].focus();
+      if (e.key === 'Enter') submitExit();
+    });
+    container.appendChild(inp);
+  }
+}
+
+function openExitModal() {
+  buildExitPinBoxes();
+  document.getElementById('exit-err').classList.add('hidden');
+  document.getElementById('modal-exit').classList.add('open');
+  setTimeout(() => document.getElementById('exit-pin-boxes').children[0]?.focus(), 120);
+}
+
+function closeExitModal() {
+  document.getElementById('modal-exit').classList.remove('open');
+}
+
+function submitExit() {
+  const entered = [...document.getElementById('exit-pin-boxes').children].map(b => b.value).join('');
+  if (entered === childPin) {
+    localStorage.removeItem('aac_child_mode');
+    window.location.href = 'aac-caregiver.html';
+  } else {
+    document.getElementById('exit-err').classList.remove('hidden');
+    buildExitPinBoxes();
+  }
+}
+
+document.getElementById('modal-exit').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-exit')) closeExitModal();
+});
+</script>
+</body>
+</html>

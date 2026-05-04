@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Continuum AAC — Caregiver Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    :root { --teal:#3abeca; --teal-dk:#1d6d7d; --navy:#2c4a7c; --dark:#163f4a; --green:#6db33f; --orange:#F7941D; --bg:#f0fafb; }
+    body { background:var(--bg); min-height:100vh; }
+    .screen { display:none; } .screen.active { display:block; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation:fadeUp .28s ease; }
+    .btn-primary { background:linear-gradient(135deg,var(--teal),var(--teal-dk)); color:white; font-weight:700; border-radius:.875rem; box-shadow:0 4px 14px rgba(58,190,202,.3); transition:transform .15s,filter .15s; }
+    .btn-primary:hover { filter:brightness(1.08); } .btn-primary:active { transform:scale(.96); }
+    .btn-secondary { background:#e8f5f7; color:var(--dark); font-weight:600; border-radius:.875rem; transition:background .15s,transform .1s; }
+    .btn-secondary:hover { background:#d0eff4; } .btn-secondary:active { transform:scale(.96); }
+    .btn-danger { background:#fff1f2; color:#be123c; font-weight:600; border-radius:.875rem; transition:background .15s; }
+    .btn-danger:hover { background:#ffe4e6; }
+    .card { background:white; border-radius:1.25rem; box-shadow:0 2px 12px rgba(22,63,74,.07); border:1.5px solid #e0f0f4; }
+    input,select { width:100%; padding:.7rem 1rem; border:2px solid #d0eff4; border-radius:.75rem; font-size:.95rem; color:var(--dark); outline:none; transition:border-color .2s; background:white; }
+    input:focus,select:focus { border-color:var(--teal); }
+    .modal-backdrop { position:fixed; inset:0; z-index:60; background:rgba(22,63,74,.5); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:1rem; }
+    .modal-backdrop.open { display:flex; }
+    .modal-box { background:white; border-radius:1.5rem; box-shadow:0 24px 60px rgba(22,63,74,.2); width:100%; max-width:480px; padding:2rem; animation:fadeUp .25s ease; max-height:92vh; overflow-y:auto; }
+    nav { background:var(--dark); }
+    .tag { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .65rem; border-radius:.5rem; font-size:.78rem; font-weight:700; }
+    .tag-edit { background:#dcfce7; color:#166534; } .tag-view { background:#dbeafe; color:#1e40af; }
+    .symbol-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.25rem; border-radius:1rem; border:2px solid #d0eff4; background:#f8fdfe; padding:.5rem .25rem; min-height:72px; transition:border-color .15s; }
+    .symbol-btn .word { font-size:.65rem; font-weight:700; color:var(--teal-dk); text-align:center; line-height:1.2; }
+    .symbol-btn .icon { font-size:1.6rem; line-height:1; }
+    .symbol-remove { position:absolute; top:-6px; right:-6px; width:20px; height:20px; background:#be123c; color:white; border-radius:50%; font-size:.7rem; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:700; z-index:2; }
+    .child-card { transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; }
+    .child-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(22,63,74,.12); }
+    .pin-box { width:52px; height:60px; text-align:center; font-size:1.5rem; font-weight:800; border:2px solid #d0eff4; border-radius:.75rem; color:var(--dark); transition:border-color .2s; padding:0; }
+    .pin-box:focus { border-color:var(--teal); outline:none; }
+    .avatar-opt { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.4rem; cursor:pointer; border:3px solid transparent; transition:border-color .15s, transform .1s; }
+    .avatar-opt:hover { transform:scale(1.1); }
+    .avatar-opt.selected { border-color:var(--dark); }
+    .color-opt { width:28px; height:28px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:border-color .15s, transform .1s; }
+    .color-opt:hover { transform:scale(1.15); }
+    .color-opt.selected { border-color:var(--dark); }
+    .gs-btn { border-color:#d0eff4; color:#94a3b8; }
+  </style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="screen-auth" class="screen active">
+  <div class="min-h-screen flex items-center justify-center p-4" style="background:var(--dark)">
+    <div class="card w-full max-w-md p-8 fade-up">
+      <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-12 object-contain mx-auto mb-6" style="max-width:180px" />
+      <h1 class="text-2xl font-black text-center mb-1" style="color:var(--dark)">Continuum AAC</h1>
+      <p class="text-sm text-center mb-6" style="color:var(--teal-dk)">Caregiver Portal</p>
+      <div class="flex rounded-xl overflow-hidden border-2 mb-6" style="border-color:#d0eff4">
+        <button id="tab-login" onclick="showAuthTab('login')" class="flex-1 py-2.5 text-sm font-bold transition-colors" style="background:var(--teal);color:white">Log In</button>
+        <button id="tab-signup" onclick="showAuthTab('signup')" class="flex-1 py-2.5 text-sm font-bold transition-colors" style="color:var(--teal-dk)">Sign Up</button>
+      </div>
+      <div id="form-login" class="space-y-3">
+        <input id="login-email" type="email" placeholder="Email address" autocomplete="email" />
+        <input id="login-pw" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+        <p id="login-err" class="hidden text-xs font-semibold text-center" style="color:#be123c"></p>
+        <button onclick="doLogin()" class="btn-primary w-full py-3 text-base mt-1">Log In</button>
+      </div>
+      <div id="form-signup" class="space-y-3 hidden">
+        <input id="signup-name" type="text" placeholder="Your full name" autocomplete="name" />
+        <input id="signup-email" type="email" placeholder="Email address" autocomplete="email" />
+        <input id="signup-pw" type="password" placeholder="Password (min 8 chars)" autocomplete="new-password" />
+        <div class="rounded-xl border-2 p-3" style="border-color:#d0eff4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--dark)">I am a... <span class="font-normal normal-case">(select all that apply)</span></p>
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="role-caregiver" class="w-4 h-4 shrink-0 accent-teal-500" checked />
+              <span class="text-sm font-semibold" style="color:var(--dark)">Caregiver / Family Member</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="role-therapist" class="w-4 h-4 shrink-0 accent-teal-500" />
+              <span class="text-sm font-semibold" style="color:var(--dark)">Therapist</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="role-bcba" class="w-4 h-4 shrink-0 accent-teal-500" />
+              <span class="text-sm font-semibold" style="color:var(--dark)">BCBA</span>
+            </label>
+          </div>
+        </div>
+        <p id="signup-err" class="hidden text-xs font-semibold text-center" style="color:#be123c"></p>
+        <button onclick="doSignup()" class="btn-primary w-full py-3 text-base mt-1">Create Account</button>
+        <p class="text-xs text-center" style="color:#94a3b8">By signing up you agree to our terms of service.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="screen-app" class="screen">
+  <nav class="sticky top-0 z-40 shadow-lg">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
+          <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-8 object-contain" style="max-width:140px" />
+        </div>
+        <span class="hidden sm:block text-white font-bold text-sm opacity-70">Caregiver Portal</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="nav-name" class="text-white text-sm font-semibold opacity-80 hidden sm:block"></span>
+        <div class="relative">
+          <button onclick="document.getElementById('portal-menu').classList.toggle('hidden')" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors">Switch Portal ▾</button>
+          <div id="portal-menu" class="hidden absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border p-1 min-w-[170px] z-50" style="border-color:#e0f0f4">
+            <a href="aac-caregiver.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold" style="background:#f0fafb;color:var(--teal-dk)">🏠 Caregiver</a>
+            <a href="aac-therapist.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50" style="color:#4a7a2a">🩺 Therapist</a>
+            <a href="aac-bcba.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50" style="color:var(--navy)">📋 BCBA</a>
+          </div>
+        </div>
+        <button onclick="doLogout()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 py-6">
+
+    <!-- PAGE: CHILDREN -->
+    <div id="page-children" class="fade-up">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-black" style="color:var(--dark)">My Children</h1>
+          <p class="text-sm mt-0.5" style="color:var(--teal-dk)">Select a child to manage their boards</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openShareModal()" class="btn-secondary flex items-center gap-2 px-4 py-2.5 text-sm">🔗 Share Access</button>
+          <button onclick="openAddChildModal()" class="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm">
+            <span class="text-lg font-light">+</span> Add Child
+          </button>
+        </div>
+      </div>
+      <div id="children-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+      <div id="therapist-access-section" class="mt-8"></div>
+      <div id="children-empty" class="hidden text-center py-20">
+        <div class="text-6xl mb-4">🧒</div>
+        <p class="text-xl font-bold" style="color:var(--dark)">No children yet</p>
+        <p class="mt-2 text-sm" style="color:var(--teal-dk)">Add your first child to get started</p>
+        <button onclick="openAddChildModal()" class="btn-primary inline-flex items-center gap-2 px-5 py-3 mt-5 text-sm">+ Add Child</button>
+      </div>
+    </div>
+
+    <!-- PAGE: BOARDS (for selected child) -->
+    <div id="page-boards" class="hidden fade-up">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showChildren()" class="btn-secondary px-3 py-1.5 text-sm">← Back</button>
+        <div id="child-avatar-display" class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <h2 id="child-name-title" class="text-xl font-black truncate" style="color:var(--dark)"></h2>
+          <p class="text-xs" style="color:var(--teal-dk)">AAC Boards</p>
+        </div>
+        <button onclick="openNewBoardModal()" class="btn-primary flex items-center gap-2 px-4 py-2.5 text-sm">+ Board</button>
+      </div>
+      <div id="boards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="boards-empty" class="hidden text-center py-16">
+        <div class="text-5xl mb-4">📋</div>
+        <p class="text-lg font-bold" style="color:var(--dark)">No boards yet</p>
+        <p class="mt-2 text-sm" style="color:var(--teal-dk)">Create a board for this child</p>
+        <button onclick="openNewBoardModal()" class="btn-primary inline-flex items-center gap-2 px-5 py-3 mt-5 text-sm">+ Create First Board</button>
+      </div>
+    </div>
+
+    <!-- PAGE: BOARD EDITOR -->
+    <div id="page-editor" class="hidden fade-up">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showBoards()" class="btn-secondary px-3 py-1.5 text-sm">← Back</button>
+        <h2 id="editor-title" class="text-xl font-black flex-1 truncate" style="color:var(--dark)"></h2>
+        <button onclick="openBoardSettings()" class="btn-secondary px-3 py-2 text-sm">⚙️</button>
+      </div>
+      <div class="card p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-bold" style="color:var(--dark)">Grid Size</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="setGridSize(4)"  id="gs-4"  class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">2×2</button>
+            <button onclick="setGridSize(6)"  id="gs-6"  class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">2×3</button>
+            <button onclick="setGridSize(9)"  id="gs-9"  class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">3×3</button>
+            <button onclick="setGridSize(12)" id="gs-12" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">3×4</button>
+            <button onclick="setGridSize(16)" id="gs-16" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">4×4</button>
+            <button onclick="setGridSize(20)" id="gs-20" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">4×5</button>
+            <button onclick="setGridSize(25)" id="gs-25" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">5×5</button>
+            <button onclick="setGridSize(30)" id="gs-30" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">5×6</button>
+            <button onclick="setGridSize(36)" id="gs-36" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">6×6</button>
+            <button onclick="setGridSize(42)" id="gs-42" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">6×7</button>
+            <button onclick="setGridSize(49)" id="gs-49" class="gs-btn px-2 py-1 rounded-lg text-xs font-bold border-2 transition-colors">7×7</button>
+          </div>
+        </div>
+        <p class="text-xs" style="color:#94a3b8">Board shows <span id="gs-label">9</span> buttons. Add up to <span id="gs-max">9</span> symbols.</p>
+      </div>
+      <div class="card p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-bold" style="color:var(--dark)">Symbols <span id="sym-count" class="font-normal text-xs ml-1" style="color:#94a3b8"></span></p>
+          <button onclick="openAddSymbolModal()" id="btn-add-sym" class="btn-primary px-3 py-1.5 text-xs">+ Add Symbol</button>
+        </div>
+        <div id="symbol-grid" class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(80px,1fr))"></div>
+        <p id="sym-empty" class="text-center text-sm py-6 hidden" style="color:#94a3b8">No symbols yet — add some above</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: Add Child -->
+<div id="modal-add-child" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl font-black mb-5" style="color:var(--dark)">Add Child</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Child's Name *</label>
+        <input id="child-name" type="text" placeholder="e.g. Emma, Jake..." />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2" style="color:var(--dark)">Avatar</label>
+        <div class="grid grid-cols-6 gap-2 mb-3" id="emoji-picker">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2" style="color:var(--dark)">Card Color</label>
+        <div class="flex gap-2 flex-wrap" id="color-picker">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <!-- Preview -->
+      <div class="flex justify-center">
+        <div id="child-preview" class="w-24 h-24 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
+          <span id="preview-emoji" class="text-4xl"></span>
+          <span id="preview-name" class="text-xs font-black text-white truncate px-1" style="max-width:88px"></span>
+        </div>
+      </div>
+    </div>
+    <p id="child-err" class="hidden text-xs font-semibold mt-3" style="color:#be123c"></p>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModal('modal-add-child')" class="btn-secondary flex-1 py-3 text-sm">Cancel</button>
+      <button onclick="saveChild()" class="btn-primary flex-1 py-3 text-sm">Add Child</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Child Mode -->
+<div id="modal-child-mode" class="modal-backdrop">
+  <div class="modal-box text-center">
+    <div id="cm-avatar" class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-3 shadow-md"></div>
+    <h2 id="cm-child-name" class="text-xl font-black mb-1" style="color:var(--dark)"></h2>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Child Mode</p>
+
+    <!-- No PIN yet: set PIN -->
+    <div id="cm-view-set">
+      <p class="text-xs mb-4 text-left" style="color:var(--dark)">Create a 4-digit PIN. Your child will need it to exit child mode.</p>
+      <p class="text-xs font-semibold text-left mb-1" style="color:var(--dark)">PIN</p>
+      <div class="flex gap-3 justify-center mb-4" id="cm-boxes-set"></div>
+      <p class="text-xs font-semibold text-left mb-1" style="color:var(--dark)">Confirm PIN</p>
+      <div class="flex gap-3 justify-center mb-4" id="cm-boxes-confirm"></div>
+      <p id="cm-err" class="hidden text-xs font-semibold mb-3" style="color:#be123c"></p>
+      <div class="flex gap-3">
+        <button onclick="closeModal('modal-child-mode')" class="btn-secondary flex-1 py-3 text-sm">Cancel</button>
+        <button onclick="saveAndLaunchChildMode()" class="btn-primary flex-1 py-3 text-sm">Save &amp; Launch 🎮</button>
+      </div>
+    </div>
+
+    <!-- PIN exists: launch -->
+    <div id="cm-view-launch" class="hidden">
+      <div class="rounded-xl p-3 mb-5" style="background:#e8f9fb">
+        <p class="text-sm font-semibold" style="color:var(--teal-dk)">🔒 PIN is set</p>
+        <p class="text-xs mt-1" style="color:var(--dark)">Your child will need the PIN to exit.</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeModal('modal-child-mode')" class="btn-secondary flex-1 py-3 text-sm">Cancel</button>
+        <button onclick="launchChildMode()" class="btn-primary flex-1 py-3 text-sm">Launch 🎮</button>
+      </div>
+      <button onclick="showCmSetView()" class="text-xs font-semibold mt-4 block w-full" style="color:#94a3b8">Reset PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New Board -->
+<div id="modal-new-board" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl font-black mb-5" style="color:var(--dark)">Create New Board</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Board Name *</label>
+        <input id="nb-name" type="text" placeholder="e.g. Morning Routine, Feelings, School" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Starting Grid Size</label>
+        <select id="nb-grid">
+          <option value="4">2×2 — 4 buttons (early learner)</option>
+          <option value="6">2×3 — 6 buttons</option>
+          <option value="9" selected>3×3 — 9 buttons (recommended start)</option>
+          <option value="12">3×4 — 12 buttons</option>
+          <option value="16">4×4 — 16 buttons</option>
+          <option value="20">4×5 — 20 buttons</option>
+          <option value="25">5×5 — 25 buttons</option>
+          <option value="30">5×6 — 30 buttons</option>
+          <option value="36">6×6 — 36 buttons</option>
+          <option value="42">6×7 — 42 buttons</option>
+          <option value="49">7×7 — 49 buttons (advanced)</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2" style="color:var(--dark)">Starter Template</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" onclick="selectTemplate('blank')" id="tpl-blank" class="tpl-btn rounded-xl border-2 p-2.5 text-center transition-colors" style="border-color:var(--teal);background:#e8f9fb">
+            <div class="text-lg mb-0.5">⬜</div><div class="text-xs font-bold" style="color:var(--dark)">Blank</div>
+          </button>
+          <button type="button" onclick="selectTemplate('basic')" id="tpl-basic" class="tpl-btn rounded-xl border-2 p-2.5 text-center transition-colors" style="border-color:#e0f0f4;background:white">
+            <div class="text-lg mb-0.5">🗣️</div><div class="text-xs font-bold" style="color:var(--dark)">Basic</div>
+          </button>
+          <button type="button" onclick="selectTemplate('feelings')" id="tpl-feelings" class="tpl-btn rounded-xl border-2 p-2.5 text-center transition-colors" style="border-color:#e0f0f4;background:white">
+            <div class="text-lg mb-0.5">😊</div><div class="text-xs font-bold" style="color:var(--dark)">Feelings</div>
+          </button>
+          <button type="button" onclick="selectTemplate('routine')" id="tpl-routine" class="tpl-btn rounded-xl border-2 p-2.5 text-center transition-colors" style="border-color:#e0f0f4;background:white">
+            <div class="text-lg mb-0.5">📅</div><div class="text-xs font-bold" style="color:var(--dark)">Routine</div>
+          </button>
+          <button type="button" onclick="selectTemplate('food')" id="tpl-food" class="tpl-btn rounded-xl border-2 p-2.5 text-center transition-colors" style="border-color:#e0f0f4;background:white">
+            <div class="text-lg mb-0.5">🍎</div><div class="text-xs font-bold" style="color:var(--dark)">Food</div>
+          </button>
+          <button type="button" onclick="selectTemplate('people')" id="tpl-people" class="tpl-btn rounded-xl border-2 p-2.5 text-center transition-colors" style="border-color:#e0f0f4;background:white">
+            <div class="text-lg mb-0.5">👨‍👩‍👧</div><div class="text-xs font-bold" style="color:var(--dark)">People</div>
+          </button>
+        </div>
+      </div>
+    </div>
+    <p id="nb-err" class="hidden text-xs font-semibold mt-3" style="color:#be123c"></p>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModal('modal-new-board')" class="btn-secondary flex-1 py-3 text-sm">Cancel</button>
+      <button onclick="createBoard()" class="btn-primary flex-1 py-3 text-sm">Create Board</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Board Settings -->
+<div id="modal-board-settings" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl font-black mb-5" style="color:var(--dark)">Board Settings</h2>
+    <div>
+      <label class="text-sm font-semibold block mb-1" style="color:var(--dark)">Board Name</label>
+      <input id="bs-name" type="text" />
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="deleteBoard()" class="btn-danger flex-1 py-3 text-sm">Delete Board</button>
+      <button onclick="saveBoardSettings()" class="btn-primary flex-1 py-3 text-sm">Save</button>
+    </div>
+    <button onclick="closeModal('modal-board-settings')" class="btn-secondary w-full py-2.5 text-sm mt-2">Cancel</button>
+  </div>
+</div>
+
+<!-- MODAL: Add Symbol -->
+<div id="modal-add-symbol" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl font-black mb-1" style="color:var(--dark)">Add Symbol</h2>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Search for a word or add your own</p>
+    <div class="flex gap-2 mb-4">
+      <input id="sym-search" type="text" placeholder="Search words (e.g. apple, happy, go...)" oninput="searchSymbols()" />
+      <button onclick="searchSymbols()" class="btn-primary px-4 py-2 text-sm shrink-0">Search</button>
+    </div>
+    <div id="sym-results" class="grid grid-cols-4 gap-2 mb-4 max-h-48 overflow-y-auto"></div>
+    <div class="border-t pt-4" style="border-color:#e8f2f4">
+      <p class="text-xs font-bold mb-3" style="color:var(--teal-dk)">OR ADD CUSTOM</p>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="text-xs font-semibold block mb-1" style="color:var(--dark)">Word *</label>
+          <input id="sym-word" type="text" placeholder="e.g. Grandma" />
+        </div>
+        <div style="width:90px;position:relative">
+          <label class="text-xs font-semibold block mb-1" style="color:var(--dark)">Emoji</label>
+          <input id="sym-emoji" type="text" placeholder="🔷" readonly
+            onclick="openEmojiPicker('sym-emoji')"
+            style="text-align:center;font-size:1.4rem;padding:.5rem;cursor:pointer;border:2px solid var(--teal);border-radius:.75rem;background:#f0fafb;outline:none;width:100%" />
+        </div>
+      </div>
+      <!-- Photo upload -->
+      <div class="flex items-center gap-3 mt-3 pt-3" style="border-top:1.5px solid #e8f2f4">
+        <button type="button" id="sym-upload-btn" onclick="triggerSymPhotoUpload()"
+          class="btn-secondary px-3 py-2 text-xs flex items-center gap-1.5 shrink-0">📷 Upload Photo</button>
+        <div id="sym-photo-preview-wrap" class="hidden flex items-center gap-2">
+          <img id="sym-photo-preview" style="width:48px;height:48px;object-fit:cover;border-radius:.6rem;border:2px solid #d0eff4" />
+          <button type="button" onclick="removeSymPhoto()" style="font-size:.75rem;color:#be123c;font-weight:700;background:none;border:none;cursor:pointer">✕</button>
+        </div>
+        <p class="text-xs" style="color:#94a3b8">Photo overrides emoji</p>
+      </div>
+      <input type="file" id="sym-photo-input" accept="image/*" style="display:none" onchange="handleSymPhoto(this.files[0])" />
+    </div>
+    <p id="sym-err" class="hidden text-xs font-semibold mt-2" style="color:#be123c"></p>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeModal('modal-add-symbol')" class="btn-secondary flex-1 py-3 text-sm">Cancel</button>
+      <button onclick="addCustomSymbol()" class="btn-primary flex-1 py-3 text-sm">Add Symbol</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Share Access -->
+<div id="modal-share" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl font-black mb-1" style="color:var(--dark)">Share Client Access</h2>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Give a therapist access to <strong>all</strong> of your children's boards with one code</p>
+    <div class="rounded-xl p-4 mb-4 border-2" style="background:#f0fafb;border-color:#d0eff4">
+      <label class="text-xs font-bold block mb-2" style="color:var(--dark)">Therapist Permission</label>
+      <div class="flex gap-3">
+        <label class="flex-1 flex items-center gap-2 cursor-pointer p-3 rounded-xl border-2 transition-colors" id="perm-view-lbl" style="border-color:var(--teal);background:white">
+          <input type="radio" name="perm" value="view" checked onchange="updatePermLabel()" class="accent-teal-500" />
+          <div><p class="text-sm font-bold" style="color:var(--dark)">View &amp; Use</p><p class="text-xs" style="color:#94a3b8">Cannot edit</p></div>
+        </label>
+        <label class="flex-1 flex items-center gap-2 cursor-pointer p-3 rounded-xl border-2 transition-colors" id="perm-edit-lbl" style="border-color:#e2e8f0">
+          <input type="radio" name="perm" value="edit" onchange="updatePermLabel()" class="accent-teal-500" />
+          <div><p class="text-sm font-bold" style="color:var(--dark)">Edit &amp; Use</p><p class="text-xs" style="color:#94a3b8">Can add/remove symbols</p></div>
+        </label>
+      </div>
+    </div>
+    <button onclick="generateShareCode()" class="btn-primary w-full py-3 text-sm mb-3">Generate Share Code</button>
+    <div id="share-code-display" class="hidden rounded-2xl p-5 text-center" style="background:#f0fafb;border:2px dashed var(--teal)">
+      <p class="text-xs font-bold uppercase tracking-widest mb-2" style="color:var(--teal-dk)">Share this code with the therapist</p>
+      <div id="share-code-val" class="text-4xl font-black tracking-widest mb-3" style="color:var(--dark);letter-spacing:.15em"></div>
+      <button onclick="copyShareCode()" class="btn-secondary px-4 py-2 text-sm">📋 Copy Code</button>
+      <p class="text-xs mt-3" style="color:#94a3b8">Therapist enters this code in their portal to see all boards</p>
+    </div>
+
+    <!-- Active therapist access list -->
+    <div class="mt-4">
+      <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--dark)">Current Access</p>
+      <div id="access-list"></div>
+      <p id="access-empty" class="text-xs py-1 hidden" style="color:#94a3b8">No therapists have access yet.</p>
+    </div>
+
+    <button onclick="closeModal('modal-share')" class="btn-secondary w-full py-2.5 text-sm mt-4">Close</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://vkbeenvimujuzclqxvuj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYmVlbnZpbXVqdXpjbHF4dnVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1ODQ3ODAsImV4cCI6MjA5MzE2MDc4MH0.ZgbxhEAI8PEs1OxivWmDiG2sxJsSgUQAQsqmOCZ1MAU';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentChildId = null;
+let currentChildName = '';
+let currentBoardId = null;
+let currentBoardSymbols = [];
+let currentGridSize = 9;
+let selectedTemplate = 'blank';
+let selectedEmoji = '🧒';
+let selectedColor = '#3abeca';
+
+const AVATAR_EMOJIS = ['🧒','👦','👧','🧑','🧒🏻','👦🏻','👧🏻','🧒🏽','👦🏽','👧🏽','🧒🏿','👦🏿'];
+const AVATAR_COLORS = ['#3abeca','#6db33f','#F7941D','#2c4a7c','#9b59b6','#e74c3c','#f59e0b','#06b6d4'];
+
+const TEMPLATES = {
+  blank: [],
+  basic: [{w:'I want',e:'🙋'},{w:'I need',e:'❗'},{w:'help',e:'🆘'},{w:'yes',e:'✅'},{w:'no',e:'❌'},{w:'more',e:'➕'},{w:'stop',e:'✋'},{w:'please',e:'🙏'},{w:'thank you',e:'😊'},{w:'all done',e:'🙌'},{w:'look',e:'👀'},{w:'wait',e:'⏳'}],
+  feelings: [{w:'happy',e:'😄'},{w:'sad',e:'😢'},{w:'angry',e:'😠'},{w:'scared',e:'😨'},{w:'tired',e:'😴'},{w:'excited',e:'🤩'},{w:'calm',e:'😌'},{w:'hurt',e:'🤕'},{w:'sick',e:'🤒'},{w:'okay',e:'👍'},{w:'frustrated',e:'😤'},{w:'silly',e:'🤪'}],
+  routine: [{w:'eat',e:'🍽️'},{w:'drink',e:'🥤'},{w:'sleep',e:'😴'},{w:'school',e:'🏫'},{w:'home',e:'🏠'},{w:'play',e:'🎮'},{w:'bath',e:'🛁'},{w:'outside',e:'🌤️'},{w:'all done',e:'🙌'},{w:'walk',e:'🚶'},{w:'read',e:'📚'},{w:'music',e:'🎵'}],
+  food: [{w:'water',e:'💧'},{w:'juice',e:'🧃'},{w:'milk',e:'🥛'},{w:'apple',e:'🍎'},{w:'banana',e:'🍌'},{w:'cookie',e:'🍪'},{w:'pizza',e:'🍕'},{w:'snack',e:'🍿'},{w:'hungry',e:'🤤'},{w:'thirsty',e:'😮‍💨'},{w:'cereal',e:'🥣'},{w:'sandwich',e:'🥪'}],
+  people: [{w:'mom',e:'👩'},{w:'dad',e:'👨'},{w:'me',e:'👤'},{w:'you',e:'👆'},{w:'teacher',e:'👩‍🏫'},{w:'friend',e:'🤝'},{w:'doctor',e:'👨‍⚕️'},{w:'grandma',e:'👵'},{w:'grandpa',e:'👴'},{w:'sister',e:'👧'},{w:'brother',e:'👦'},{w:'helper',e:'🙌'}]
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) await afterLogin(session.user);
+  db.auth.onAuthStateChange((_e, session) => {
+    if (session) afterLogin(session.user);
+    else showScreen('auth');
+  });
+  initAvatarPickers();
+})();
+
+async function afterLogin(user) {
+  currentUser = user;
+  const { data: profile } = await db.from('profiles').select('*').eq('id', user.id).single();
+  document.getElementById('nav-name').textContent = profile?.full_name || user.email;
+  showScreen('app');
+  loadChildren();
+  loadTherapistAccess();
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function showAuthTab(tab) {
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+  document.getElementById('tab-login').style.cssText = tab==='login' ? 'background:var(--teal);color:white' : 'color:var(--teal-dk)';
+  document.getElementById('tab-signup').style.cssText = tab==='signup' ? 'background:var(--teal);color:white' : 'color:var(--teal-dk)';
+}
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value;
+  const { error } = await db.auth.signInWithPassword({ email, password: pw });
+  if (error) showErr('login-err', error.message);
+}
+async function doSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pw = document.getElementById('signup-pw').value;
+  const isCaregiver = document.getElementById('role-caregiver').checked;
+  const isTherapist = document.getElementById('role-therapist').checked;
+  const isBcba = document.getElementById('role-bcba').checked;
+  if (!name) { showErr('signup-err','Please enter your name.'); return; }
+  if (pw.length < 8) { showErr('signup-err','Password must be at least 8 characters.'); return; }
+  if (!isCaregiver && !isTherapist && !isBcba) { showErr('signup-err','Please select at least one role.'); return; }
+  const primaryRole = isBcba ? 'bcba' : isTherapist ? 'therapist' : 'caregiver';
+  const { error } = await db.auth.signUp({ email, password: pw, options: { data: { full_name: name, role: primaryRole, is_parent: isCaregiver, is_therapist: isTherapist, is_bcba: isBcba } } });
+  if (error) showErr('signup-err', error.message);
+  else showErr('signup-err', 'Check your email to confirm your account!', true);
+}
+async function doLogout() { await db.auth.signOut(); showScreen('auth'); }
+
+// ── CHILDREN ──────────────────────────────────────────────────────────────────
+async function loadChildren() {
+  const { data: children } = await db.from('children').select('*').eq('caregiver_id', currentUser.id).order('created_at');
+  const grid = document.getElementById('children-grid');
+  const empty = document.getElementById('children-empty');
+  if (!children?.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  grid.innerHTML = children.map(c => `
+    <div class="card child-card p-5 text-center">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-md"
+        style="background:${c.avatar_color}">${c.avatar_emoji}</div>
+      <p class="font-black text-base mb-3" style="color:var(--dark)">${c.name}</p>
+      <div class="flex gap-2">
+        <button onclick="selectChild('${c.id}','${c.name.replace(/'/g,"\\'")}','${c.avatar_emoji}','${c.avatar_color}')"
+          class="btn-secondary flex-1 py-2 text-xs">✏️ Edit</button>
+        <button onclick="activateChildMode('${c.id}','${c.name.replace(/'/g,"\\'")}','${c.avatar_emoji}','${c.avatar_color}','${c.pin||''}')"
+          class="btn-primary flex-1 py-2 text-xs">🎮 Use</button>
+      </div>
+    </div>`).join('');
+}
+
+function selectChild(id, name, emoji, color) {
+  currentChildId = id;
+  currentChildName = name;
+  document.getElementById('child-name-title').textContent = name;
+  const av = document.getElementById('child-avatar-display');
+  av.textContent = emoji;
+  av.style.background = color;
+  showPage('boards');
+  loadBoards();
+}
+
+function showChildren() {
+  showPage('children');
+  loadChildren();
+  loadTherapistAccess();
+}
+
+async function loadTherapistAccess() {
+  const { data: accessRows } = await db.from('therapist_access')
+    .select('id, therapist_id, can_edit')
+    .eq('caregiver_id', currentUser.id)
+    .is('revoked_at', null);
+
+  const section = document.getElementById('therapist-access-section');
+  if (!accessRows?.length) { section.innerHTML = ''; return; }
+
+  const therapistIds = [...new Set(accessRows.map(a => a.therapist_id))];
+  const { data: profiles } = await db.from('profiles').select('id, full_name').in('id', therapistIds);
+  const profileMap = {};
+  profiles?.forEach(p => profileMap[p.id] = p);
+
+  section.innerHTML = `
+    <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:var(--teal-dk)">Therapists with Access</p>
+    <div class="space-y-2">
+      ${accessRows.map(a => {
+        const name = profileMap[a.therapist_id]?.full_name || 'Therapist';
+        return `<div class="card p-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black shrink-0"
+                 style="background:linear-gradient(135deg,var(--teal),var(--teal-dk))">${name.charAt(0).toUpperCase()}</div>
+            <div>
+              <p class="font-bold text-sm" style="color:var(--dark)">${name}</p>
+              <span class="text-xs" style="color:var(--teal-dk)">${a.can_edit ? '✏️ Can Edit' : '👁 View Only'}</span>
+            </div>
+          </div>
+          <button onclick="revokeTherapistAccess('${a.id}')" class="btn-danger px-3 py-1.5 text-xs">Revoke</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function revokeTherapistAccess(accessId) {
+  if (!confirm('Revoke this therapist\'s access? They will no longer see your children\'s boards.')) return;
+  await db.from('therapist_access').update({ revoked_at: new Date().toISOString() }).eq('id', accessId);
+  loadTherapistAccess();
+}
+
+// ── AVATAR PICKER ─────────────────────────────────────────────────────────────
+function initAvatarPickers() {
+  const ep = document.getElementById('emoji-picker');
+  ep.innerHTML = AVATAR_EMOJIS.map(e =>
+    `<div class="avatar-opt ${e===selectedEmoji?'selected':''}" onclick="pickEmoji('${e}')" style="background:#f0fafb">${e}</div>`
+  ).join('');
+  const cp = document.getElementById('color-picker');
+  cp.innerHTML = AVATAR_COLORS.map(c =>
+    `<div class="color-opt ${c===selectedColor?'selected':''}" onclick="pickColor('${c}')" style="background:${c}"></div>`
+  ).join('');
+  updateChildPreview();
+}
+
+function pickEmoji(e) {
+  selectedEmoji = e;
+  document.querySelectorAll('.avatar-opt').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  updateChildPreview();
+}
+
+function pickColor(c) {
+  selectedColor = c;
+  document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  updateChildPreview();
+}
+
+function updateChildPreview() {
+  document.getElementById('child-preview').style.background = selectedColor;
+  document.getElementById('preview-emoji').textContent = selectedEmoji;
+  const name = document.getElementById('child-name')?.value || '';
+  document.getElementById('preview-name').textContent = name || 'Name';
+}
+
+function openAddChildModal() {
+  selectedEmoji = '🧒'; selectedColor = '#3abeca';
+  initAvatarPickers();
+  document.getElementById('child-name').value = '';
+  document.getElementById('child-err').classList.add('hidden');
+  openModal('modal-add-child');
+  setTimeout(() => document.getElementById('child-name').focus(), 120);
+}
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'child-name') updateChildPreview();
+});
+
+async function saveChild() {
+  const name = document.getElementById('child-name').value.trim();
+  if (!name) { showErr('child-err', 'Please enter a name.'); return; }
+  const { error } = await db.from('children').insert({
+    caregiver_id: currentUser.id, name, avatar_emoji: selectedEmoji, avatar_color: selectedColor
+  });
+  if (error) { showErr('child-err', error.message); return; }
+  closeModal('modal-add-child');
+  loadChildren();
+}
+
+// ── BOARDS ────────────────────────────────────────────────────────────────────
+async function loadBoards() {
+  const { data: boards } = await db.from('boards').select('*').eq('owner_id', currentUser.id).eq('child_id', currentChildId).order('created_at');
+  const grid = document.getElementById('boards-grid');
+  const empty = document.getElementById('boards-empty');
+  if (!boards?.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  grid.innerHTML = boards.map(b => `
+    <div class="card p-5" style="border-color:#d0eff4">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black mb-3"
+        style="background:linear-gradient(135deg,var(--teal),var(--teal-dk))">${b.name.charAt(0).toUpperCase()}</div>
+      <h3 class="font-bold text-base truncate" style="color:var(--dark)">${b.name}</h3>
+      <p class="text-xs mt-1" style="color:var(--teal-dk)">${gridLabel(b.grid_size)} grid</p>
+      <p class="text-xs mt-0.5" style="color:#94a3b8">Created ${fmtDate(b.created_at)}</p>
+      <div class="flex gap-2 mt-4">
+        <button onclick="openBoard('${b.id}')" class="btn-secondary flex-1 py-2 text-xs">✏️ Edit</button>
+        <button onclick="window.location.href='aac-board.html?board_id=${b.id}'" class="btn-primary flex-1 py-2 text-xs">▶ Use</button>
+      </div>
+    </div>`).join('');
+}
+
+async function openBoard(id) {
+  currentBoardId = id;
+  const { data: board } = await db.from('boards').select('*').eq('id', id).single();
+  currentGridSize = board.grid_size;
+  document.getElementById('editor-title').textContent = board.name;
+  document.getElementById('bs-name').value = board.name;
+  updateGridButtons(currentGridSize);
+  showPage('editor');
+  await loadSymbols();
+}
+
+function showBoards() { showPage('boards'); loadBoards(); }
+
+function openNewBoardModal() {
+  openModal('modal-new-board');
+  document.getElementById('nb-name').value = '';
+  document.getElementById('nb-err').classList.add('hidden');
+  selectTemplate('blank');
+  setTimeout(() => document.getElementById('nb-name').focus(), 120);
+}
+
+async function createBoard() {
+  const name = document.getElementById('nb-name').value.trim();
+  const grid = parseInt(document.getElementById('nb-grid').value);
+  if (!name) { showErr('nb-err', 'Please enter a board name.'); return; }
+  const { data: board, error } = await db.from('boards')
+    .insert({ owner_id: currentUser.id, child_id: currentChildId, name, grid_size: grid })
+    .select().single();
+  if (error) { showErr('nb-err', error.message); return; }
+  if (selectedTemplate !== 'blank' && TEMPLATES[selectedTemplate]?.length) {
+    const symbols = TEMPLATES[selectedTemplate].slice(0, grid);
+    await db.from('board_symbols').insert(symbols.map((s, i) => ({ board_id: board.id, word: s.w, emoji: s.e, image_url: '', position: i })));
+  }
+  closeModal('modal-new-board');
+  loadBoards();
+}
+
+function openBoardSettings() { openModal('modal-board-settings'); }
+
+async function saveBoardSettings() {
+  const name = document.getElementById('bs-name').value.trim();
+  if (!name) return;
+  await db.from('boards').update({ name }).eq('id', currentBoardId);
+  document.getElementById('editor-title').textContent = name;
+  closeModal('modal-board-settings');
+}
+
+async function deleteBoard() {
+  if (!confirm('Delete this board and all its symbols? This cannot be undone.')) return;
+  await db.from('boards').delete().eq('id', currentBoardId);
+  closeModal('modal-board-settings');
+  showBoards();
+}
+
+// ── GRID SIZE ─────────────────────────────────────────────────────────────────
+function updateGridButtons(size) {
+  [4,6,9,12,16,20,25,30,36,42,49].forEach(s => {
+    const btn = document.getElementById('gs-'+s);
+    if (!btn) return;
+    btn.style.cssText = s===size ? 'border-color:var(--teal);background:#e8f9fb;color:var(--teal-dk)' : 'border-color:#d0eff4;color:#94a3b8';
+  });
+  document.getElementById('gs-label').textContent = size;
+  document.getElementById('gs-max').textContent = size;
+  document.getElementById('sym-count').textContent = `(${currentBoardSymbols.length}/${size})`;
+  const canAdd = currentBoardSymbols.length < size;
+  document.getElementById('btn-add-sym').disabled = !canAdd;
+  document.getElementById('btn-add-sym').style.opacity = canAdd ? '1' : '0.4';
+}
+
+async function setGridSize(size) {
+  currentGridSize = size;
+  await db.from('boards').update({ grid_size: size }).eq('id', currentBoardId);
+  updateGridButtons(size);
+}
+
+// ── SYMBOLS ───────────────────────────────────────────────────────────────────
+async function loadSymbols() {
+  const { data } = await db.from('board_symbols').select('*').eq('board_id', currentBoardId).order('position');
+  currentBoardSymbols = data || [];
+  renderSymbols();
+}
+
+let caregiverSortable = null;
+function renderSymbols() {
+  const grid = document.getElementById('symbol-grid');
+  const empty = document.getElementById('sym-empty');
+  updateGridButtons(currentGridSize);
+  if (!currentBoardSymbols.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); if (caregiverSortable) { caregiverSortable.destroy(); caregiverSortable = null; } return; }
+  empty.classList.add('hidden');
+  grid.innerHTML = currentBoardSymbols.map(s => `
+    <div class="relative" data-id="${s.id}" style="cursor:grab">
+      <div class="symbol-btn">
+        <span class="icon">${s.image_url ? `<img src="${s.image_url}" style="width:36px;height:36px;object-fit:contain">` : (s.emoji||'🔷')}</span>
+        <span class="word">${s.word}</span>
+      </div>
+      <div class="symbol-remove" onclick="removeSymbol('${s.id}')">×</div>
+    </div>`).join('');
+
+  if (caregiverSortable) caregiverSortable.destroy();
+  caregiverSortable = new Sortable(grid, {
+    animation: 180,
+    ghostClass: 'opacity-40',
+    onEnd: async (evt) => {
+      const moved = currentBoardSymbols.splice(evt.oldIndex, 1)[0];
+      currentBoardSymbols.splice(evt.newIndex, 0, moved);
+      await Promise.all(currentBoardSymbols.map((s, i) =>
+        db.from('board_symbols').update({ position: i }).eq('id', s.id)
+      ));
+    }
+  });
+}
+
+async function removeSymbol(id) {
+  await db.from('board_symbols').delete().eq('id', id);
+  currentBoardSymbols = currentBoardSymbols.filter(s => s.id !== id);
+  renderSymbols();
+}
+
+// ── ADD SYMBOL ────────────────────────────────────────────────────────────────
+const QUICK_VOCAB = [
+  {w:'I',e:'👤'},{w:'want',e:'🙋'},{w:'need',e:'❗'},{w:'help',e:'🆘'},{w:'more',e:'➕'},
+  {w:'stop',e:'✋'},{w:'go',e:'🚀'},{w:'yes',e:'✅'},{w:'no',e:'❌'},{w:'finished',e:'🏁'},
+  {w:'please',e:'🙏'},{w:'thank you',e:'😊'},{w:'look',e:'👀'},{w:'wait',e:'⏳'},{w:'like',e:'❤️'},
+  {w:'happy',e:'😄'},{w:'sad',e:'😢'},{w:'angry',e:'😠'},{w:'scared',e:'😨'},{w:'tired',e:'😴'},
+  {w:'eat',e:'🍽️'},{w:'drink',e:'🥤'},{w:'water',e:'💧'},{w:'juice',e:'🧃'},{w:'milk',e:'🥛'},
+  {w:'mom',e:'👩'},{w:'dad',e:'👨'},{w:'home',e:'🏠'},{w:'school',e:'🏫'},{w:'play',e:'🎮'},
+];
+
+let symPendingPhotoUrl = '';
+
+function openAddSymbolModal() {
+  if (currentBoardSymbols.length >= currentGridSize) return;
+  openModal('modal-add-symbol');
+  document.getElementById('sym-search').value = '';
+  document.getElementById('sym-word').value = '';
+  document.getElementById('sym-emoji').value = '';
+  document.getElementById('sym-results').innerHTML = '';
+  document.getElementById('sym-err').classList.add('hidden');
+  removeSymPhoto();
+  setTimeout(() => document.getElementById('sym-search').focus(), 120);
+}
+
+function triggerSymPhotoUpload() { document.getElementById('sym-photo-input').click(); }
+
+async function handleSymPhoto(file) {
+  if (!file) return;
+  const btn = document.getElementById('sym-upload-btn');
+  btn.textContent = '⏳ Uploading...'; btn.disabled = true;
+  try {
+    const blob = await resizeImageForUpload(file);
+    const path = `${currentUser.id}/${Date.now()}.jpg`;
+    const { data, error } = await db.storage.from('symbol-images').upload(path, blob, { contentType: 'image/jpeg' });
+    if (error) { alert('Upload failed: ' + error.message); return; }
+    const { data: { publicUrl } } = db.storage.from('symbol-images').getPublicUrl(data.path);
+    symPendingPhotoUrl = publicUrl;
+    document.getElementById('sym-photo-preview').src = publicUrl;
+    document.getElementById('sym-photo-preview-wrap').classList.remove('hidden');
+    btn.textContent = '📷 Change Photo';
+  } finally { btn.disabled = false; }
+}
+
+function removeSymPhoto() {
+  symPendingPhotoUrl = '';
+  document.getElementById('sym-photo-preview-wrap').classList.add('hidden');
+  document.getElementById('sym-upload-btn').textContent = '📷 Upload Photo';
+  document.getElementById('sym-upload-btn').disabled = false;
+  const inp = document.getElementById('sym-photo-input');
+  if (inp) inp.value = '';
+}
+
+async function resizeImageForUpload(file, maxPx = 400) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(maxPx / img.width, maxPx / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(resolve, 'image/jpeg', 0.82);
+    };
+    img.src = url;
+  });
+}
+
+let searchTimeout = null;
+function searchSymbols() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    const q = document.getElementById('sym-search').value.trim().toLowerCase();
+    const results = document.getElementById('sym-results');
+    if (!q) { results.innerHTML = ''; return; }
+    const local = QUICK_VOCAB.filter(v => v.w.toLowerCase().includes(q)).slice(0, 8);
+    results.innerHTML = local.map(v => `
+      <button onclick="pickSymbol('${v.w.replace(/'/g,"\\'")}','${v.e}','')"
+        class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 hover:border-teal-400 transition-colors"
+        style="border-color:#e0f0f4;background:#f8fdfe;min-height:64px">
+        <span style="font-size:1.5rem">${v.e}</span>
+        <span style="font-size:.6rem;font-weight:700;color:var(--teal-dk);text-align:center">${v.w}</span>
+      </button>`).join('');
+    try {
+      const res = await fetch(`https://api.arasaac.org/api/pictograms/en/search/${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) {
+        results.innerHTML += data.slice(0, 8).map(item => {
+          const imgUrl = `https://static.arasaac.org/pictograms/${item._id}/${item._id}_300.png`;
+          const word = item.keywords?.[0]?.keyword || q;
+          return `<button onclick="pickSymbol('${word.replace(/'/g,"\\'")}','',\`${imgUrl}\`)"
+            class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 hover:border-teal-400 transition-colors"
+            style="border-color:#e0f0f4;background:#f8fdfe;min-height:64px">
+            <img src="${imgUrl}" style="width:36px;height:36px;object-fit:contain" loading="lazy" />
+            <span style="font-size:.6rem;font-weight:700;color:var(--teal-dk);text-align:center">${word}</span>
+          </button>`;
+        }).join('');
+      }
+    } catch {}
+  }, 300);
+}
+
+function pickSymbol(word, emoji, imageUrl) {
+  document.getElementById('sym-word').value = word;
+  document.getElementById('sym-emoji').value = emoji;
+  if (imageUrl) document.getElementById('sym-emoji').dataset.imageUrl = imageUrl;
+  else delete document.getElementById('sym-emoji').dataset.imageUrl;
+}
+
+async function addCustomSymbol() {
+  const word = document.getElementById('sym-word').value.trim();
+  const emoji = document.getElementById('sym-emoji').value.trim() || '🔷';
+  const imageUrl = symPendingPhotoUrl || document.getElementById('sym-emoji').dataset.imageUrl || '';
+  if (!word) { showErr('sym-err', 'Please enter a word.'); return; }
+  if (currentBoardSymbols.length >= currentGridSize) { showErr('sym-err', 'Board is full.'); return; }
+  const pos = currentBoardSymbols.length;
+  const { data, error } = await db.from('board_symbols').insert({ board_id: currentBoardId, word, emoji, image_url: imageUrl, position: pos }).select().single();
+  if (error) { showErr('sym-err', error.message); return; }
+  currentBoardSymbols.push(data);
+  renderSymbols();
+  closeModal('modal-add-symbol');
+}
+
+// ── SHARE ACCESS (caregiver-level) ────────────────────────────────────────────
+function openShareModal() {
+  document.getElementById('share-code-display').classList.add('hidden');
+  document.querySelector('input[name="perm"][value="view"]').checked = true;
+  updatePermLabel();
+  loadAccessList();
+  openModal('modal-share');
+}
+
+function updatePermLabel() {
+  const val = document.querySelector('input[name="perm"]:checked')?.value;
+  document.getElementById('perm-view-lbl').style.borderColor = val==='view' ? 'var(--teal)' : '#e2e8f0';
+  document.getElementById('perm-edit-lbl').style.borderColor = val==='edit' ? 'var(--teal)' : '#e2e8f0';
+}
+
+async function generateShareCode() {
+  const canEdit = document.querySelector('input[name="perm"]:checked')?.value === 'edit';
+  const code = Math.random().toString(36).substring(2,5).toUpperCase() + '-' + Math.random().toString(36).substring(2,6).toUpperCase();
+  const { error } = await db.from('share_codes').insert({
+    code, created_by: currentUser.id, code_type: 'parent_to_therapist',
+    caregiver_id: currentUser.id, can_edit: canEdit
+  });
+  if (error) { alert(error.message); return; }
+  document.getElementById('share-code-val').textContent = code;
+  document.getElementById('share-code-display').classList.remove('hidden');
+}
+
+function copyShareCode() {
+  navigator.clipboard.writeText(document.getElementById('share-code-val').textContent).then(() => alert('Code copied!'));
+}
+
+async function loadAccessList() {
+  const { data } = await db.from('therapist_access')
+    .select('*, profiles(full_name)')
+    .eq('caregiver_id', currentUser.id)
+    .is('revoked_at', null);
+  const list = document.getElementById('access-list');
+  const empty = document.getElementById('access-empty');
+  if (!data?.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  list.innerHTML = data.map(a => `
+    <div class="flex items-center justify-between py-2 border-b last:border-0" style="border-color:#f0fafb">
+      <div>
+        <p class="text-sm font-semibold" style="color:var(--dark)">${a.profiles?.full_name || 'Therapist'}</p>
+        <span class="tag ${a.can_edit ? 'tag-edit' : 'tag-view'}">${a.can_edit ? '✏️ Can edit' : '👁 View only'}</span>
+      </div>
+      <button onclick="revokeAccess('${a.id}')" class="btn-danger px-3 py-1.5 text-xs">Revoke</button>
+    </div>`).join('');
+}
+
+async function revokeAccess(id) {
+  if (!confirm('Revoke this therapist\'s access?')) return;
+  await db.from('therapist_access').update({ revoked_at: new Date().toISOString() }).eq('id', id);
+  loadAccessList();
+}
+
+// ── TEMPLATE PICKER ───────────────────────────────────────────────────────────
+function selectTemplate(tpl) {
+  selectedTemplate = tpl;
+  document.querySelectorAll('.tpl-btn').forEach(btn => { btn.style.borderColor='#e0f0f4'; btn.style.background='white'; });
+  const btn = document.getElementById('tpl-'+tpl);
+  if (btn) { btn.style.borderColor='var(--teal)'; btn.style.background='#e8f9fb'; }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+function showPage(name) {
+  ['children','boards','editor'].forEach(p => {
+    const el = document.getElementById('page-'+p);
+    if (el) el.classList.toggle('hidden', p !== name);
+  });
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showErr(id, msg, info=false) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.color = info ? 'var(--teal-dk)' : '#be123c';
+  el.classList.remove('hidden');
+}
+function gridLabel(size) {
+  return {4:'2×2',6:'2×3',9:'3×3',12:'3×4',16:'4×4',20:'4×5',25:'5×5',30:'5×6',36:'6×6',42:'6×7',49:'7×7'}[size]||size+'btn';
+}
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+}
+document.querySelectorAll('.modal-backdrop').forEach(m =>
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); })
+);
+</script>
+
+<!-- EMOJI PICKER POPUP -->
+<div id="emoji-picker-popup" style="display:none;position:fixed;z-index:300;background:white;border-radius:1rem;box-shadow:0 8px 32px rgba(22,63,74,.18);border:1.5px solid #d0eff4;padding:.75rem;width:280px;max-height:260px;overflow-y:auto">
+  <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px" id="emoji-picker-grid"></div>
+</div>
+<script>
+const PICKER_EMOJIS = [
+  '😊','😢','😠','😮','😴','🤒','😄','😨','🤗','😐','😃','😞','🥰','😬','🤔','😅',
+  '👦','👧','👨','👩','👴','👵','👶','🧒','👩‍⚕️','👨‍⚕️','🧑','👫','👨‍👩‍👦','👩‍👦','🙋','🙅',
+  '🐶','🐱','🐻','🐸','🦁','🐮','🐰','🐧','🐟','🦋','🐼','🐨','🐔','🐴','🐙','🦊',
+  '🍎','🍕','🍦','🥤','🍞','🧃','🍗','🥦','🍌','🍓','🥛','🍪','🥕','🍉','🥚','🥗',
+  '🏠','🚗','💊','🛏️','📚','✏️','🧸','🎒','🚿','🪥','📱','🧴','🚽','🛁','🪑','🚪',
+  '🏃','🏊','🎮','📺','🎵','🎨','🏈','⚽','🤸','🧩','🎯','🎪','🚴','🏋️','🤾','🎭',
+  '✅','❌','⬆️','⬇️','🔴','🟡','🟢','🔔','💬','👍','👎','❤️','⭐','💥','🔇','🔊',
+];
+
+let activeEmojiInputId = null;
+
+function buildEmojiPicker() {
+  document.getElementById('emoji-picker-grid').innerHTML = PICKER_EMOJIS.map(e =>
+    `<button onclick="selectEmoji('${e}')" style="font-size:1.4rem;padding:.2rem;border:none;background:none;cursor:pointer;border-radius:.4rem;line-height:1" onmouseover="this.style.background='#e8f9fb'" onmouseout="this.style.background='none'">${e}</button>`
+  ).join('');
+}
+
+function openEmojiPicker(inputId) {
+  activeEmojiInputId = inputId;
+  const input = document.getElementById(inputId);
+  const rect = input.getBoundingClientRect();
+  const popup = document.getElementById('emoji-picker-popup');
+  let top = rect.bottom + 6;
+  if (top + 260 > window.innerHeight) top = rect.top - 266;
+  let left = rect.left;
+  if (left + 280 > window.innerWidth) left = window.innerWidth - 288;
+  popup.style.top  = top + 'px';
+  popup.style.left = left + 'px';
+  popup.style.display = 'block';
+}
+
+function selectEmoji(emoji) {
+  if (!activeEmojiInputId) return;
+  document.getElementById(activeEmojiInputId).value = emoji;
+  document.getElementById('emoji-picker-popup').style.display = 'none';
+}
+
+buildEmojiPicker();
+
+// ── CHILD MODE ────────────────────────────────────────────────────────────────
+let cmChildId = '', cmChildName = '', cmChildEmoji = '', cmChildColor = '', cmChildPin = '';
+
+function activateChildMode(childId, childName, emoji, color, existingPin) {
+  cmChildId = childId; cmChildName = childName; cmChildEmoji = emoji; cmChildColor = color; cmChildPin = existingPin;
+  const av = document.getElementById('cm-avatar');
+  av.textContent = emoji; av.style.background = color;
+  document.getElementById('cm-child-name').textContent = childName;
+  existingPin ? showCmLaunchView() : showCmSetView();
+  openModal('modal-child-mode');
+}
+
+function showCmSetView() {
+  document.getElementById('cm-view-set').classList.remove('hidden');
+  document.getElementById('cm-view-launch').classList.add('hidden');
+  document.getElementById('cm-err').classList.add('hidden');
+  buildPinBoxes('cm-boxes-set');
+  buildPinBoxes('cm-boxes-confirm');
+}
+
+function showCmLaunchView() {
+  document.getElementById('cm-view-set').classList.add('hidden');
+  document.getElementById('cm-view-launch').classList.remove('hidden');
+}
+
+function buildPinBoxes(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = 1; inp.className = 'pin-box';
+    inp.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+      if (e.target.value && i < 3) container.children[i + 1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) container.children[i - 1].focus();
+    });
+    container.appendChild(inp);
+  }
+  container.children[0].focus();
+}
+
+function getPin(containerId) {
+  return [...document.getElementById(containerId).children].map(b => b.value).join('');
+}
+
+async function saveAndLaunchChildMode() {
+  const pin = getPin('cm-boxes-set');
+  const confirm = getPin('cm-boxes-confirm');
+  const err = document.getElementById('cm-err');
+  err.classList.add('hidden');
+  if (pin.length !== 4) { err.textContent = 'Please enter all 4 digits.'; err.classList.remove('hidden'); return; }
+  if (pin !== confirm) { err.textContent = "PINs don't match — try again."; err.classList.remove('hidden'); return; }
+  const { error } = await db.from('children').update({ pin }).eq('id', cmChildId);
+  if (error) { err.textContent = error.message; err.classList.remove('hidden'); return; }
+  cmChildPin = pin;
+  launchChildMode();
+}
+
+function launchChildMode() {
+  localStorage.setItem('aac_child_mode', JSON.stringify({
+    childId: cmChildId, childName: cmChildName, emoji: cmChildEmoji, color: cmChildColor, pin: cmChildPin
+  }));
+  window.location.href = 'aac-child.html';
+}
+
+document.addEventListener('click', e => {
+  const popup = document.getElementById('emoji-picker-popup');
+  const active = activeEmojiInputId ? document.getElementById(activeEmojiInputId) : null;
+  if (popup && !popup.contains(e.target) && e.target !== active) {
+    popup.style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>

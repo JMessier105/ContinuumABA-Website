@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Continuum AAC — BCBA Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    :root { --teal: #3abeca; --teal-dk: #1d6d7d; --navy: #2c4a7c; --dark: #163f4a; --green: #6db33f; --orange: #F7941D; --bg: #f0fafb; }
+    body { background: var(--bg); min-height: 100vh; }
+    .screen { display: none; } .screen.active { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp .28s ease; }
+    .btn-primary { background: linear-gradient(135deg, var(--navy), #1a2e50); color: white; font-weight: 700; border-radius: .875rem; box-shadow: 0 4px 14px rgba(44,74,124,.3); transition: transform .15s, filter .15s; }
+    .btn-primary:hover { filter: brightness(1.1); } .btn-primary:active { transform: scale(.96); }
+    .btn-teal { background: linear-gradient(135deg, var(--teal), var(--teal-dk)); color: white; font-weight: 700; border-radius: .875rem; box-shadow: 0 4px 14px rgba(58,190,202,.3); transition: transform .15s, filter .15s; }
+    .btn-teal:hover { filter: brightness(1.08); } .btn-teal:active { transform: scale(.96); }
+    .btn-secondary { background: #e8f5f7; color: var(--dark); font-weight: 600; border-radius: .875rem; transition: background .15s, transform .1s; }
+    .btn-secondary:hover { background: #d0eff4; } .btn-secondary:active { transform: scale(.96); }
+    .btn-danger { background: #fff1f2; color: #be123c; font-weight: 600; border-radius: .875rem; transition: background .15s; }
+    .btn-danger:hover { background: #ffe4e6; }
+    .card { background: white; border-radius: 1.25rem; box-shadow: 0 2px 12px rgba(22,63,74,.07); border: 1.5px solid #e0f0f4; }
+    input { width: 100%; padding: .7rem 1rem; border: 2px solid #d0eff4; border-radius: .75rem; font-size: .95rem; color: var(--dark); outline: none; transition: border-color .2s; background: white; }
+    input:focus { border-color: var(--teal); }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(22,63,74,.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-backdrop.open { display: flex; }
+    .modal-box { background: white; border-radius: 1.5rem; box-shadow: 0 24px 60px rgba(22,63,74,.2); width: 100%; max-width: 460px; padding: 2rem; animation: fadeUp .25s ease; max-height: 92vh; overflow-y: auto; }
+    nav { background: var(--navy); }
+    .therapist-card { transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; cursor: pointer; }
+    .therapist-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(44,74,124,.15); }
+    .client-row { transition: background .15s; cursor: pointer; border-radius: .75rem; }
+    .client-row:hover { background: #f0fafb; }
+    .client-card { transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; cursor: pointer; }
+    .client-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(58,190,202,.15); }
+  </style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="screen-auth" class="screen active">
+  <div class="min-h-screen flex items-center justify-center p-4" style="background:var(--navy)">
+    <div class="card w-full max-w-md p-8 fade-up">
+      <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-12 object-contain mx-auto mb-6" style="max-width:180px" />
+      <h1 class="text-2xl font-black text-center mb-1" style="color:var(--dark)">BCBA Portal</h1>
+      <p class="text-sm text-center mb-6" style="color:var(--teal-dk)">Supervise your therapists and review client boards</p>
+
+      <div class="flex rounded-xl overflow-hidden border-2 mb-6" style="border-color:#d0eff4">
+        <button id="tab-login"  onclick="showTab('login')"  class="flex-1 py-2.5 text-sm font-bold" style="background:var(--navy);color:white">Log In</button>
+        <button id="tab-signup" onclick="showTab('signup')" class="flex-1 py-2.5 text-sm font-bold" style="color:var(--teal-dk)">Sign Up</button>
+      </div>
+
+      <div id="form-login" class="space-y-3">
+        <input id="login-email" type="email" placeholder="Email address" autocomplete="email" />
+        <input id="login-pw"    type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+        <p id="login-err" class="hidden text-xs font-semibold text-center" style="color:#be123c"></p>
+        <button onclick="doLogin()" class="btn-primary w-full py-3 text-base">Log In</button>
+      </div>
+
+      <div id="form-signup" class="space-y-3 hidden">
+        <input id="su-name"  type="text"     placeholder="Your full name" autocomplete="name" />
+        <input id="su-email" type="email"    placeholder="Email address" autocomplete="email" />
+        <input id="su-pw"    type="password" placeholder="Password (min 8 chars)" autocomplete="new-password" />
+        <div class="rounded-xl border-2 p-3 space-y-2" style="border-color:#d0eff4">
+          <p class="text-xs font-bold uppercase tracking-wider mb-1" style="color:var(--dark)">I am a... <span class="font-normal normal-case">(select all that apply)</span></p>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="role-caregiver" class="w-4 h-4 shrink-0 accent-teal-500" />
+            <span class="text-sm font-semibold" style="color:var(--dark)">Caregiver / Family Member</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="role-therapist" class="w-4 h-4 shrink-0 accent-teal-500" />
+            <span class="text-sm font-semibold" style="color:var(--dark)">Therapist</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="role-bcba" class="w-4 h-4 shrink-0 accent-teal-500" checked />
+            <span class="text-sm font-semibold" style="color:var(--dark)">BCBA</span>
+          </label>
+        </div>
+        <p id="su-err" class="hidden text-xs font-semibold text-center" style="color:#be123c"></p>
+        <button onclick="doSignup()" class="btn-primary w-full py-3 text-base">Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="screen-app" class="screen">
+  <nav class="sticky top-0 z-40 shadow-lg">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white rounded-xl px-2.5 py-1.5 shadow-sm">
+          <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-8 object-contain" style="max-width:140px" />
+        </div>
+        <span class="hidden sm:block text-white font-bold text-sm">BCBA Portal</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="nav-name" class="text-white text-sm font-semibold opacity-80 hidden sm:block"></span>
+        <div class="relative">
+          <button onclick="document.getElementById('portal-menu').classList.toggle('hidden')" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors">Switch Portal ▾</button>
+          <div id="portal-menu" class="hidden absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border p-1 min-w-[170px] z-50" style="border-color:#e0f0f4">
+            <a href="aac-caregiver.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50" style="color:var(--teal-dk)">🏠 Caregiver</a>
+            <a href="aac-therapist.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50" style="color:#4a7a2a">🩺 Therapist</a>
+            <a href="aac-bcba.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold" style="background:#f0fafb;color:var(--navy)">📋 BCBA</a>
+          </div>
+        </div>
+        <button onclick="doLogout()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 fade-up">
+
+    <!-- Two-column layout: therapists left, clients right -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+      <!-- THERAPIST LIST (left) -->
+      <div class="lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-black" style="color:var(--dark)">My Therapists</h2>
+          <button onclick="openAddTherapistModal()" class="btn-primary px-3 py-2 text-xs">+ Add</button>
+        </div>
+        <div id="therapist-list" class="space-y-3"></div>
+        <div id="therapist-empty" class="hidden card p-6 text-center">
+          <div class="text-4xl mb-3">👩‍⚕️</div>
+          <p class="font-bold text-sm" style="color:var(--dark)">No therapists yet</p>
+          <p class="text-xs mt-1" style="color:var(--teal-dk)">Ask a therapist to generate a BCBA code for you</p>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="lg:col-span-3">
+        <div class="flex items-center gap-3 mb-4">
+          <button id="bcba-back-btn" class="hidden btn-secondary px-3 py-1.5 text-sm" onclick="bcbaGoBack()">← Back</button>
+          <h2 class="text-xl font-black" style="color:var(--dark)"><span id="client-section-title">Select a Therapist</span></h2>
+        </div>
+        <div id="client-list"></div>
+        <div id="client-placeholder" class="card p-8 text-center">
+          <div class="text-5xl mb-3">👈</div>
+          <p class="font-bold" style="color:var(--dark)">Select a therapist</p>
+          <p class="text-sm mt-1" style="color:var(--teal-dk)">Their clients will appear here</p>
+        </div>
+        <div id="client-empty" class="hidden card p-8 text-center">
+          <div class="text-5xl mb-3">📋</div>
+          <p class="font-bold" style="color:var(--dark)">Nothing here yet</p>
+          <p class="text-sm mt-1" style="color:var(--teal-dk)">No data found at this level</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: Add Therapist -->
+<div id="modal-add-therapist" class="modal-backdrop">
+  <div class="modal-box">
+    <h2 class="text-xl font-black mb-1" style="color:var(--dark)">Add Therapist</h2>
+    <p class="text-sm mb-5" style="color:var(--teal-dk)">Enter the BCBA code generated by your therapist</p>
+    <input id="therapist-code" type="text" placeholder="e.g. XYZ-5678" style="text-transform:uppercase;letter-spacing:.1em;font-size:1.1rem;font-weight:700;text-align:center" oninput="this.value=this.value.toUpperCase()" />
+    <p id="therapist-code-err" class="hidden text-xs font-semibold mt-2 text-center" style="color:#be123c"></p>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeModal('modal-add-therapist')" class="btn-secondary flex-1 py-3 text-sm">Cancel</button>
+      <button onclick="redeemTherapistCode()" class="btn-primary flex-1 py-3 text-sm">Add Therapist</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://vkbeenvimujuzclqxvuj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYmVlbnZpbXVqdXpjbHF4dnVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1ODQ3ODAsImV4cCI6MjA5MzE2MDc4MH0.ZgbxhEAI8PEs1OxivWmDiG2sxJsSgUQAQsqmOCZ1MAU';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let selectedTherapistId = null;
+
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) await afterLogin(session.user);
+  db.auth.onAuthStateChange((_e, session) => { if (session) afterLogin(session.user); else showScreen('auth'); });
+})();
+
+async function afterLogin(user) {
+  currentUser = user;
+  const { data: p } = await db.from('profiles').select('full_name').eq('id', user.id).single();
+  document.getElementById('nav-name').textContent = p?.full_name || user.email;
+  showScreen('app');
+  loadTherapists();
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+  document.getElementById('tab-login').style.cssText  = tab==='login'  ? 'background:var(--navy);color:white' : 'color:var(--teal-dk)';
+  document.getElementById('tab-signup').style.cssText = tab==='signup' ? 'background:var(--navy);color:white' : 'color:var(--teal-dk)';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const { error } = await db.auth.signInWithPassword({ email, password: pw });
+  if (error) showErr('login-err', error.message);
+}
+
+async function doSignup() {
+  const name        = document.getElementById('su-name').value.trim();
+  const email       = document.getElementById('su-email').value.trim();
+  const pw          = document.getElementById('su-pw').value;
+  const isCaregiver = document.getElementById('role-caregiver').checked;
+  const isTherapist = document.getElementById('role-therapist').checked;
+  const isBcba      = document.getElementById('role-bcba').checked;
+  if (!name) { showErr('su-err','Please enter your name.'); return; }
+  if (pw.length < 8) { showErr('su-err','Password must be at least 8 characters.'); return; }
+  if (!isCaregiver && !isTherapist && !isBcba) { showErr('su-err','Please select at least one role.'); return; }
+  const primaryRole = isBcba ? 'bcba' : isTherapist ? 'therapist' : 'caregiver';
+  const { error } = await db.auth.signUp({ email, password: pw, options: { data: { full_name: name, role: primaryRole, is_parent: isCaregiver, is_therapist: isTherapist, is_bcba: isBcba } } });
+  if (error) showErr('su-err', error.message);
+  else showErr('su-err', 'Check your email to confirm your account!', true);
+}
+
+async function doLogout() { await db.auth.signOut(); showScreen('auth'); }
+
+// ── THERAPISTS ────────────────────────────────────────────────────────────────
+async function loadTherapists() {
+  const { data: accessRows } = await db.from('bcba_access')
+    .select('id, therapist_id')
+    .eq('bcba_id', currentUser.id)
+    .is('revoked_at', null);
+
+  const list  = document.getElementById('therapist-list');
+  const empty = document.getElementById('therapist-empty');
+
+  if (!accessRows?.length) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  // Two-step: therapist_id references auth.users, not profiles table
+  const therapistIds = [...new Set(accessRows.map(a => a.therapist_id))];
+  const { data: profiles } = await db.from('profiles').select('id, full_name').in('id', therapistIds);
+  const profileMap = {};
+  profiles?.forEach(p => profileMap[p.id] = p);
+
+  list.innerHTML = accessRows.map(a => {
+    const name = profileMap[a.therapist_id]?.full_name || 'Therapist';
+    return `
+    <div class="card therapist-card p-4" onclick="selectTherapist('${a.therapist_id}','${name.replace(/'/g,"\\'")}','${a.id}')">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0"
+               style="background:linear-gradient(135deg,var(--navy),#1a2e50)">${name.charAt(0).toUpperCase()}</div>
+          <div>
+            <p class="font-bold text-sm" style="color:var(--dark)">${name}</p>
+            <p class="text-xs" style="color:var(--teal-dk)">Therapist</p>
+          </div>
+        </div>
+        <button onclick="event.stopPropagation();revokeTherapist('${a.id}')" class="btn-danger px-2.5 py-1.5 text-xs">Revoke</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Navigation state
+let selectedTherapistName = '';
+let selectedCaregiverId = null;
+let selectedCaregiverName = '';
+// bcbaNavStack: array of {title, fn} for back navigation
+let bcbaNavStack = [];
+
+function bcbaSetView(title, renderFn) {
+  bcbaNavStack.push({ title, renderFn });
+  document.getElementById('client-section-title').textContent = title;
+  document.getElementById('client-placeholder').classList.add('hidden');
+  document.getElementById('client-empty').classList.add('hidden');
+  document.getElementById('bcba-back-btn').classList.toggle('hidden', bcbaNavStack.length <= 1);
+  renderFn();
+}
+
+function bcbaGoBack() {
+  bcbaNavStack.pop();
+  const prev = bcbaNavStack[bcbaNavStack.length - 1];
+  if (!prev) return;
+  document.getElementById('client-section-title').textContent = prev.title;
+  document.getElementById('bcba-back-btn').classList.toggle('hidden', bcbaNavStack.length <= 1);
+  prev.renderFn();
+}
+
+let bcbaCanEdit = false;
+
+async function selectTherapist(therapistId, therapistName, accessId) {
+  selectedTherapistId = therapistId;
+  selectedTherapistName = therapistName;
+  bcbaNavStack = [];
+
+  // Highlight selected therapist card
+  document.querySelectorAll('.therapist-card').forEach(c => c.style.borderColor = '#e0f0f4');
+  event.currentTarget.style.borderColor = 'var(--teal)';
+
+  // Fetch can_edit for this access row
+  const { data: access } = await db.from('bcba_access').select('can_edit').eq('id', accessId).single();
+  bcbaCanEdit = access?.can_edit || false;
+
+  bcbaSetView(therapistName + "'s Clients", () => renderBcbaClients(therapistId));
+}
+
+async function renderBcbaClients(therapistId) {
+  const list = document.getElementById('client-list');
+  list.innerHTML = '<p class="text-sm text-center py-6" style="color:#94a3b8">Loading...</p>';
+
+  const { data: accessRows } = await db.from('therapist_access')
+    .select('caregiver_id')
+    .eq('therapist_id', therapistId)
+    .is('revoked_at', null)
+    .not('caregiver_id', 'is', null);
+
+  if (!accessRows?.length) {
+    list.innerHTML = '';
+    document.getElementById('client-empty').querySelector('p').textContent = 'This therapist has no clients yet';
+    document.getElementById('client-empty').classList.remove('hidden');
+    return;
+  }
+
+  const caregiverIds = [...new Set(accessRows.map(a => a.caregiver_id))];
+  const { data: profiles } = await db.from('profiles').select('id, full_name').in('id', caregiverIds);
+
+  list.innerHTML = `<div class="space-y-3">${(profiles || []).map(p => {
+    const initial = p.full_name.charAt(0).toUpperCase();
+    return `
+    <div class="card client-row p-4 cursor-pointer flex items-center gap-4"
+         onclick="selectBcbaCaregiver('${p.id}','${p.full_name.replace(/'/g,"\\'")}')">
+      <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-white text-lg font-black shrink-0"
+           style="background:linear-gradient(135deg,var(--teal),var(--teal-dk))">${initial}</div>
+      <div class="flex-1">
+        <p class="font-bold text-sm" style="color:var(--dark)">${p.full_name}</p>
+        <p class="text-xs" style="color:var(--teal-dk)">Caregiver</p>
+      </div>
+      <span style="color:var(--teal-dk);font-size:.8rem">›</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function selectBcbaCaregiver(caregiverId, caregiverName) {
+  selectedCaregiverId = caregiverId;
+  selectedCaregiverName = caregiverName;
+  bcbaSetView(caregiverName + "'s Children", () => renderBcbaChildren(caregiverId, caregiverName));
+}
+
+async function renderBcbaChildren(caregiverId, caregiverName) {
+  const list = document.getElementById('client-list');
+  list.innerHTML = '<p class="text-sm text-center py-6" style="color:#94a3b8">Loading...</p>';
+
+  const { data: children } = await db.from('children')
+    .select('*')
+    .eq('caregiver_id', caregiverId)
+    .order('created_at');
+
+  if (!children?.length) {
+    list.innerHTML = '';
+    document.getElementById('client-empty').querySelector('p').textContent = 'No children added yet';
+    document.getElementById('client-empty').classList.remove('hidden');
+    return;
+  }
+
+  list.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 gap-4">${children.map(c => `
+    <div onclick="selectBcbaChild('${c.id}','${c.name.replace(/'/g,"\\'")}','${c.avatar_emoji}','${c.avatar_color}')"
+         class="card client-card p-5 text-center cursor-pointer" style="transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-md"
+           style="background:${c.avatar_color}">${c.avatar_emoji}</div>
+      <p class="font-black text-base" style="color:var(--dark)">${c.name}</p>
+    </div>`).join('')}</div>`;
+}
+
+async function selectBcbaChild(childId, childName, emoji, color) {
+  bcbaSetView(childName + "'s Boards", () => renderBcbaBoards(childId, childName, emoji, color));
+}
+
+async function renderBcbaBoards(childId, childName, emoji, color) {
+  const list = document.getElementById('client-list');
+  list.innerHTML = '<p class="text-sm text-center py-6" style="color:#94a3b8">Loading...</p>';
+
+  const { data: boards } = await db.from('boards')
+    .select('id, name')
+    .eq('child_id', childId)
+    .order('created_at');
+
+  if (!boards?.length) {
+    list.innerHTML = '';
+    document.getElementById('client-empty').querySelector('p').textContent = 'No boards for this child yet';
+    document.getElementById('client-empty').classList.remove('hidden');
+    return;
+  }
+
+  list.innerHTML = `<div class="space-y-3">${boards.map(b => `
+    <div class="card client-row p-4 flex items-center justify-between gap-3" onclick="openBoard('${b.id}')">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+             style="background:${color}">${emoji}</div>
+        <p class="font-bold text-sm" style="color:var(--dark)">${b.name}</p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        ${bcbaCanEdit ? `<button onclick="event.stopPropagation();openBoard('${b.id}','1')" class="btn-secondary px-3 py-1.5 text-xs">✏️ Edit</button>` : ''}
+        <button onclick="event.stopPropagation();openBoard('${b.id}')" class="btn-teal px-3 py-1.5 text-xs">Open →</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function openBoard(boardId, edit = '0') {
+  const url = edit === '1'
+    ? `aac-board.html?board_id=${boardId}&edit=1`
+    : `aac-board.html?board_id=${boardId}`;
+  window.location.href = url;
+}
+
+async function revokeTherapist(accessId) {
+  if (!confirm('Remove this therapist? You will no longer see their clients.')) return;
+  await db.from('bcba_access').update({ revoked_at: new Date().toISOString() }).eq('id', accessId);
+  loadTherapists();
+  document.getElementById('client-list').innerHTML = '';
+  document.getElementById('client-placeholder').classList.remove('hidden');
+  document.getElementById('client-section-title').textContent = 'Select a Therapist';
+}
+
+// ── ADD THERAPIST VIA CODE ────────────────────────────────────────────────────
+function openAddTherapistModal() {
+  openModal('modal-add-therapist');
+  document.getElementById('therapist-code').value = '';
+  document.getElementById('therapist-code-err').classList.add('hidden');
+  setTimeout(() => document.getElementById('therapist-code').focus(), 120);
+}
+
+async function redeemTherapistCode() {
+  const code = document.getElementById('therapist-code').value.trim().toUpperCase();
+  if (!code) { showErr('therapist-code-err','Please enter a code.'); return; }
+
+  const { data: sc } = await db.from('share_codes')
+    .select('*').eq('code', code).eq('code_type', 'therapist_to_bcba').is('used_at', null).single();
+
+  if (!sc) { showErr('therapist-code-err','Code not found or already used. Ask the therapist for a new one.'); return; }
+
+  // Check if a row already exists (possibly revoked) — upsert to reactivate
+  const { data: existing } = await db.from('bcba_access')
+    .select('id').eq('bcba_id', currentUser.id).eq('therapist_id', sc.therapist_id).maybeSingle();
+
+  if (existing) {
+    const { error } = await db.from('bcba_access')
+      .update({ revoked_at: null, can_edit: sc.can_edit || false }).eq('id', existing.id);
+    if (error) { showErr('therapist-code-err', error.message); return; }
+  } else {
+    const { error } = await db.from('bcba_access').insert({
+      bcba_id: currentUser.id, therapist_id: sc.therapist_id, can_edit: sc.can_edit || false
+    });
+    if (error) { showErr('therapist-code-err', error.message); return; }
+  }
+
+  await db.from('share_codes').update({ used_at: new Date().toISOString() }).eq('id', sc.id);
+  closeModal('modal-add-therapist');
+  loadTherapists();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showErr(id, msg, info=false) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.color = info ? 'var(--teal-dk)' : '#be123c';
+  el.classList.remove('hidden');
+}
+document.querySelectorAll('.modal-backdrop').forEach(m =>
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
+);
+</script>
+</body>
+</html>
