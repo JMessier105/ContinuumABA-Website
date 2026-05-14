@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quest Board Admin — Continuum ABA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --teal:#3abeca; --teal-dk:#1d6d7d; --navy:#2c4a7c;
+      --dark:#163f4a; --green:#6db33f; --orange:#F7941D;
+      --gold:#fbbf24; --red:#ef4444; --bg:#f0fafb;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#f1f5f9;min-height:100vh;color:#1e293b;}
+
+    /* ── FULL-SCREEN OVERLAYS ── */
+    .overlay{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem;}
+    .overlay.hidden{display:none!important;}
+    #ov-auth,#ov-setup{background:linear-gradient(145deg,#080f1e,#163f4a);}
+    #ov-loading{background:rgba(8,15,30,.85);backdrop-filter:blur(8px);}
+
+    /* ── AUTH CARD ── */
+    .auth-card{background:white;border-radius:1.5rem;padding:2.25rem 2rem;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.55);animation:popIn .4s cubic-bezier(.34,1.56,.64,1);}
+    @keyframes popIn{from{opacity:0;transform:scale(.85) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+
+    /* ── LAYOUT ── */
+    #app{display:none;min-height:100vh;flex-direction:column;}
+    #app.active{display:flex;}
+    .topbar{background:var(--dark);color:white;padding:.7rem 1.5rem;display:flex;align-items:center;gap:.85rem;box-shadow:0 2px 12px rgba(0,0,0,.3);flex-shrink:0;}
+    .body-wrap{display:flex;flex:1;min-height:0;overflow:hidden;}
+    .sidebar{width:220px;background:white;border-right:1px solid #e2e8f0;padding:1rem .75rem;display:flex;flex-direction:column;gap:.2rem;flex-shrink:0;overflow-y:auto;}
+    .nav-btn{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;border-radius:.65rem;border:none;background:transparent;cursor:pointer;font-size:.85rem;font-weight:600;color:#64748b;width:100%;text-align:left;transition:background .14s,color .14s;font-family:'Inter',sans-serif;}
+    .nav-btn:hover{background:#f1f5f9;color:var(--dark);}
+    .nav-btn.active{background:rgba(58,190,202,.12);color:var(--teal-dk);}
+    .nav-icon{font-size:1.1rem;width:1.4rem;text-align:center;}
+    .content{flex:1;padding:1.5rem;overflow-y:auto;}
+
+    /* ── PANELS ── */
+    .card{background:white;border-radius:1rem;padding:1.25rem 1.4rem;box-shadow:0 1px 12px rgba(22,63,74,.07),0 0 0 1px rgba(22,63,74,.04);margin-bottom:1rem;}
+    .card-title{font-size:1rem;font-weight:800;color:var(--dark);margin-bottom:.2rem;}
+    .card-sub{font-size:.78rem;color:#64748b;margin-bottom:1rem;}
+    .page-title{font-size:1.4rem;font-weight:900;color:var(--dark);}
+    .page-sub{font-size:.82rem;color:#64748b;margin-top:.2rem;margin-bottom:1.25rem;}
+
+    /* ── STAT TILES ── */
+    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.25rem;}
+    @media(max-width:700px){.stat-grid{grid-template-columns:1fr 1fr;}}
+    .stat-tile{background:white;border-radius:.85rem;padding:1rem 1.1rem;box-shadow:0 1px 12px rgba(22,63,74,.07),0 0 0 1px rgba(22,63,74,.04);}
+    .stat-val{font-size:1.9rem;font-weight:900;line-height:1;}
+    .stat-lbl{font-size:.7rem;color:#64748b;font-weight:600;margin-top:.2rem;}
+
+    /* ── BAR ── */
+    .bar-track{height:8px;border-radius:999px;background:#e5e7eb;overflow:hidden;}
+    .bar-fill{height:100%;border-radius:999px;transition:width .5s ease;}
+
+    /* ── TABLE ── */
+    .tbl{width:100%;border-collapse:collapse;}
+    .tbl th{text-align:left;font-size:.7rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;padding:.5rem .75rem;border-bottom:1px solid #e2e8f0;}
+    .tbl td{padding:.6rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.84rem;vertical-align:middle;}
+    .tbl tr:last-child td{border-bottom:none;}
+    .tbl tr:hover td{background:#f8fafc;}
+    .ie{border:1px solid #e2e8f0;border-radius:.4rem;padding:.25rem .45rem;font-size:.82rem;font-family:'Inter',sans-serif;outline:none;width:100%;transition:border-color .15s;}
+    .ie:focus{border-color:var(--teal);}
+    .ie.num{width:60px;text-align:center;}
+
+    /* ── FORM ── */
+    .form-row{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;margin-top:.75rem;padding-top:.75rem;border-top:1px solid #e2e8f0;}
+    .f-group{display:flex;flex-direction:column;gap:.3rem;}
+    .f-label{font-size:.7rem;font-weight:700;color:var(--dark);letter-spacing:.04em;}
+    .fi{padding:.5rem .7rem;border:1.5px solid #e2e8f0;border-radius:.55rem;font-size:.84rem;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;background:white;}
+    .fi:focus{border-color:var(--teal);}
+    .fi.wide{min-width:180px;}
+    .fi.sm{width:72px;}
+    select.fi{cursor:pointer;}
+
+    /* ── BUTTONS ── */
+    .btn{padding:.5rem 1rem;border-radius:.6rem;border:none;font-weight:700;cursor:pointer;font-size:.83rem;font-family:'Inter',sans-serif;transition:transform .12s,opacity .12s;}
+    .btn:active{transform:scale(.93);}
+    .btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal-dk));color:white;box-shadow:0 2px 10px rgba(58,190,202,.3);}
+    .btn-primary:hover{opacity:.9;}
+    .btn-danger{background:#fee2e2;color:var(--red);}
+    .btn-danger:hover{background:#fecaca;}
+    .btn-ghost{background:#f1f5f9;color:#475569;}
+    .btn-ghost:hover{background:#e2e8f0;}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),var(--orange));color:white;}
+    .btn-sm{padding:.3rem .65rem;font-size:.75rem;}
+
+    /* ── BADGE ── */
+    .badge{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .55rem;border-radius:999px;font-size:.68rem;font-weight:700;}
+    .badge-teal{background:rgba(58,190,202,.12);color:var(--teal-dk);}
+    .badge-green{background:rgba(109,179,63,.12);color:#3f7a18;}
+    .badge-orange{background:rgba(247,148,29,.12);color:#b45309;}
+    .badge-purple{background:rgba(139,92,246,.12);color:#6d28d9;}
+    .badge-red{background:rgba(239,68,68,.12);color:#b91c1c;}
+    .badge-gray{background:#f1f5f9;color:#64748b;}
+
+    /* ── DIFF CARDS ── */
+    .diff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:.75rem;}
+    @media(max-width:600px){.diff-grid{grid-template-columns:1fr 1fr;}}
+    .diff-card{border:2px solid #e2e8f0;border-radius:.85rem;padding:.85rem .75rem;cursor:pointer;transition:border-color .2s,background .2s;text-align:center;}
+    .diff-card:hover{border-color:var(--teal);background:#f0fafb;}
+    .diff-card.active{border-color:var(--teal);background:rgba(58,190,202,.1);}
+
+    /* ── CLIENT CARDS ── */
+    .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:1rem;}
+    .client-card{border:2px solid #e2e8f0;border-radius:1rem;padding:1.1rem;text-align:center;transition:border-color .2s;}
+    .client-card.active-client{border-color:var(--teal);box-shadow:0 0 0 3px rgba(58,190,202,.18);}
+    .client-avatar{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9rem;margin:0 auto .55rem;}
+
+    /* ── MODAL ── */
+    .modal-bg{position:fixed;inset:0;z-index:200;background:rgba(10,18,34,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;}
+    .modal-bg.hidden{display:none;}
+    .modal{background:white;border-radius:1.25rem;padding:1.75rem;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.35);animation:popIn .3s both;}
+
+    /* ── TOAST ── */
+    .toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;background:var(--dark);color:white;padding:.7rem 1.2rem;border-radius:.75rem;font-size:.83rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideUp .3s ease;}
+    @keyframes slideUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+    /* ── MISC ── */
+    .empty{text-align:center;padding:2rem 1rem;color:#94a3b8;font-size:.83rem;}
+    .spinner{width:40px;height:40px;border:4px solid rgba(58,190,202,.2);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .info-box{background:#fefce8;border:1px solid #fde68a;border-radius:.65rem;padding:.65rem .9rem;font-size:.78rem;line-height:1.6;color:#713f12;margin-bottom:1rem;}
+    .err-msg{color:var(--red);font-size:.78rem;font-weight:600;min-height:1rem;margin-top:.35rem;}
+
+    /* ── ROADMAP ── */
+    .roadmap-item{display:flex;align-items:center;gap:.55rem;padding:.5rem .65rem;border:1.5px solid #e2e8f0;border-radius:.65rem;background:white;margin-bottom:.3rem;user-select:none;transition:border-color .12s,background .12s,opacity .12s;}
+    .roadmap-item.drag-over{border-color:var(--teal);background:#f0fafb;}
+    .roadmap-item.dragging{opacity:.3;border-style:dashed;}
+    .roadmap-handle{cursor:grab;color:#d1d5db;font-size:1.05rem;flex-shrink:0;line-height:1;padding:0 .1rem;}
+    .roadmap-handle:active{cursor:grabbing;}
+    .pkg-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .65rem;border-radius:999px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:.72rem;font-weight:600;cursor:pointer;color:#475569;transition:border-color .14s,background .14s;font-family:'Inter',sans-serif;}
+    .pkg-chip:hover{border-color:var(--teal);background:rgba(58,190,202,.08);color:var(--teal-dk);}
+
+    /* ── CALENDAR ── */
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+    .cal-dow{text-align:center;font-size:.6rem;font-weight:700;color:#94a3b8;padding:.2rem 0;}
+    .cal-cell{border:1.5px solid #e2e8f0;border-radius:.4rem;padding:.3rem .2rem;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .12s,box-shadow .12s;}
+    .cal-cell:hover:not(.cal-future){border-color:var(--teal);box-shadow:0 0 0 2px rgba(58,190,202,.18);}
+    .cal-cell.cal-today{border-color:var(--teal);border-width:2px;}
+    .cal-cell.cal-future{opacity:.3;cursor:default;}
+    .cal-cell.cal-selected{border-color:var(--teal);box-shadow:0 0 0 3px rgba(58,190,202,.25);background:rgba(58,190,202,.06);}
+    .cal-day-num{font-size:.62rem;font-weight:600;color:#94a3b8;line-height:1;}
+    .cal-count{font-size:.78rem;font-weight:900;line-height:1;}
+    .cal-dots{display:flex;gap:2px;align-items:center;}
+    .cal-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+    .cal-detail{border-left:3px solid var(--teal);padding:.5rem .75rem;border-radius:0 .5rem .5rem 0;background:#f0fafb;margin-bottom:.35rem;font-size:.8rem;}
+  </style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ──────────────────────────────────────────────── -->
+<div id="ov-auth" class="overlay">
+  <div class="auth-card">
+    <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" style="height:48px;margin:0 auto 1.25rem;display:block;background:white;border-radius:8px;padding:3px 10px;" onerror="this.style.display='none'">
+    <h2 style="font-size:1.25rem;font-weight:800;color:var(--dark);margin-bottom:.2rem;" id="auth-title">BCBA / Parent Sign In</h2>
+    <p style="font-size:.8rem;color:#64748b;margin-bottom:1.25rem;" id="auth-sub">Access the Quest Board admin portal</p>
+
+    <div class="f-group" style="margin-bottom:.65rem;">
+      <label class="f-label">EMAIL</label>
+      <input type="email" id="auth-email" class="fi" style="width:100%;" placeholder="your@email.com" onkeydown="if(event.key==='Enter')authSubmit()" />
+    </div>
+    <div class="f-group" style="margin-bottom:.25rem;">
+      <label class="f-label">PASSWORD</label>
+      <input type="password" id="auth-pass" class="fi" style="width:100%;" placeholder="••••••••" onkeydown="if(event.key==='Enter')authSubmit()" />
+    </div>
+    <p class="err-msg" id="auth-err"></p>
+
+    <button onclick="authSubmit()" class="btn btn-primary" style="width:100%;padding:.85rem;font-size:.95rem;margin-top:.75rem;" id="auth-submit-btn">Sign In</button>
+    <button onclick="toggleAuthMode()" style="width:100%;margin-top:.6rem;background:none;border:none;font-size:.8rem;color:var(--teal-dk);font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" id="auth-toggle">Don't have an account? Create one</button>
+  </div>
+</div>
+
+<!-- ── SETUP SCREEN (first time) ────────────────────────────────── -->
+<div id="ov-setup" class="overlay hidden">
+  <div class="auth-card">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;text-align:center;">👋</div>
+    <h2 style="font-size:1.2rem;font-weight:800;color:var(--dark);margin-bottom:.25rem;text-align:center;">Welcome to Quest Board!</h2>
+    <p style="font-size:.8rem;color:#64748b;margin-bottom:1.25rem;text-align:center;">Tell us a bit about yourself to get started.</p>
+
+    <div class="f-group" style="margin-bottom:.75rem;">
+      <label class="f-label">YOUR FULL NAME</label>
+      <input type="text" id="setup-name" class="fi" style="width:100%;" placeholder="e.g. Dr. Sarah Mitchell" maxlength="60" onkeydown="if(event.key==='Enter')setupSubmit()" />
+    </div>
+    <div class="f-group" style="margin-bottom:.25rem;">
+      <label class="f-label">YOUR ROLE</label>
+      <select id="setup-role" class="fi" style="width:100%;">
+        <option value="bcba">BCBA / Therapist</option>
+        <option value="parent">Parent / Caregiver</option>
+      </select>
+    </div>
+    <p class="err-msg" id="setup-err"></p>
+    <button onclick="setupSubmit()" class="btn btn-primary" style="width:100%;padding:.85rem;font-size:.95rem;margin-top:.75rem;">Continue →</button>
+  </div>
+</div>
+
+<!-- ── LOADING ───────────────────────────────────────────────────── -->
+<div id="ov-loading" class="overlay hidden">
+  <div style="text-align:center;color:white;">
+    <div class="spinner" style="margin-bottom:1rem;"></div>
+    <div style="font-size:.85rem;color:#94a3b8;" id="loading-msg">Loading…</div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ─────────────────────────────────────────────── -->
+<div class="modal-bg hidden" id="confirm-modal">
+  <div class="modal">
+    <h3 id="confirm-title" style="font-size:1.05rem;font-weight:800;color:var(--dark);margin-bottom:.5rem;"></h3>
+    <p id="confirm-body" style="font-size:.84rem;color:#64748b;margin-bottom:1.25rem;line-height:1.6;"></p>
+    <div style="display:flex;gap:.65rem;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PACKAGE PICKER MODAL ──────────────────────────────────────── -->
+<div class="modal-bg hidden" id="package-modal">
+  <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <h3 style="font-size:1.05rem;font-weight:800;color:var(--dark);">Choose Next Skill Package</h3>
+      <button onclick="closePackageModal()" style="background:#f1f5f9;border:none;border-radius:.5rem;padding:.3rem .55rem;cursor:pointer;font-size:.8rem;color:#64748b;">✕</button>
+    </div>
+    <div id="package-list" style="display:flex;flex-direction:column;gap:.55rem;"></div>
+  </div>
+</div>
+
+<!-- ── LINK CODE MODAL ────────────────────────────────────────────── -->
+<div class="modal-bg hidden" id="code-modal">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:.5rem;">🔗</div>
+    <h3 style="font-size:1rem;font-weight:800;color:var(--dark);margin-bottom:.4rem;">Link Code for <span id="code-client-name"></span></h3>
+    <p style="font-size:.78rem;color:#64748b;margin-bottom:1rem;line-height:1.6;">Give this code to the child. They enter it in Settings inside Quest Board to link their game to your account.</p>
+    <div id="code-display" style="font-family:'Press Start 2P',monospace;font-size:1.6rem;color:var(--teal);background:#f0fafb;border:2px dashed var(--teal);border-radius:.85rem;padding:.9rem 1.25rem;margin-bottom:.85rem;letter-spacing:.12em;"></div>
+    <div id="code-expiry" style="font-size:.73rem;color:#94a3b8;margin-bottom:1.1rem;"></div>
+    <button onclick="closeCodeModal()" class="btn btn-primary" style="width:100%;">Done</button>
+  </div>
+</div>
+
+<!-- ── NEW CLIENT MODAL ──────────────────────────────────────────── -->
+<div class="modal-bg hidden" id="client-modal">
+  <div class="modal">
+    <h3 style="font-size:1.05rem;font-weight:800;color:var(--dark);margin-bottom:1rem;">Add New Client</h3>
+    <div class="f-group" style="margin-bottom:.75rem;width:100%;">
+      <label class="f-label">CHILD'S NAME</label>
+      <input type="text" id="new-client-name" class="fi" style="width:100%;" placeholder="First name…" maxlength="30" onkeydown="if(event.key==='Enter')createClient()" />
+    </div>
+    <div class="f-group" style="margin-bottom:1.25rem;">
+      <label class="f-label">CHOOSE CHARACTER</label>
+      <div style="display:flex;gap:.55rem;margin-top:.35rem;" id="modal-chars">
+        <div onclick="pickChar('fox',this)" title="Fiora Fox"    style="cursor:pointer;border:2px solid #e2e8f0;border-radius:.65rem;padding:.55rem .8rem;font-size:1.4rem;transition:border-color .15s;">🦊</div>
+        <div onclick="pickChar('owl',this)" title="Ollie Owl"    style="cursor:pointer;border:2px solid #e2e8f0;border-radius:.65rem;padding:.55rem .8rem;font-size:1.4rem;transition:border-color .15s;">🦉</div>
+        <div onclick="pickChar('bear',this)" title="Benny Bear"  style="cursor:pointer;border:2px solid #e2e8f0;border-radius:.65rem;padding:.55rem .8rem;font-size:1.4rem;transition:border-color .15s;">🐻</div>
+        <div onclick="pickChar('frog',this)" title="Finn Frog"   style="cursor:pointer;border:2px solid #e2e8f0;border-radius:.65rem;padding:.55rem .8rem;font-size:1.4rem;transition:border-color .15s;">🐸</div>
+      </div>
+    </div>
+    <p class="err-msg" id="client-err"></p>
+    <div style="display:flex;gap:.65rem;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeClientModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createClient()">Create Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ──────────────────────────────────────────────────── -->
+<div id="app">
+  <header class="topbar">
+    <img src="Brand_assets/continuum logo no padding.png" alt="" style="height:30px;flex-shrink:0;background:white;border-radius:6px;padding:2px 7px;" onerror="this.style.display='none'">
+    <div style="font-weight:800;font-size:.88rem;">BCBA / Parent Portal</div>
+    <div style="flex:1;"></div>
+    <div style="font-size:.75rem;color:#94a3b8;flex-shrink:0;">Viewing:</div>
+    <div id="hdr-client" style="font-weight:700;font-size:.85rem;background:rgba(58,190,202,.2);color:var(--teal);padding:.22rem .7rem;border-radius:999px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
+    <a href="quest.html" target="_blank" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.2);border-radius:.5rem;padding:.32rem .75rem;font-size:.75rem;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">▶ Quest Board</a>
+    <button onclick="signOut()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:#94a3b8;border-radius:.45rem;padding:.32rem .55rem;font-size:.72rem;cursor:pointer;flex-shrink:0;">Sign Out</button>
+  </header>
+
+  <div class="body-wrap">
+    <nav class="sidebar">
+      <button class="nav-btn active" onclick="goTab('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</button>
+      <button class="nav-btn" onclick="goTab('tasks',this)"><span class="nav-icon">⚡</span>Tasks</button>
+      <button class="nav-btn" id="nav-rewards" onclick="goTab('rewards',this)"><span class="nav-icon">🏆</span>Rewards <span id="rewards-badge" style="display:none;background:#f59e0b;color:white;border-radius:999px;font-size:.58rem;font-weight:800;padding:.1rem .38rem;margin-left:.3rem;vertical-align:middle;"></span></button>
+      <button class="nav-btn" onclick="goTab('clients',this)"><span class="nav-icon">👤</span>Clients</button>
+      <button class="nav-btn" onclick="goTab('clans',this)"><span class="nav-icon">⚔️</span>Clans</button>
+      <button class="nav-btn" onclick="goTab('gifts',this)"><span class="nav-icon">🎁</span>Gifts</button>
+      <button class="nav-btn" onclick="goTab('progress',this)"><span class="nav-icon">📈</span>Progress</button>
+      <button class="nav-btn" onclick="goTab('settings',this)"><span class="nav-icon">⚙️</span>Settings</button>
+      <div style="flex:1;"></div>
+      <div style="font-size:.67rem;color:#cbd5e1;padding:.5rem .85rem;line-height:1.6;border-top:1px solid #f1f5f9;margin-top:.5rem;padding-top:.75rem;">
+        Quest Board works without this portal. Everything here is optional.
+      </div>
+    </nav>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="tab-dashboard">
+        <p class="page-title">Dashboard</p>
+        <p class="page-sub" id="dash-sub"></p>
+        <div class="stat-grid" id="stat-grid"></div>
+        <div class="card">
+          <div class="card-title">XP Progress to Next Level</div>
+          <div class="card-sub" id="xp-sub"></div>
+          <div class="bar-track" style="height:14px;"><div class="bar-fill" id="xp-bar" style="background:linear-gradient(90deg,#6db33f,#86efac);width:0%;"></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="card">
+            <div class="card-title">Today's Dailies</div>
+            <div id="daily-prog" style="margin-top:.5rem;"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Development Stage</div>
+            <div id="dash-stage" style="margin-top:.5rem;"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:.75rem;" onclick="goTab('settings',document.querySelectorAll('.nav-btn')[4])">Adjust →</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem;">
+          <div class="card-title">🐾 Pet Skill Journey</div>
+          <div id="dash-pet" style="margin-top:.5rem;"></div>
+        </div>
+        <div class="card" style="margin-top:1rem;" id="dash-roadmap-card">
+          <div id="dash-roadmap"></div>
+        </div>
+        <div class="card" style="margin-top:1rem;background:rgba(247,148,29,.06);border:1.5px solid rgba(247,148,29,.3);">
+          <div class="card-title" style="color:#92400e;">🪙 Award Gold</div>
+          <div class="card-sub" style="margin-bottom:.85rem;">Give gold for in-session achievements — token board completions, great focus, a tough skill mastered. The child sees your message next time they open the game.</div>
+          <div class="form-row" style="align-items:flex-end;gap:.65rem;">
+            <div class="f-group">
+              <label class="f-label">GOLD</label>
+              <input type="number" id="award-gold-amt" class="fi sm" value="25" min="1" max="999" style="width:70px;" />
+            </div>
+            <div class="f-group" style="flex:1;">
+              <label class="f-label">MESSAGE TO CHILD</label>
+              <input type="text" id="award-gold-reason" class="fi wide" placeholder="e.g. Amazing focus today! You filled your whole token board!" maxlength="200" onkeydown="if(event.key==='Enter')awardGold()" />
+            </div>
+            <button class="btn btn-gold" onclick="awardGold()" style="align-self:flex-end;white-space:nowrap;">Give Gold 🪙</button>
+          </div>
+          <div id="award-gold-result" style="display:none;margin-top:.6rem;font-size:.82rem;padding:.45rem .7rem;border-radius:.5rem;"></div>
+        </div>
+
+        <div class="card" style="margin-top:1rem;background:rgba(58,190,202,.06);border:1.5px solid rgba(58,190,202,.25);">
+          <div class="card-title" style="color:var(--teal-dk);">🎮 Activate on Quest Board</div>
+          <div class="card-sub" style="margin-bottom:.75rem;">Set this client as the active profile on this device. The child can then open Quest Board and see their own game.</div>
+          <button class="btn btn-primary" onclick="activateOnQuestBoard()" id="activate-btn">Set Active on This Device</button>
+          <div id="activate-status" style="font-size:.75rem;color:#64748b;margin-top:.5rem;"></div>
+        </div>
+      </div>
+
+      <!-- TASKS -->
+      <div id="tab-tasks" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+          <div><p class="page-title">Tasks</p><p style="font-size:.82rem;color:#64748b;margin-top:.2rem;">Changes appear immediately in the child's Quest Board.</p></div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="ttab-habits" onclick="switchTaskTab('habits')">⚡ Habits</button>
+          <button class="btn btn-ghost"   id="ttab-dailies" onclick="switchTaskTab('dailies')">📅 Dailies</button>
+          <button class="btn btn-ghost"   id="ttab-todos"   onclick="switchTaskTab('todos')">✅ To-Dos</button>
+        </div>
+        <div class="card">
+          <p id="task-tab-desc" style="font-size:.78rem;color:#64748b;margin-bottom:1rem;line-height:1.6;"></p>
+          <table class="tbl"><thead><tr>
+            <th style="width:42%;">Task</th><th>Category</th><th>XP</th><th>Gold</th><th></th>
+          </tr></thead><tbody id="tasks-body"></tbody></table>
+          <div class="form-row">
+            <div class="f-group" style="flex:1;min-width:170px;">
+              <label class="f-label">TASK TEXT</label>
+              <input type="text" id="new-task-text" class="fi wide" placeholder="e.g. Asked for help nicely 🙋" maxlength="60" onkeydown="if(event.key==='Enter')addTask()" />
+            </div>
+            <div class="f-group">
+              <label class="f-label">CATEGORY</label>
+              <select id="new-task-cat" class="fi">
+                <option value="communication">💬 Communication</option>
+                <option value="social">👋 Social</option>
+                <option value="selfcare">🌟 Self-Care</option>
+                <option value="academic">📚 Academic</option>
+                <option value="behavior">🧠 Behavior</option>
+                <option value="other">⭐ Other</option>
+              </select>
+            </div>
+            <div class="f-group"><label class="f-label">XP</label><input type="number" id="new-task-xp"   class="fi sm" value="15" min="1" max="200" /></div>
+            <div class="f-group"><label class="f-label">GOLD</label><input type="number" id="new-task-gold" class="fi sm" value="8"  min="1" max="200" /></div>
+            <div class="f-group" id="limit-field-wrap"><label class="f-label">LIMIT/DAY</label><input type="number" id="new-task-limit" class="fi sm" value="1" min="1" max="10" /></div>
+            <button class="btn btn-primary" onclick="addTask()" style="align-self:flex-end;">+ Add Task</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REWARDS -->
+      <div id="tab-rewards" style="display:none;">
+        <p class="page-title">Real World Rewards</p>
+        <p class="page-sub">These appear in the child's game under "Special Rewards." When claimed, you'll see a notification here.</p>
+        <div class="info-box">💡 Add meaningful real-world incentives — extra screen time, a special outing, choosing dinner. Set the gold cost based on how much effort the reward requires. Raise costs as skills grow stronger.</div>
+
+        <!-- Claimed notifications -->
+        <div id="claimed-rewards-panel" style="display:none;margin-bottom:1rem;">
+          <div class="card" style="border-left:4px solid #f59e0b;">
+            <div style="font-weight:700;font-size:.88rem;margin-bottom:.6rem;color:#92400e;">Claimed Rewards — Action Needed</div>
+            <div id="claimed-rewards-list"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <table class="tbl"><thead><tr>
+            <th style="width:3rem;">Icon</th><th>Reward</th><th>Gold Cost</th><th>Status</th><th></th>
+          </tr></thead><tbody id="rewards-body"></tbody></table>
+          <div class="form-row">
+            <div class="f-group" style="flex:1;min-width:170px;">
+              <label class="f-label">REWARD NAME</label>
+              <input type="text" id="new-rwd-name" class="fi wide" placeholder="e.g. 30 min extra screen time" maxlength="50" onkeydown="if(event.key==='Enter')addReward()" />
+            </div>
+            <div class="f-group"><label class="f-label">ICON</label><input type="text" id="new-rwd-icon" class="fi sm" value="🎁" maxlength="2" style="text-align:center;font-size:1.1rem;" /></div>
+            <div class="f-group"><label class="f-label">GOLD COST</label><input type="number" id="new-rwd-cost" class="fi sm" value="50" min="1" max="9999" /></div>
+            <button class="btn btn-gold" onclick="addReward()" style="align-self:flex-end;">+ Add Reward</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div id="tab-clients" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+          <div><p class="page-title">Clients</p><p style="font-size:.82rem;color:#64748b;margin-top:.2rem;">Each client has their own profile, tasks, and rewards.</p></div>
+          <button class="btn btn-primary" onclick="openClientModal()">+ Add Client</button>
+        </div>
+        <div class="client-grid" id="client-grid"></div>
+      </div>
+
+      <!-- CLANS -->
+      <div id="tab-clans" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+          <div>
+            <p class="page-title">Clans</p>
+            <p style="font-size:.82rem;color:#64748b;margin-top:.2rem;">Group boss challenges — clients chip away together between sessions.</p>
+          </div>
+          <button class="btn btn-primary" onclick="toggleAdminCreateClan()">+ Create Clan</button>
+        </div>
+
+        <!-- Create clan form (hidden by default) -->
+        <div id="admin-clan-create-form" style="display:none;" class="card" style="border:1.5px solid rgba(58,190,202,.3);background:rgba(58,190,202,.04);margin-bottom:1rem;">
+          <div class="card-title">New Clan</div>
+          <div class="card-sub">Pick a name — share the join code with your clients.</div>
+          <div id="admin-clan-opts" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem;"></div>
+          <div class="f-group" style="margin-bottom:.75rem;">
+            <label class="f-label">BOSS FOCUS AREA</label>
+            <select id="new-clan-category" class="fi">
+              <option value="communication">💬 Communication</option>
+              <option value="social">👋 Social Skills</option>
+              <option value="selfcare">🌟 Self-Care</option>
+              <option value="behavior">🧠 Behavior</option>
+              <option value="academic">📚 Academic</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:.5rem;">
+            <button class="btn btn-ghost btn-sm" onclick="adminShuffleClanOpts()">🔀 Shuffle</button>
+            <button class="btn btn-primary btn-sm" onclick="adminCreateClan()">Create & Get Code</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleAdminCreateClan()">Cancel</button>
+          </div>
+        </div>
+
+        <div id="admin-clans-list"></div>
+
+        <!-- Per-client question management -->
+        <div id="boss-q-panel" style="margin-top:1.5rem;display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem;">
+            <div>
+              <div style="font-size:1rem;font-weight:800;color:var(--dark);">⚡ Boss Questions</div>
+              <div style="font-size:.78rem;color:#64748b;" id="boss-q-client-label">Custom questions override defaults for this client.</div>
+            </div>
+            <select id="boss-q-cat" class="fi" style="font-size:.8rem;" onchange="renderBossQuestionsPanel()">
+              <option value="communication">💬 Communication</option>
+              <option value="social">👋 Social Skills</option>
+              <option value="selfcare">🌟 Self-Care</option>
+              <option value="behavior">🧠 Behavior</option>
+              <option value="academic">📚 Academic</option>
+            </select>
+          </div>
+          <div class="card">
+            <div id="boss-q-defaults" style="margin-bottom:1rem;"></div>
+            <div style="border-top:1px solid #e2e8f0;padding-top:.85rem;">
+              <div style="font-size:.72rem;font-weight:700;color:var(--dark);letter-spacing:.04em;margin-bottom:.6rem;">CUSTOM QUESTIONS FOR <span id="boss-q-name-lbl"></span></div>
+              <div id="boss-q-custom-list" style="margin-bottom:.75rem;"></div>
+              <!-- Add form -->
+              <div style="background:#f8fafc;border:1.5px dashed #e2e8f0;border-radius:.65rem;padding:.85rem;display:flex;flex-direction:column;gap:.5rem;">
+                <input id="bq-new-q" class="fi" placeholder="Question text…" style="width:100%;" />
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;" id="bq-opts-grid">
+                  <input id="bq-opt0" class="fi" placeholder="Option A (correct)" style="border-color:rgba(22,163,74,.4);" />
+                  <input id="bq-opt1" class="fi" placeholder="Option B" />
+                  <input id="bq-opt2" class="fi" placeholder="Option C" />
+                  <input id="bq-opt3" class="fi" placeholder="Option D" />
+                </div>
+                <div style="font-size:.68rem;color:#94a3b8;">Option A is always the correct answer.</div>
+                <button class="btn btn-primary btn-sm" onclick="addClientQuestion()" style="align-self:flex-start;">+ Add Question</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GIFTS -->
+      <div id="tab-gifts" style="display:none;">
+        <p class="page-title">Gift Items</p>
+        <p class="page-sub">Send equipment or consumables directly to a client's inventory. Equipment is gated to their current zone level — higher-tier items unlock as they progress.</p>
+        <div id="gifts-no-client" class="info-box" style="display:none;">⚠️ Select a client from the sidebar first.</div>
+        <div id="gifts-content" style="display:none;">
+          <div id="gifts-client-banner" style="display:flex;align-items:center;gap:.75rem;background:rgba(58,190,202,.08);border:1px solid rgba(58,190,202,.2);border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1.25rem;">
+            <span id="gifts-client-emoji" style="font-size:1.6rem;"></span>
+            <div>
+              <div id="gifts-client-name" style="font-weight:700;font-size:.95rem;color:var(--dark);"></div>
+              <div id="gifts-client-meta" style="font-size:.72rem;color:#64748b;"></div>
+            </div>
+          </div>
+
+          <!-- Consumables -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div style="font-weight:700;font-size:.88rem;color:var(--dark);margin-bottom:.75rem;">🧪 Consumables</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.6rem;" id="gifts-consumables"></div>
+          </div>
+
+          <!-- Equipment by slot -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div style="font-weight:700;font-size:.88rem;color:var(--dark);margin-bottom:.4rem;">⚔️ Equipment</div>
+            <div style="font-size:.72rem;color:#94a3b8;margin-bottom:.85rem;">Only shows items at or below the client's current zone. Items already in their inventory are marked.</div>
+            <div id="gifts-equipment"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESS REPORT -->
+      <div id="tab-progress" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+          <div>
+            <p class="page-title">Progress Report</p>
+            <p style="font-size:.82rem;color:#64748b;margin-top:.2rem;">Skill acquisition, engagement, adventure progress, and Chirp history for the selected client.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="renderProgressTab()">↻ Refresh</button>
+        </div>
+        <div id="progress-no-client" class="info-box" style="display:none;">⚠️ Select a client from the sidebar first.</div>
+        <div id="progress-content">
+
+          <!-- Overview stats row -->
+          <div class="stat-grid" id="prog-stat-grid" style="margin-bottom:1.25rem;"></div>
+
+          <!-- Engagement & streak -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div class="card">
+              <div class="card-title">Engagement</div>
+              <div id="prog-engagement" style="margin-top:.5rem;"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Current Task List</div>
+              <div id="prog-tasks" style="margin-top:.5rem;font-size:.8rem;color:#64748b;"></div>
+            </div>
+          </div>
+
+          <!-- Chirp skill journey -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-title">🐾 Chirp Skill Journey</div>
+            <div class="card-sub">Packages completed and current progress.</div>
+            <div id="prog-chirp" style="margin-top:.5rem;"></div>
+          </div>
+
+          <!-- Adventure progress -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-title">🗺️ Adventure Progress</div>
+            <div class="card-sub">Zone, equipment, and inventory status.</div>
+            <div id="prog-adventure" style="margin-top:.5rem;"></div>
+          </div>
+
+          <!-- Completion calendar -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem;">
+              <div>
+                <div class="card-title">📅 Completion Calendar</div>
+                <div class="card-sub" id="prog-cal-sub" style="margin-bottom:0;">6-week habit and daily completion history.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:.85rem;flex-shrink:0;">
+              <select id="cal-range" class="fi" style="font-size:.75rem;padding:.3rem .55rem;" onchange="renderProgressTab()">
+                <option value="4">4 weeks</option>
+                <option value="6" selected>6 weeks</option>
+                <option value="8">8 weeks</option>
+                <option value="12">12 weeks</option>
+                <option value="24">6 months</option>
+              </select>
+              <div style="display:flex;align-items:center;gap:.65rem;font-size:.7rem;color:#64748b;">
+                <span><span class="cal-dot" style="display:inline-block;background:#3abeca;"></span> Habit</span>
+                <span><span class="cal-dot" style="display:inline-block;background:#F7941D;"></span> Daily</span>
+                <span><span class="cal-dot" style="display:inline-block;background:#6db33f;"></span> To-Do</span>
+              </div>
+            </div>
+            </div>
+            <div id="prog-calendar" style="margin-bottom:.85rem;"></div>
+            <div id="prog-cal-detail" style="display:none;">
+              <div style="font-size:.7rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.45rem;" id="prog-cal-detail-title"></div>
+              <div id="prog-cal-detail-list"></div>
+            </div>
+          </div>
+
+          <!-- Clan activity timeline -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-title">⚔️ Clan Participation</div>
+            <div class="card-sub" id="prog-clan-sub">Recent boss contributions.</div>
+            <div id="prog-clan" style="margin-top:.5rem;"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="tab-settings" style="display:none;">
+        <p class="page-title">Settings</p>
+        <p class="page-sub" style="margin-bottom:1.25rem;"></p>
+
+        <div class="card">
+          <div class="card-title">Development Stage</div>
+          <div class="card-sub">Controls how fast the child levels up. Adjust as their skills mature.</div>
+          <div class="diff-grid" id="diff-grid">
+            <div class="diff-card" data-scale="0.65" onclick="setDiff(0.65,this)">
+              <div style="font-size:1.8rem;margin-bottom:.3rem;">🌱</div>
+              <div style="font-size:.8rem;font-weight:800;color:var(--dark);margin-bottom:.2rem;">Early Learner</div>
+              <div style="font-size:.68rem;color:#64748b;line-height:1.5;">Levels up fast. High reinforcement for brand new skills.</div>
+            </div>
+            <div class="diff-card" data-scale="1" onclick="setDiff(1,this)">
+              <div style="font-size:1.8rem;margin-bottom:.3rem;">⚡</div>
+              <div style="font-size:.8rem;font-weight:800;color:var(--dark);margin-bottom:.2rem;">Building Skills</div>
+              <div style="font-size:.68rem;color:#64748b;line-height:1.5;">Balanced pacing. Good starting point for most clients.</div>
+            </div>
+            <div class="diff-card" data-scale="1.4" onclick="setDiff(1.4,this)">
+              <div style="font-size:1.8rem;margin-bottom:.3rem;">🔥</div>
+              <div style="font-size:.8rem;font-weight:800;color:var(--dark);margin-bottom:.2rem;">Emerging Independence</div>
+              <div style="font-size:.68rem;color:#64748b;line-height:1.5;">Higher bar. Builds persistence for maturing skills.</div>
+            </div>
+            <div class="diff-card" data-scale="2" onclick="setDiff(2,this)">
+              <div style="font-size:1.8rem;margin-bottom:.3rem;">💎</div>
+              <div style="font-size:.8rem;font-weight:800;color:var(--dark);margin-bottom:.2rem;">Independent</div>
+              <div style="font-size:.68rem;color:#64748b;line-height:1.5;">Significant challenge. For fluent, established skills.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Your Name for This Client</div>
+          <div class="card-sub">How you want to appear to this specific client. Each client can know you by a different name — "Mr. Smith" for one, "Coach Alex" for another.</div>
+          <input id="display-name-input" class="fi" type="text" style="width:100%;margin-bottom:.6rem;" placeholder="e.g. Mr. Van Loon, Mrs. Smith, Gerry…" maxlength="60" />
+          <button class="btn btn-primary" onclick="saveDisplayName()">Save Name</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Reward Notifications</div>
+          <div class="card-sub">When this client claims a real-world reward, an email is sent to everyone listed here. One address per line or comma-separated.</div>
+          <textarea id="notif-emails" class="fi" style="width:100%;height:76px;resize:vertical;font-size:.84rem;font-family:'Inter',sans-serif;padding:.55rem .7rem;border:1.5px solid #e2e8f0;border-radius:.6rem;line-height:1.6;" placeholder="parent@email.com&#10;bcba@email.com"></textarea>
+          <div style="display:flex;gap:.6rem;margin-top:.6rem;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="saveNotifEmails()">Save</button>
+            <button class="btn" style="background:#f1f5f9;color:#475569;border:1.5px solid #e2e8f0;" onclick="testNotification()">Send Test Email</button>
+          </div>
+          <div id="notif-test-result" style="display:none;margin-top:.6rem;padding:.5rem .75rem;border-radius:.5rem;font-size:.82rem;"></div>
+        </div>
+
+        <div class="card" style="border:1.5px solid #fee2e2;">
+          <div class="card-title" style="color:var(--red);">Danger Zone</div>
+          <div class="card-sub">For the currently selected client. Cannot be undone.</div>
+          <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
+            <button class="btn btn-danger" onclick="doConfirm('Reset Progress','Clear all XP, gold, level, and streak for this client. Tasks and rewards are kept.',resetProgress)">Reset Progress</button>
+            <button class="btn btn-danger" onclick="doConfirm('Clear All Tasks','Remove all habits, dailies, and to-dos for this client.',clearTasks)">Clear All Tasks</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /body-wrap -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════════════════════════
+const SUPA_URL = 'https://cstwsfqwdgqpkgzdcfev.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzdHdzZnF3ZGdxcGtnemRjZmV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4OTM3NzIsImV4cCI6MjA5MzQ2OTc3Mn0.xisL2SRSpKNOe8v_fHSvphuXtdwMrm0rcuPCswkjIYE';
+const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── STATE ──────────────────────────────────────────────────────────
+let currentUser    = null;
+let userProfile    = null;
+let children       = [];
+let activeChild    = null;
+let activeTasks    = { habits:[], dailies:[], todos:[] };
+let activeRewards  = [];
+let currentTaskTab = 'habits';
+let newClientChar  = 'fox';
+let isSignUp       = false;
+let _calByDate     = {};  // keyed by 'YYYY-MM-DD', value: array of completion rows
+let _calSelected   = null; // currently selected day key
+
+const CHARS = {
+  fox:  {emoji:'🦊', name:'Fiora Fox',  cls:'THE BRAVE',  bg:'linear-gradient(135deg,#f97316,#c2410c)'},
+  owl:  {emoji:'🦉', name:'Ollie Owl',  cls:'THE WISE',   bg:'linear-gradient(135deg,#7c3aed,#1d4ed8)'},
+  bear: {emoji:'🐻', name:'Benny Bear', cls:'THE STRONG', bg:'linear-gradient(135deg,#3abeca,#1d6d7d)'},
+  frog: {emoji:'🐸', name:'Finn Frog',  cls:'THE AGILE',  bg:'linear-gradient(135deg,#16a34a,#065f46)'},
+};
+const DIFF_LABELS    = {0.65:'🌱 Early Learner', 1:'⚡ Building Skills', 1.4:'🔥 Emerging Independence', 2:'💎 Independent'};
+const EQUIP_LEVEL_REQ = {1:1, 2:5, 3:10, 4:15, 5:20, 6:25};
+function itemLevelReq(item) { return item.dropZone ? (EQUIP_LEVEL_REQ[item.dropZone] || 1) : 1; }
+const SKILL_PACKAGES = [
+  {id:'calm-body',       name:'Calm Body',               icon:'🌬️', tier:1, tierName:'Foundations',    color:'#3abeca', desc:'Breathe through big feelings and calm your body'},
+  {id:'waiting-patience',name:'Waiting & Patience',      icon:'⏳', tier:1, tierName:'Foundations',    color:'#3abeca', desc:'Take turns and wait without losing it'},
+  {id:'using-words',     name:'Using My Words',          icon:'💬', tier:1, tierName:'Foundations',    color:'#3abeca', desc:'Say what you need clearly and kindly'},
+  {id:'asking-help',     name:'Asking for Help',         icon:'🙋', tier:1, tierName:'Foundations',    color:'#3abeca', desc:'Know when and how to ask for support'},
+  {id:'handling-mistakes',name:'Handling Mistakes',      icon:'💪', tier:2, tierName:'Building Skills', color:'#F7941D', desc:'Try again, own it, and grow from it'},
+  {id:'joining-play',    name:'Joining Play',            icon:'🤝', tier:2, tierName:'Building Skills', color:'#F7941D', desc:'Invite yourself in and include others too'},
+  {id:'managing-anger',  name:'Managing Anger',          icon:'😤', tier:2, tierName:'Building Skills', color:'#F7941D', desc:'Feel the heat without starting a fire'},
+  {id:'brave-choices',   name:'Brave Choices',           icon:'🦁', tier:2, tierName:'Building Skills', color:'#F7941D', desc:'Try anyway — one small step at a time'},
+  {id:'flexible-thinking',name:'Flexible Thinking',      icon:'🤸', tier:2, tierName:'Building Skills', color:'#F7941D', desc:'Bend, adapt, and find the new path'},
+  {id:'empathy-apology', name:'Empathy & Apologies',     icon:'💙', tier:3, tierName:'Growing Strong',  color:'#2c4a7c', desc:'Feel with others and repair what breaks'},
+  {id:'self-regulation-adv',name:'Advanced Self-Regulation',icon:'🧠',tier:3,tierName:'Growing Strong', color:'#2c4a7c', desc:'Know yourself and grow your emotional toolkit'},
+  {id:'problem-solving', name:'Problem Solving',         icon:'🔍', tier:3, tierName:'Growing Strong',  color:'#2c4a7c', desc:'Think it through and find a fair solution'},
+  {id:'good-friend',     name:'Being a Good Friend',     icon:'⭐', tier:3, tierName:'Growing Strong',  color:'#2c4a7c', desc:'Show up, listen, and celebrate each other'},
+  {id:'complex-social',  name:'Complex Social Situations',icon:'🎭', tier:4, tierName:'Master Hero',    color:'#fbbf24', desc:'Navigate the tough ones with wisdom and courage'},
+  {id:'leadership',      name:'Leadership & Advocacy',   icon:'🌟', tier:4, tierName:'Master Hero',    color:'#fbbf24', desc:'Lift others up and make things better for everyone'},
+];
+const CAT_BADGES  = {
+  communication:'<span class="badge badge-teal">💬 Communication</span>',
+  social:       '<span class="badge badge-green">👋 Social</span>',
+  selfcare:     '<span class="badge badge-orange">🌟 Self-Care</span>',
+  academic:     '<span class="badge badge-purple">📚 Academic</span>',
+  behavior:     '<span class="badge badge-red">🧠 Behavior</span>',
+  other:        '<span class="badge badge-gray">⭐ Other</span>',
+};
+const TASK_DESCS = {
+  habits:  'Habits can be done many times per day. Use for target skills to reinforce throughout sessions.',
+  dailies: 'Dailies reset each morning and track daily routine goals. Missing a day breaks the streak.',
+  todos:   'To-Dos are one-time tasks. The child completes them and they disappear.',
+};
+
+// ── OVERLAY HELPERS ───────────────────────────────────────────────
+function showOv(id) {
+  ['ov-auth','ov-setup','ov-loading'].forEach(o => document.getElementById(o).classList.toggle('hidden', o !== id));
+}
+function hideAllOv() {
+  ['ov-auth','ov-setup','ov-loading'].forEach(o => document.getElementById(o).classList.add('hidden'));
+}
+function setLoading(msg) { document.getElementById('loading-msg').textContent = msg||'Loading…'; showOv('ov-loading'); }
+
+// ── AUTH ──────────────────────────────────────────────────────────
+function toggleAuthMode() {
+  isSignUp = !isSignUp;
+  document.getElementById('auth-title').textContent   = isSignUp ? 'Create Account' : 'BCBA / Parent Sign In';
+  document.getElementById('auth-sub').textContent     = isSignUp ? 'Set up your Continuum ABA portal account' : 'Access the Quest Board admin portal';
+  document.getElementById('auth-submit-btn').textContent = isSignUp ? 'Create Account' : 'Sign In';
+  document.getElementById('auth-toggle').textContent  = isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create one";
+  document.getElementById('auth-err').textContent     = '';
+}
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+
+  setLoading(isSignUp ? 'Creating account…' : 'Signing in…');
+  try {
+    let result;
+    if (isSignUp) {
+      result = await db.auth.signUp({ email, password: pass });
+    } else {
+      result = await db.auth.signInWithPassword({ email, password: pass });
+    }
+    if (result.error) throw result.error;
+    currentUser = result.data.user;
+    await afterAuth();
+  } catch(e) {
+    hideAllOv(); showOv('ov-auth');
+    errEl.textContent = e.message || 'Authentication failed.';
+  }
+}
+
+async function afterAuth() {
+  if (!currentUser) return;
+  setLoading('Loading your profile…');
+  const { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+  if (!profile) {
+    hideAllOv(); showOv('ov-setup');
+  } else {
+    userProfile = profile;
+    await loadEverything();
+  }
+}
+
+async function setupSubmit() {
+  const name = document.getElementById('setup-name').value.trim();
+  const role = document.getElementById('setup-role').value;
+  if (!name) { document.getElementById('setup-err').textContent = 'Please enter your name.'; return; }
+  setLoading('Setting up your account…');
+  const { error } = await db.from('profiles').insert({ id: currentUser.id, full_name: name, role });
+  if (error) { hideAllOv(); showOv('ov-setup'); document.getElementById('setup-err').textContent = error.message; return; }
+  userProfile = { id: currentUser.id, full_name: name, role };
+  await loadEverything();
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  currentUser = null; userProfile = null; children = []; activeChild = null;
+  document.getElementById('app').classList.remove('active');
+  showOv('ov-auth');
+}
+
+// ── LOAD ──────────────────────────────────────────────────────────
+async function loadEverything() {
+  setLoading('Loading clients…');
+  await loadChildren();
+  hideAllOv();
+  document.getElementById('app').classList.add('active');
+  refreshAll();
+}
+
+async function loadChildren() {
+  // Two-step query — never join through auth.users (CLAUDE.md rule)
+  const { data: accessRows } = await db.from('child_access').select('child_id').eq('user_id', currentUser.id);
+  if (!accessRows || !accessRows.length) { children = []; return; }
+  const ids = accessRows.map(r => r.child_id);
+  const { data } = await db.from('child_profiles').select('*').in('id', ids).order('created_at');
+  children = data || [];
+  if (children.length && !activeChild) await selectClient(children[0].id);
+}
+
+async function selectClient(id) {
+  activeChild = children.find(c => c.id === id) || null;
+  if (!activeChild) return;
+  const { data: tasks }   = await db.from('tasks').select('*').eq('child_id', id).order('created_at');
+  const { data: rewards } = await db.from('rewards').select('*').eq('child_id', id).order('created_at');
+  activeTasks = {
+    habits:  (tasks||[]).filter(t => t.type==='habit'),
+    dailies: (tasks||[]).filter(t => t.type==='daily'),
+    todos:   (tasks||[]).filter(t => t.type==='todo'),
+  };
+  activeRewards = rewards || [];
+  document.getElementById('hdr-client').textContent = activeChild.name;
+  refreshAll();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+function refreshAll() {
+  renderDashboard();
+  renderRoadmap();
+  renderTasksTab();
+  renderRewardsTab();
+  renderClients();
+  renderGiftsTab();
+  syncDiffUI();
+  updateActivateStatus();
+  // Only eagerly render progress if the tab is visible
+  if (document.getElementById('tab-progress') && document.getElementById('tab-progress').style.display !== 'none') {
+    renderProgressTab();
+  }
+  const claimedCount = activeRewards.filter(r => r.claimed_at).length;
+  const badge = document.getElementById('rewards-badge');
+  if (badge) { badge.textContent = claimedCount; badge.style.display = claimedCount ? 'inline' : 'none'; }
+}
+
+function renderDashboard() {
+  if (!activeChild) {
+    document.getElementById('stat-grid').innerHTML='<div class="empty" style="grid-column:span 4">No clients yet. Add one in the Clients tab.</div>';
+    const petEl = document.getElementById('dash-pet');
+    if (petEl) petEl.innerHTML = '<p style="font-size:.8rem;color:#94a3b8;">No client selected.</p>';
+    return;
+  }
+  const ch = CHARS[activeChild.char]||CHARS.fox;
+  document.getElementById('dash-sub').textContent = ch.emoji+' '+activeChild.name+' · '+ch.name+' · '+ch.cls;
+
+  const scale   = activeChild.xp_scale||1;
+  const needed  = Math.round(activeChild.level*100*scale);
+  const xpPct   = Math.min(100,Math.round((activeChild.xp||0)/needed*100));
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-tile"><div class="stat-val" style="color:var(--teal);">${activeChild.level||1}</div><div class="stat-lbl">LEVEL</div></div>
+    <div class="stat-tile"><div class="stat-val" style="color:var(--green);">${activeChild.total_tasks||0}</div><div class="stat-lbl">TASKS DONE</div></div>
+    <div class="stat-tile"><div class="stat-val" style="color:var(--orange);">${activeChild.total_gold||0}</div><div class="stat-lbl">GOLD EARNED</div></div>
+    <div class="stat-tile"><div class="stat-val" style="color:var(--red);">${activeChild.streak||0}</div><div class="stat-lbl">DAY STREAK 🔥</div></div>`;
+  document.getElementById('xp-bar').style.width = xpPct+'%';
+  document.getElementById('xp-sub').textContent = `${activeChild.xp||0} / ${needed} XP to Level ${(activeChild.level||1)+1} (${xpPct}%)`;
+
+  const doneCount = activeTasks.dailies.filter(d=>d.done).length;
+  const totalD    = activeTasks.dailies.length;
+  document.getElementById('daily-prog').innerHTML = totalD===0
+    ? '<p style="font-size:.8rem;color:#94a3b8;">No dailies set.</p>'
+    : `<div style="font-size:2rem;font-weight:900;color:${doneCount===totalD?'var(--green)':'var(--dark)'};">${doneCount}<span style="font-size:1rem;color:#94a3b8;"> / ${totalD}</span></div>
+       <div style="font-size:.73rem;color:#64748b;margin-bottom:.55rem;">${doneCount===totalD?'All done today! 🎉':'completed today'}</div>
+       <div class="bar-track"><div class="bar-fill" style="background:linear-gradient(90deg,var(--green),#86efac);width:${totalD?Math.round(doneCount/totalD*100):0}%;"></div></div>`;
+  document.getElementById('dash-stage').innerHTML = `<div style="font-size:1rem;font-weight:800;color:var(--dark);">${DIFF_LABELS[scale]||'⚡ Building Skills'}</div><div style="font-size:.73rem;color:#64748b;margin-top:.2rem;">XP scale ×${scale}</div>`;
+
+  const petData   = activeChild.pet||{};
+  const pkgId     = activeChild.current_package||petData.packageId||'calm-body';
+  const pkg       = SKILL_PACKAGES.find(p=>p.id===pkgId)||SKILL_PACKAGES[0];
+  const progress  = (activeChild.package_progress||petData.packageProgress||[]).length;
+  const history   = (activeChild.package_history||petData.packageHistory||[]).length;
+  const notify    = activeChild.pending_notification === 'package_complete';
+  const petEl = document.getElementById('dash-pet');
+  if (petEl) petEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;margin-bottom:.2rem;">PET SKILL PACKAGE</div>
+        <div style="display:flex;align-items:center;gap:.45rem;">
+          <span style="font-size:1.3rem;">${pkg.icon}</span>
+          <div>
+            <div style="font-weight:800;color:var(--dark);font-size:.92rem;">${pkg.name}</div>
+            <div style="font-size:.7rem;color:#64748b;">${pkg.tierName} · Tier ${pkg.tier} · ${progress}/6 lessons done · ${history} package${history!==1?'s':''} complete</div>
+          </div>
+        </div>
+        ${notify?`<div style="margin-top:.5rem;display:inline-flex;align-items:center;gap:.35rem;background:#f0fdf4;border:1.5px solid #86efac;border-radius:.5rem;padding:.3rem .65rem;font-size:.72rem;font-weight:700;color:#166534;">✅ Package complete — auto-advanced to next in roadmap.</div>`:''}
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openPackageModal('${activeChild.id}')">🎯 Override Package</button>
+        <button class="btn btn-ghost btn-sm" onclick="generateCode('${activeChild.id}')">🔗 Link Code</button>
+      </div>
+    </div>`;
+}
+
+function renderTasksTab() {
+  document.getElementById('task-tab-desc').textContent = TASK_DESCS[currentTaskTab];
+  const list = activeTasks[currentTaskTab]||[];
+  const isHabits = currentTaskTab === 'habits';
+  const thead = document.querySelector('.tbl thead tr');
+  thead.innerHTML = isHabits
+    ? '<th style="width:38%;">Task</th><th>Category</th><th>XP</th><th>Gold</th><th>Limit/Day</th><th></th>'
+    : '<th style="width:42%;">Task</th><th>Category</th><th>XP</th><th>Gold</th><th></th>';
+  const tbody = document.getElementById('tasks-body');
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="${isHabits?6:5}" class="empty">No tasks yet. Add one below.</td></tr>`; return; }
+  tbody.innerHTML = list.map(t=>`
+    <tr>
+      <td><input class="ie" value="${esc(t.text)}" onchange="updateTask('${t.id}','text',this.value)" /></td>
+      <td>${CAT_BADGES[t.category||'other']}</td>
+      <td><input type="number" class="ie num" value="${t.xp}" min="1" max="200" onchange="updateTask('${t.id}','xp',+this.value)" /></td>
+      <td><input type="number" class="ie num" value="${t.gold}" min="1" max="200" onchange="updateTask('${t.id}','gold',+this.value)" /></td>
+      ${isHabits ? `<td><input type="number" class="ie num" value="${t.daily_limit||1}" min="1" max="10" onchange="updateTask('${t.id}','daily_limit',+this.value)" /></td>` : ''}
+      <td><button class="btn btn-danger btn-sm" onclick="removeTask('${t.id}')">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderRewardsTab() {
+  const tbody = document.getElementById('rewards-body');
+  const claimedPanel = document.getElementById('claimed-rewards-panel');
+  const claimedList  = document.getElementById('claimed-rewards-list');
+  const claimed = activeRewards.filter(r => r.claimed_at);
+  if (claimed.length) {
+    claimedPanel.style.display = 'block';
+    claimedList.innerHTML = claimed.map(r => `
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid #fde68a;">
+        <span style="font-size:1.2rem;">${r.icon}</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:.84rem;">${esc(r.text)}</div>
+          <div style="font-size:.72rem;color:#92400e;">Claimed ${new Date(r.claimed_at).toLocaleString()}</div>
+        </div>
+        <button class="btn btn-sm" style="background:#16a34a;color:white;border:none;" onclick="acknowledgeReward('${r.id}')">Acknowledge</button>
+      </div>`).join('');
+  } else {
+    claimedPanel.style.display = 'none';
+  }
+
+  if (!activeRewards.length) { tbody.innerHTML='<tr><td colspan="5" class="empty">No rewards yet. Add one below!</td></tr>'; return; }
+  tbody.innerHTML = activeRewards.map(r=>{
+    const isClaimed = !!r.claimed_at;
+    return `<tr${isClaimed?' style="background:#fffbeb;"':''}>
+      <td style="text-align:center;font-size:1.4rem;">${r.icon}</td>
+      <td><input class="ie" value="${esc(r.text)}" onchange="updateReward('${r.id}','text',this.value)" ${isClaimed?'disabled':''}/></td>
+      <td><input type="number" class="ie num" value="${r.cost}" min="1" max="9999" onchange="updateReward('${r.id}','cost',+this.value)" ${isClaimed?'disabled':''}/></td>
+      <td>${isClaimed?'<span style="font-size:.72rem;font-weight:700;color:#d97706;background:#fef3c7;padding:.2rem .5rem;border-radius:.4rem;">CLAIMED</span>':'<span style="font-size:.72rem;color:#64748b;">Available</span>'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeReward('${r.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function acknowledgeReward(id) {
+  await db.from('rewards').update({ claimed_at: null }).eq('id', id);
+  const r = activeRewards.find(x=>x.id===id);
+  if (r) r.claimed_at = null;
+  renderRewardsTab(); toast('Reward reset — available again!');
+}
+
+function renderClients() {
+  const grid = document.getElementById('client-grid');
+  if (!children.length) { grid.innerHTML='<div class="empty" style="grid-column:span 3">No clients yet. Click "+ Add Client" to get started.</div>'; return; }
+  grid.innerHTML = children.map(c=>{
+    const ch = CHARS[c.char]||CHARS.fox;
+    const isCur = activeChild && c.id===activeChild.id;
+    const pkgNotify = c.pending_notification === 'package_complete';
+    const petData   = c.pet || {};
+    const pkg = SKILL_PACKAGES.find(p=>p.id===(c.current_package||petData.packageId||'calm-body'))||SKILL_PACKAGES[0];
+    const progress  = (c.package_progress||petData.packageProgress||[]).length;
+    const pkgBadge  = pkgNotify
+      ? `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:.6rem;padding:.35rem .6rem;font-size:.68rem;font-weight:700;color:#166534;margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem;">✅ Package complete — auto-advanced</div>`
+      : '';
+    return `<div class="client-card${isCur?' active-client':''}">
+      <div class="client-avatar" style="background:${ch.bg};">${ch.emoji}</div>
+      <div style="font-weight:800;font-size:.93rem;margin-bottom:.15rem;">${esc(c.name)}</div>
+      <div style="font-size:.7rem;color:var(--teal);margin-bottom:.4rem;">${ch.cls}</div>
+      ${pkgBadge}
+      <div style="font-size:.68rem;color:#64748b;margin-bottom:.3rem;line-height:1.5;">Level ${c.level||1} · ${c.total_tasks||0} tasks · ${c.streak||0}🔥</div>
+      <div style="font-size:.67rem;color:${pkg.color};font-weight:600;margin-bottom:.65rem;">${pkg.icon} ${pkg.name} (${progress}/6)</div>
+      ${isCur
+        ? '<span class="badge badge-teal" style="margin-bottom:.4rem;display:block;">Selected</span>'
+        : `<button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:.4rem;" onclick="switchClient('${c.id}')">Select</button>`}
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:.3rem;" onclick="openPackageModal('${c.id}')">🎯 Set Skill Package</button>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:.3rem;" onclick="generateCode('${c.id}')">🔗 Generate Link Code</button>
+      <button class="btn btn-danger btn-sm" style="width:100%;" onclick="deleteClient('${c.id}')">Delete</button>
+    </div>`;
+  }).join('');
+}
+
+function syncDiffUI() {
+  const scale = activeChild ? (activeChild.xp_scale||1) : 1;
+  document.querySelectorAll('.diff-card').forEach(c => c.classList.toggle('active', parseFloat(c.dataset.scale)===scale));
+}
+
+// ── TASK OPERATIONS ───────────────────────────────────────────────
+function switchTaskTab(tab) {
+  currentTaskTab = tab;
+  ['habits','dailies','todos'].forEach(t => {
+    const btn = document.getElementById('ttab-'+t);
+    btn.className = t===tab ? 'btn btn-primary' : 'btn btn-ghost';
+  });
+  document.getElementById('limit-field-wrap').style.display = tab==='habits' ? '' : 'none';
+  renderTasksTab();
+}
+
+async function addTask() {
+  if (!activeChild) return;
+  const text = document.getElementById('new-task-text').value.trim();
+  if (!text) { document.getElementById('new-task-text').focus(); return; }
+  const cat  = document.getElementById('new-task-cat').value;
+  const xp   = Math.max(1,parseInt(document.getElementById('new-task-xp').value)||15);
+  const gold = Math.max(1,parseInt(document.getElementById('new-task-gold').value)||8);
+  const limit = currentTaskTab==='habits' ? Math.max(1,parseInt(document.getElementById('new-task-limit').value)||1) : 1;
+  const { data, error } = await db.from('tasks').insert({ child_id:activeChild.id, type:currentTaskTab==='todos'?'todo':currentTaskTab.slice(0,-1), text, category:cat, xp, gold, daily_limit:limit, done:false }).select().single();
+  if (error) { toast('Error adding task: '+error.message); return; }
+  activeTasks[currentTaskTab].push(data);
+  document.getElementById('new-task-text').value='';
+  renderTasksTab(); toast('Task added!');
+}
+
+async function updateTask(id, field, val) {
+  const { error } = await db.from('tasks').update({ [field]:val }).eq('id',id);
+  if (error) { toast('Save error: '+error.message); return; }
+  // Update local
+  for (const type of ['habits','dailies','todos']) {
+    const t = activeTasks[type].find(x=>x.id===id);
+    if (t) { t[field]=val; break; }
+  }
+}
+
+async function removeTask(id) {
+  await db.from('tasks').delete().eq('id',id);
+  for (const type of ['habits','dailies','todos']) {
+    activeTasks[type] = activeTasks[type].filter(x=>x.id!==id);
+  }
+  renderTasksTab(); toast('Task removed.');
+}
+
+// ── REWARD OPERATIONS ─────────────────────────────────────────────
+async function addReward() {
+  if (!activeChild) return;
+  const text = document.getElementById('new-rwd-name').value.trim();
+  if (!text) { document.getElementById('new-rwd-name').focus(); return; }
+  const icon = document.getElementById('new-rwd-icon').value||'🎁';
+  const cost = Math.max(1,parseInt(document.getElementById('new-rwd-cost').value)||30);
+  const { data, error } = await db.from('rewards').insert({ child_id:activeChild.id, text, icon, cost }).select().single();
+  if (error) { toast('Error: '+error.message); return; }
+  activeRewards.push(data);
+  document.getElementById('new-rwd-name').value='';
+  renderRewardsTab(); toast('Reward added!');
+}
+
+async function updateReward(id, field, val) {
+  await db.from('rewards').update({ [field]:val }).eq('id',id);
+  const r = activeRewards.find(x=>x.id===id);
+  if (r) r[field]=val;
+}
+
+async function removeReward(id) {
+  await db.from('rewards').delete().eq('id',id);
+  activeRewards = activeRewards.filter(x=>x.id!==id);
+  renderRewardsTab(); toast('Reward removed.');
+}
+
+// ── CLIENT MANAGEMENT ─────────────────────────────────────────────
+function openClientModal() {
+  newClientChar='fox';
+  document.getElementById('new-client-name').value='';
+  document.getElementById('client-err').textContent='';
+  document.querySelectorAll('#modal-chars > div').forEach(d=>d.style.borderColor='#e2e8f0');
+  document.getElementById('client-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('new-client-name').focus(),50);
+}
+function closeClientModal() { document.getElementById('client-modal').classList.add('hidden'); }
+function pickChar(key,el) {
+  newClientChar=key;
+  document.querySelectorAll('#modal-chars > div').forEach(d=>d.style.borderColor='#e2e8f0');
+  el.style.borderColor='var(--teal)';
+}
+
+async function createClient() {
+  const name = document.getElementById('new-client-name').value.trim();
+  if (!name) { document.getElementById('client-err').textContent='Please enter a name.'; return; }
+  setLoading('Creating client…');
+  closeClientModal();
+
+  const { data: child, error } = await db.from('child_profiles').insert({ name, char:newClientChar }).select().single();
+  if (error) { hideAllOv(); toast('Error: '+error.message); return; }
+
+  // Grant access
+  await db.from('child_access').insert({ user_id:currentUser.id, child_id:child.id, can_edit:true });
+
+  // Default tasks
+  await db.from('tasks').insert([
+    {child_id:child.id,type:'habit',text:'Used my words 💬',category:'communication',xp:12,gold:6,done:false},
+    {child_id:child.id,type:'habit',text:'Asked for help nicely 🙋',category:'communication',xp:12,gold:6,done:false},
+    {child_id:child.id,type:'habit',text:'Tried something new! ✨',category:'behavior',xp:15,gold:8,done:false},
+    {child_id:child.id,type:'daily',text:'Morning routine ☀️',category:'selfcare',xp:18,gold:10,done:false},
+    {child_id:child.id,type:'daily',text:'Practiced a social skill 👋',category:'social',xp:20,gold:12,done:false},
+    {child_id:child.id,type:'todo',text:'Read a book 📚',category:'academic',xp:25,gold:15,done:false},
+  ]);
+
+  // Default real-world rewards (edit costs to match what works for this client)
+  await db.from('rewards').insert([
+    {child_id:child.id,text:'30 min extra screen time',icon:'📱',cost:50},
+    {child_id:child.id,text:'Choose a special snack',icon:'🍦',cost:35},
+    {child_id:child.id,text:'Pick a fun activity',icon:'🎉',cost:75},
+  ]);
+
+  children.push(child);
+  await selectClient(child.id);
+  hideAllOv();
+  renderClients(); toast('Client "'+name+'" created!');
+}
+
+async function switchClient(id) {
+  setLoading('Loading client…');
+  await selectClient(id);
+  hideAllOv();
+  goTab('dashboard',document.querySelector('.nav-btn'));
+}
+
+function deleteClient(id) {
+  if (children.length<=1) { toast('Cannot delete the only client.'); return; }
+  doConfirm('Delete Client','This permanently removes this client and all their data.',async()=>{
+    await db.from('child_profiles').delete().eq('id',id);
+    children=children.filter(c=>c.id!==id);
+    if (activeChild&&activeChild.id===id) await selectClient(children[0].id);
+    renderClients(); toast('Client deleted.');
+  });
+}
+
+// ── ACTIVATE ON QUEST BOARD ───────────────────────────────────────
+function activateOnQuestBoard() {
+  if (!activeChild) return;
+  localStorage.setItem('qb2_active_child', activeChild.id);
+  localStorage.setItem('qb2_supa_url', SUPA_URL);
+  localStorage.setItem('qb2_supa_key', SUPA_KEY);
+  updateActivateStatus();
+  toast('Quest Board is now showing '+activeChild.name+'\'s profile!');
+}
+
+function updateActivateStatus() {
+  const cur = localStorage.getItem('qb2_active_child');
+  const el  = document.getElementById('activate-status');
+  if (cur && activeChild && cur===activeChild.id) {
+    el.textContent='✓ '+activeChild.name+' is currently active on this device.';
+    el.style.color='var(--green)';
+  } else if (cur) {
+    const other = children.find(c=>c.id===cur);
+    el.textContent = other ? '⚠ Another client ('+other.name+') is currently active.' : '⚠ Another client is currently active.';
+    el.style.color='var(--orange)';
+  } else {
+    el.textContent='No client is currently activated on this device.';
+    el.style.color='#94a3b8';
+  }
+}
+
+// ── SKILL ROADMAP ─────────────────────────────────────────────────
+let _dragSrcIdx = null;
+const TIER_COLORS    = {1:'#3abeca',2:'#F7941D',3:'#2c4a7c',4:'#fbbf24'};
+const TIER_TEXT      = {1:'white',  2:'white',  3:'white',  4:'#78350f'};
+const TIER_NAMES     = {1:'Foundations',2:'Building Skills',3:'Growing Strong',4:'Master Hero'};
+function tierBadge(tier) {
+  return `<span style="display:inline-flex;align-items:center;padding:.15rem .52rem;border-radius:999px;background:${TIER_COLORS[tier]};color:${TIER_TEXT[tier]};font-size:.62rem;font-weight:700;white-space:nowrap;">${TIER_NAMES[tier]}</span>`;
+}
+
+function _getQueue() {
+  const petData = activeChild?.pet || {};
+  return Array.isArray(petData.packageQueue) ? [...petData.packageQueue] : [];
+}
+
+function renderRoadmap() {
+  const el = document.getElementById('dash-roadmap');
+  if (!el) return;
+  if (!activeChild) { el.innerHTML=''; return; }
+
+  const petData   = activeChild.pet || {};
+  const curPkgId  = activeChild.current_package || petData.packageId || 'calm-body';
+  const queue     = _getQueue();
+  const history   = activeChild.package_history || petData.packageHistory || [];
+  const progress  = (activeChild.package_progress || petData.packageProgress || []).length;
+  const curPkg    = SKILL_PACKAGES.find(p => p.id === curPkgId) || SKILL_PACKAGES[0];
+
+  // Available = not in queue AND not the current package
+  const available = SKILL_PACKAGES.filter(p => p.id !== curPkgId && !queue.includes(p.id));
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.85rem;">
+      <div>
+        <div class="card-title" style="margin-bottom:.15rem;">🗺 Skill Roadmap</div>
+        <div class="card-sub">The order ${activeChild.name} will progress through skill areas. Children auto-advance — no approval needed. Drag to reorder.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex-shrink:0;">
+        ${[1,2,3,4].map(t=>`<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:600;color:#475569;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${TIER_COLORS[t]};flex-shrink:0;"></span>${TIER_NAMES[t]}
+        </span>`).join('')}
+      </div>
+    </div>
+
+    <div style="font-size:.62rem;font-weight:700;color:#94a3b8;letter-spacing:.08em;margin-bottom:.4rem;">NOW LEARNING</div>
+    <div style="display:flex;align-items:center;gap:.65rem;padding:.6rem .8rem;border-radius:.7rem;background:rgba(58,190,202,.08);border:2px solid var(--teal);margin-bottom:.9rem;">
+      <span style="font-size:1.3rem;flex-shrink:0;">${curPkg.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:.88rem;color:var(--dark);">${curPkg.name}</div>
+        <div style="display:flex;align-items:center;gap:.4rem;margin-top:.25rem;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TIER_COLORS[curPkg.tier]};flex-shrink:0;"></span><span style="font-size:.67rem;color:#64748b;">${progress}/6 lessons complete</span></div>
+      </div>
+      <span style="font-size:.65rem;font-weight:800;color:var(--teal);white-space:nowrap;background:rgba(58,190,202,.15);padding:.2rem .55rem;border-radius:999px;">ACTIVE</span>
+    </div>
+
+    <div style="font-size:.62rem;font-weight:700;color:#94a3b8;letter-spacing:.08em;margin-bottom:.4rem;">UP NEXT — DRAG TO REORDER</div>
+    <div id="roadmap-list" ondragover="event.preventDefault()" ondrop="roadmapDropEnd(event)">
+      ${queue.length === 0
+        ? `<div style="text-align:center;padding:.85rem;font-size:.78rem;color:#cbd5e1;border:2px dashed #e2e8f0;border-radius:.7rem;line-height:1.6;">
+             No packages queued yet.<br>Add from the list below — ${activeChild.name} will go through them in order automatically.
+           </div>`
+        : queue.map((id, i) => {
+            const p = SKILL_PACKAGES.find(x => x.id === id);
+            if (!p) return '';
+            const wasDone = history.includes(id);
+            return `<div class="roadmap-item" draggable="true" data-idx="${i}"
+                ondragstart="roadmapDragStart(event,${i})"
+                ondragover="roadmapDragOver(event,${i})"
+                ondragleave="roadmapDragLeave(event)"
+                ondrop="roadmapDrop(event,${i})">
+              <span class="roadmap-handle" title="Drag to reorder">⠿</span>
+              <span style="font-size:.63rem;font-weight:800;color:#94a3b8;min-width:1.3rem;text-align:right;">${i + 1}.</span>
+              <span style="font-size:1.1rem;flex-shrink:0;">${p.icon}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:.82rem;color:var(--dark);margin-bottom:.18rem;">${p.name}${wasDone ? ' <span style="font-size:.6rem;color:#94a3b8;font-weight:500;">(done before)</span>' : ''}</div>
+                <span style="font-size:.67rem;font-weight:600;color:${TIER_COLORS[p.tier]};">${TIER_NAMES[p.tier]}</span>
+              </div>
+              <button onclick="removeFromQueue(${i})" title="Remove from roadmap"
+                style="background:#fee2e2;border:none;border-radius:.4rem;padding:.22rem .5rem;cursor:pointer;font-size:.72rem;color:var(--red);font-weight:700;flex-shrink:0;transition:background .12s;"
+                onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">✕</button>
+            </div>`;
+          }).join('')}
+    </div>
+
+    ${available.length > 0 ? `
+    <div style="margin-top:.9rem;">
+      <div style="font-size:.62rem;font-weight:700;color:#94a3b8;letter-spacing:.08em;margin-bottom:.45rem;">ADD TO ROADMAP</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+        ${available.map(p => {
+          const wasDone = history.includes(p.id);
+          return `<button onclick="addToQueue('${p.id}')" title="${p.desc}"
+            style="display:inline-flex;align-items:center;gap:.3rem;padding:.35rem .75rem;border-radius:999px;border:none;background:${TIER_COLORS[p.tier]};color:${TIER_TEXT[p.tier]};font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;opacity:${wasDone?.75:1};transition:opacity .15s,filter .15s;"
+            onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
+            ${p.icon} ${p.name}${wasDone ? ' ↩' : ''}
+          </button>`;
+        }).join('')}
+      </div>
+      <div style="font-size:.67rem;color:#94a3b8;margin-top:.4rem;">↩ = completed before — will restart from lesson 1</div>
+    </div>` : `
+    <div style="font-size:.73rem;color:#94a3b8;margin-top:.75rem;text-align:center;">All packages are in the roadmap.</div>`}
+  `;
+}
+
+function roadmapDragStart(event, idx) {
+  _dragSrcIdx = idx;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => {
+    const el = document.querySelector(`.roadmap-item[data-idx="${idx}"]`);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+function roadmapDragOver(event, idx) {
+  event.preventDefault();
+  if (_dragSrcIdx === null || _dragSrcIdx === idx) return;
+  document.querySelectorAll('.roadmap-item').forEach(el => el.classList.remove('drag-over'));
+  const el = document.querySelector(`.roadmap-item[data-idx="${idx}"]`);
+  if (el) el.classList.add('drag-over');
+}
+function roadmapDragLeave(event) {
+  event.currentTarget.classList.remove('drag-over');
+}
+function roadmapDrop(event, toIdx) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.querySelectorAll('.roadmap-item').forEach(el => { el.classList.remove('drag-over'); el.classList.remove('dragging'); });
+  if (_dragSrcIdx === null || _dragSrcIdx === toIdx) { _dragSrcIdx = null; return; }
+  const q = _getQueue();
+  const [moved] = q.splice(_dragSrcIdx, 1);
+  q.splice(toIdx, 0, moved);
+  _dragSrcIdx = null;
+  applyQueueAndSave(q);
+}
+function roadmapDropEnd(event) {
+  event.preventDefault();
+  document.querySelectorAll('.roadmap-item').forEach(el => { el.classList.remove('drag-over'); el.classList.remove('dragging'); });
+}
+
+function addToQueue(pkgId) {
+  const q = _getQueue();
+  if (!q.includes(pkgId)) q.push(pkgId);
+  applyQueueAndSave(q);
+}
+function removeFromQueue(idx) {
+  const q = _getQueue();
+  q.splice(idx, 1);
+  applyQueueAndSave(q);
+}
+
+let _queueSaveTimer = null;
+async function applyQueueAndSave(newQueue) {
+  if (!activeChild) return;
+  const petData = activeChild.pet || {};
+  const newPet  = { ...petData, packageQueue: newQueue };
+  activeChild.pet = newPet;
+  renderRoadmap();
+  clearTimeout(_queueSaveTimer);
+  _queueSaveTimer = setTimeout(async () => {
+    const { error } = await db.from('child_profiles').update({ pet: newPet }).eq('id', activeChild.id);
+    if (error) toast('Error saving roadmap: ' + error.message);
+    else toast('Roadmap saved!');
+  }, 600);
+}
+
+// ── DIFFICULTY ────────────────────────────────────────────────────
+async function setDiff(scale, el) {
+  if (!activeChild) return;
+  const { error } = await db.from('child_profiles').update({ xp_scale:scale }).eq('id',activeChild.id);
+  if (error) { toast('Error: '+error.message); return; }
+  activeChild.xp_scale=scale;
+  document.querySelectorAll('.diff-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderDashboard(); toast('Stage updated: '+DIFF_LABELS[scale]);
+}
+
+// ── SETTINGS ACTIONS ──────────────────────────────────────────────
+async function resetProgress() {
+  if (!activeChild) return;
+  const updates = {level:1,xp:0,hp:50,max_hp:50,gold:0,streak:0,total_tasks:0,total_gold:0};
+  await db.from('child_profiles').update(updates).eq('id',activeChild.id);
+  Object.assign(activeChild,updates);
+  renderDashboard(); toast('Progress reset.');
+}
+
+async function clearTasks() {
+  if (!activeChild) return;
+  await db.from('tasks').delete().eq('child_id',activeChild.id);
+  activeTasks={habits:[],dailies:[],todos:[]};
+  renderTasksTab(); toast('Tasks cleared.');
+}
+
+// ── PACKAGE PICKER ────────────────────────────────────────────────
+let _packageTargetId = null;
+function openPackageModal(childId) {
+  _packageTargetId = childId;
+  const child  = children.find(c=>c.id===childId);
+  const petData = child?.pet||{};
+  const curPkgId = child?.current_package||petData.packageId||'calm-body';
+  const history  = child?.package_history||petData.packageHistory||[];
+  const list = document.getElementById('package-list');
+  const tiers = [1,2,3,4];
+  list.innerHTML = tiers.map(tier=>{
+    const pkgs = SKILL_PACKAGES.filter(p=>p.tier===tier);
+    return `<div style="margin-bottom:.6rem;">
+      <div style="font-size:.66rem;font-weight:700;color:#94a3b8;letter-spacing:.08em;margin-bottom:.35rem;">${pkgs[0].tierName.toUpperCase()} — TIER ${tier}</div>
+      ${pkgs.map(p=>{
+        const done    = history.includes(p.id);
+        const current = p.id===curPkgId;
+        return `<button onclick="setNextPackage('${p.id}')" style="display:flex;align-items:center;gap:.75rem;width:100%;text-align:left;background:${current?'rgba(58,190,202,.1)':done?'#f8fafc':'white'};border:2px solid ${current?'var(--teal)':done?'#e2e8f0':'#e2e8f0'};border-radius:.75rem;padding:.65rem .85rem;cursor:pointer;margin-bottom:.35rem;font-family:'Inter',sans-serif;transition:border-color .15s;" onmouseover="this.style.borderColor='${p.color}'" onmouseout="this.style.borderColor='${current?'var(--teal)':'#e2e8f0'}'">
+          <span style="font-size:1.35rem;flex-shrink:0;">${p.icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.85rem;font-weight:700;color:var(--dark);">${p.name}${current?' <span style="font-size:.65rem;color:var(--teal);font-weight:600;">CURRENT</span>':''}${done&&!current?' <span style="font-size:.65rem;color:#94a3b8;">✓ done</span>':''}</div>
+            <div style="font-size:.7rem;color:#64748b;">${p.desc}</div>
+          </div>
+        </button>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('package-modal').classList.remove('hidden');
+}
+function closePackageModal() {
+  document.getElementById('package-modal').classList.add('hidden');
+  _packageTargetId = null;
+}
+async function setNextPackage(pkgId) {
+  if (!_packageTargetId) return;
+  const child = children.find(c=>c.id===_packageTargetId);
+  if (!child) return;
+  const petData = child.pet||{};
+  const newPet  = {...petData, packageId:pkgId, packageProgress:[], packageHistory:petData.packageHistory||[]};
+  await db.from('child_profiles').update({
+    current_package: pkgId,
+    package_progress: [],
+    pending_notification: null,
+    pet: newPet,
+  }).eq('id', _packageTargetId);
+  child.current_package    = pkgId;
+  child.package_progress   = [];
+  child.pending_notification = null;
+  child.pet                = newPet;
+  closePackageModal();
+  renderClients();
+  if (activeChild && activeChild.id === _packageTargetId) {
+    activeChild.current_package = pkgId;
+    activeChild.package_progress = [];
+    activeChild.pending_notification = null;
+    activeChild.pet = newPet;
+    renderDashboard();
+  }
+  const pkg = SKILL_PACKAGES.find(p=>p.id===pkgId);
+  toast(`${pkg?.name||pkgId} assigned to ${child.name}!`);
+}
+
+// ── LINK CODE GENERATOR ───────────────────────────────────────────
+function closeCodeModal() {
+  document.getElementById('code-modal').classList.add('hidden');
+}
+async function generateCode(childId) {
+  const child = children.find(c=>c.id===childId);
+  if (!child) return;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random()*chars.length)];
+  const expires = new Date(Date.now() + 7*24*60*60*1000).toISOString();
+  const { error } = await db.from('child_profiles').update({
+    link_code: code,
+    link_code_expires: expires,
+  }).eq('id', childId);
+  if (error) { toast('Error generating code: '+error.message); return; }
+  child.link_code         = code;
+  child.link_code_expires = expires;
+  document.getElementById('code-client-name').textContent = child.name;
+  document.getElementById('code-display').textContent = code;
+  document.getElementById('code-expiry').textContent = 'Expires: ' + new Date(expires).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('code-modal').classList.remove('hidden');
+}
+
+// ── ADMIN CLANS ────────────────────────────────────────────────────
+const CLAN_BOSSES_ADMIN = [
+  {name:'Mudcrawler King',     emoji:'🐊', baseHp:80},
+  {name:'Stone Colossus',      emoji:'🗿', baseHp:130},
+  {name:'Tempest Drake',       emoji:'🌪️', baseHp:190},
+  {name:'Inferno Hydra',       emoji:'🐍', baseHp:260},
+  {name:'Titan Crab',          emoji:'🦀', baseHp:340},
+  {name:'Void Wraith',         emoji:'👻', baseHp:430},
+  {name:'Glacial Titan',       emoji:'🧊', baseHp:530},
+  {name:'The Eternal Phoenix', emoji:'🦅', baseHp:650},
+];
+const CLAN_ADJ_A   = ['Storm','Iron','Crystal','Shadow','Flame','Frost','Thunder','Golden','Silver','Brave','Mighty','Swift','Wise','Ancient','Cosmic','Emerald','Sapphire','Crimson','Blazing','Mystic'];
+const CLAN_ANI_A   = ['Ravens','Wolves','Eagles','Dragons','Lions','Tigers','Bears','Panthers','Foxes','Owls','Hawks','Falcons','Cobras','Sharks','Phoenixes'];
+const CLAN_ICO_A   = ['🐺','🦅','🐉','🦁','🐯','🐻','🦊','🦉','🔥','⚡','🌊','💎','⚔️','🛡️','🌿'];
+
+let adminClanData   = [];
+let _adminClanOpts  = [];
+let _adminClanPick  = null;
+
+function _adminGenCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function _adminGenClanOpts() {
+  const opts=[]; const used=new Set();
+  while(opts.length<5){
+    const adj=CLAN_ADJ_A[Math.floor(Math.random()*CLAN_ADJ_A.length)];
+    const ani=CLAN_ANI_A[Math.floor(Math.random()*CLAN_ANI_A.length)];
+    const ico=CLAN_ICO_A[Math.floor(Math.random()*CLAN_ICO_A.length)];
+    const k=adj+ani; if(!used.has(k)){used.add(k);opts.push({name:`${adj} ${ani}`,icon:ico});}
+  }
+  return opts;
+}
+
+async function loadAdminClanData() {
+  if (!children.length) { adminClanData=[]; return; }
+  const clientIds = children.map(c=>c.id);
+
+  const {data:myMembers} = await db.from('clan_members').select('clan_id,child_id,role').in('child_id',clientIds);
+  if (!myMembers?.length) { adminClanData=[]; return; }
+
+  const clanIds = [...new Set(myMembers.map(m=>m.clan_id))];
+  const [{data:clans},{data:allMem},{data:bosses},{data:contribs}] = await Promise.all([
+    db.from('clans').select('*').in('id',clanIds),
+    db.from('clan_members').select('clan_id,child_id,role').in('clan_id',clanIds),
+    db.from('clan_boss').select('*').in('clan_id',clanIds),
+    db.from('clan_contributions').select('clan_id,child_id,source,damage,created_at').in('clan_id',clanIds).order('created_at',{ascending:false}).limit(60),
+  ]);
+  const allIds = [...new Set((allMem||[]).map(m=>m.child_id))];
+  const {data:profiles} = await db.from('child_profiles').select('id,name,level,char').in('id',allIds);
+
+  adminClanData = (clans||[]).map(clan=>({
+    clan,
+    members:(allMem||[]).filter(m=>m.clan_id===clan.id).map(m=>({...m,profile:(profiles||[]).find(p=>p.id===m.child_id)||null})),
+    boss:(bosses||[]).find(b=>b.clan_id===clan.id)||null,
+    contribs:(contribs||[]).filter(c=>c.clan_id===clan.id),
+    myClientIds:clientIds,
+  }));
+}
+
+function renderAdminClans() {
+  const el = document.getElementById('admin-clans-list');
+  if (!el) return;
+  if (!adminClanData.length) {
+    el.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:#94a3b8;font-size:.85rem;">None of your clients are in a clan yet.<br>Create one above and share the join code.</div>`;
+    return;
+  }
+  el.innerHTML = adminClanData.map(({clan,members,boss,contribs,myClientIds}) => {
+    const bossMonster = boss ? (CLAN_BOSSES_ADMIN[boss.zone_num % CLAN_BOSSES_ADMIN.length]||CLAN_BOSSES_ADMIN[0]) : null;
+    const hpPct = boss ? Math.max(0,Math.round(boss.boss_hp/boss.boss_max_hp*100)) : 0;
+    const unassigned = children.filter(c=>!members.find(m=>m.child_id===c.id));
+
+    const memberChips = members.map(m=>{
+      const isMyClient = myClientIds.includes(m.child_id);
+      return `<span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:999px;background:${isMyClient?'rgba(58,190,202,.12)':'#f1f5f9'};font-size:.72rem;font-weight:600;color:${isMyClient?'var(--teal-dk)':'#64748b'};">
+        ${m.profile?.name||'Unknown'} Lv${m.profile?.level||1}${m.role==='leader'?' 👑':''}
+        ${isMyClient?`<button onclick="adminRemoveFromClan('${m.child_id}')" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:.7rem;padding:0;line-height:1;" title="Remove">✕</button>`:''}
+      </span>`;
+    }).join('');
+
+    const recentRows = contribs.slice(0,5).map(c=>{
+      const p = members.find(m=>m.child_id===c.child_id)?.profile;
+      const ago = _timeAgo(c.created_at);
+      return `<div style="display:flex;justify-content:space-between;font-size:.74rem;color:#64748b;padding:.18rem 0;">
+        <span>⚔️ <strong>${p?.name||'Member'}</strong> · ${c.source}</span>
+        <span style="color:#dc2626;font-weight:700;">−${c.damage} HP <span style="color:#cbd5e1;font-weight:400;">${ago}</span></span>
+      </div>`;
+    }).join('') || `<div style="font-size:.74rem;color:#cbd5e1;">No contributions yet</div>`;
+
+    const addDropdown = unassigned.length ? `
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;align-items:center;">
+        <select id="add-sel-${clan.id}" style="flex:1;padding:.4rem .6rem;border:1.5px solid #e2e8f0;border-radius:.55rem;font-size:.78rem;font-family:Inter,sans-serif;color:var(--dark);">
+          <option value="">Add a client…</option>
+          ${unassigned.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="adminAddToClan('${clan.id}','add-sel-${clan.id}')">Add</button>
+      </div>` : '';
+
+    return `<div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.85rem;">
+        <span style="font-size:1.8rem;">${clan.icon}</span>
+        <div style="flex:1;">
+          <div style="font-weight:900;font-size:.98rem;color:var(--dark);">${clan.name}</div>
+          <div style="font-size:.7rem;color:#94a3b8;">${members.length}/${clan.member_limit} members · ${clan.origin==='bcba'?'BCBA-created':'Player-created'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:.7rem;color:#94a3b8;margin-bottom:.2rem;">Join code</div>
+          <div style="font-size:.95rem;font-weight:900;letter-spacing:.12em;color:var(--teal-dk);cursor:pointer;" onclick="navigator.clipboard?.writeText('${clan.code}');toast('Copied!')">${clan.code} 📋</div>
+        </div>
+      </div>
+
+      ${boss && bossMonster ? `
+      <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:.75rem;padding:.7rem .85rem;margin-bottom:.85rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;">
+          <div style="font-weight:800;font-size:.85rem;color:#dc2626;">${bossMonster.emoji} ${bossMonster.name}</div>
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            ${(()=>{ const BCAT={communication:'💬 Communication',social:'👋 Social',selfcare:'🌟 Self-Care',behavior:'🧠 Behavior',academic:'📚 Academic'}; const lbl=BCAT[boss.category]||''; return lbl?`<span style="font-size:.62rem;font-weight:700;background:rgba(58,190,202,.12);color:var(--teal-dk);border-radius:999px;padding:.15rem .5rem;">${lbl}</span>`:''; })()}
+            <div style="font-size:.68rem;color:#94a3b8;">Boss ${(boss.zone_num%8)+1}/8${boss.encounter_num>0?' · Cycle '+(boss.encounter_num+1):''} · ${boss.defeated_count} defeated</div>
+          </div>
+        </div>
+        <div style="height:10px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;margin-bottom:.25rem;">
+          <div style="height:100%;width:${hpPct}%;border-radius:999px;background:linear-gradient(90deg,#ef4444,#fca5a5);transition:width .5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.67rem;color:#94a3b8;">
+          <span>❤️ ${boss.boss_hp.toLocaleString()} / ${boss.boss_max_hp.toLocaleString()} HP</span>
+          <span>${hpPct}% remaining</span>
+        </div>
+      </div>` : ''}
+
+      <div style="margin-bottom:.65rem;">
+        <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.45rem;">Members</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;">${memberChips}</div>
+        ${addDropdown}
+      </div>
+
+      ${contribs.length ? `
+      <div style="border-top:1px solid #f1f5f9;padding-top:.65rem;">
+        <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.35rem;">Recent Contributions</div>
+        ${recentRows}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleAdminCreateClan() {
+  const form = document.getElementById('admin-clan-create-form');
+  const showing = form.style.display !== 'none';
+  form.style.display = showing ? 'none' : 'block';
+  if (!showing) {
+    _adminClanOpts = _adminGenClanOpts();
+    _adminClanPick = null;
+    _renderAdminClanOpts();
+  }
+}
+function _renderAdminClanOpts() {
+  const el = document.getElementById('admin-clan-opts');
+  if (!el) return;
+  el.innerHTML = _adminClanOpts.map((o,i)=>`
+    <div onclick="_adminPickClan(${i})" style="display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-radius:.65rem;border:2px solid ${_adminClanPick===o?'var(--teal)':'#e2e8f0'};background:${_adminClanPick===o?'rgba(58,190,202,.07)':'white'};cursor:pointer;transition:border-color .15s;">
+      <span style="font-size:1.3rem;">${o.icon}</span>
+      <span style="font-weight:700;font-size:.88rem;color:var(--dark);">${o.name}</span>
+    </div>`).join('');
+}
+function _adminPickClan(i) { _adminClanPick=_adminClanOpts[i]; _renderAdminClanOpts(); }
+function adminShuffleClanOpts() { _adminClanOpts=_adminGenClanOpts(); _adminClanPick=null; _renderAdminClanOpts(); }
+
+async function adminCreateClan() {
+  if (!_adminClanPick) { toast('Pick a clan name first.'); return; }
+  const {name,icon} = _adminClanPick;
+  const category = document.getElementById('new-clan-category')?.value || 'communication';
+  const code = _adminGenCode();
+  const {data:clan,error} = await db.from('clans').insert({code,name,icon,origin:'bcba',created_by:currentUser.id}).select().single();
+  if (error) { toast('Error: '+error.message); return; }
+  const hp = CLAN_BOSSES_ADMIN[0].baseHp * 4;
+  await db.from('clan_boss').insert({clan_id:clan.id,zone_num:0,encounter_num:0,boss_hp:hp,boss_max_hp:hp,category});
+  toggleAdminCreateClan();
+  await loadAdminClanData();
+  renderAdminClans();
+  toast(`"${name}" created! Code: ${code} — share it with your clients.`);
+}
+
+async function adminAddToClan(clanId, selId) {
+  const clientId = document.getElementById(selId)?.value;
+  if (!clientId) return;
+  const {error} = await db.from('clan_members').insert({clan_id:clanId,child_id:clientId,role:'member'});
+  if (error) { toast(error.message.includes('unique')?'That client is already in a clan.':'Error: '+error.message); return; }
+  await loadAdminClanData(); renderAdminClans();
+}
+
+async function adminRemoveFromClan(clientId) {
+  if (!confirm('Remove this client from their clan?')) return;
+  await db.from('clan_members').delete().eq('child_id',clientId);
+  await loadAdminClanData(); renderAdminClans();
+}
+
+function _timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);
+  if (d>0) return d+'d ago';
+  if (h>0) return h+'h ago';
+  if (m>0) return m+'m ago';
+  return 'just now';
+}
+
+// ── NAV ───────────────────────────────────────────────────────────
+function goTab(tab, btn) {
+  ['dashboard','tasks','rewards','clients','clans','gifts','progress','settings'].forEach(t =>
+    document.getElementById('tab-'+t).style.display = t===tab?'block':'none');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab==='settings') { syncDiffUI(); populateSettingsTab(); }
+  if (tab==='clans')    { loadAdminClanData().then(renderAdminClans).then(renderBossQuestionsPanel); }
+  if (tab==='gifts')    { renderGiftsTab(); }
+  if (tab==='progress') { renderProgressTab(); }
+}
+
+// ── GIFTS ─────────────────────────────────────────────────────────
+const GIFT_CONSUMABLES = [
+  {id:'health-potion', icon:'🧪', name:'HP Potion',    desc:'Restore 20 HP'},
+  {id:'super-potion',  icon:'💊', name:'Super Potion', desc:'Restore 50 HP'},
+  {id:'mp-potion',     icon:'💧', name:'Mana Elixir',  desc:'Restore 15 MP'},
+  {id:'elixir',        icon:'✨', name:'Elixir',       desc:'Full HP + MP restore'},
+  {id:'xp-scroll',     icon:'📜', name:'XP Scroll',    desc:'Gain 30 bonus XP'},
+  {id:'pet-treat',     icon:'🍖', name:'Pet Treat',    desc:'+20 Pet XP'},
+];
+
+const GIFT_EQUIPMENT = [
+  {slot:'weapon',    label:'⚔️ Weapons',    items: ['rusty-sword','iron-sword','steel-blade','crystal-shard','storm-lance','dragon-fang','void-blade']},
+  {slot:'armor',     label:'🛡️ Armor',      items: ['leather-vest','chain-mail','enchanted-robe','storm-plate','dragon-scale','void-mantle']},
+  {slot:'helm',      label:'⛑️ Helms',      items: ['cloth-cap','iron-helm','enchanted-crown','storm-helm','dragon-crest','void-crown']},
+  {slot:'boots',     label:'👟 Boots',      items: ['worn-boots','iron-boots','enchanted-boots','storm-boots','dragon-boots','void-treads']},
+  {slot:'accessory', label:'💍 Accessories', items: ['lucky-charm','power-ring','mage-pendant','shield-brooch','berserker-ring','hero-amulet','void-eye']},
+];
+
+// dropZone → minimum level
+const ZONE_LEVEL = {1:1, 2:4, 3:7, 4:10, 5:13, 6:16};
+
+function _getAllItems() {
+  // Must match quest.html item tables — defined here for admin reference
+  return {
+    'rusty-sword':     {name:'Rusty Sword',      icon:'🗡️', dropZone:0},
+    'iron-sword':      {name:'Iron Sword',        icon:'⚔️', dropZone:1},
+    'steel-blade':     {name:'Steel Blade',       icon:'🔪', dropZone:2},
+    'crystal-shard':   {name:'Crystal Shard',     icon:'💎', dropZone:3},
+    'storm-lance':     {name:'Storm Lance',       icon:'⚡', dropZone:4},
+    'dragon-fang':     {name:'Dragon Fang',       icon:'🐉', dropZone:5},
+    'void-blade':      {name:'Void Blade',        icon:'🌑', dropZone:6},
+    'leather-vest':    {name:'Leather Vest',      icon:'🧥', dropZone:1},
+    'chain-mail':      {name:'Chain Mail',        icon:'⛓️', dropZone:2},
+    'enchanted-robe':  {name:'Enchanted Robe',    icon:'🌀', dropZone:3},
+    'storm-plate':     {name:'Storm Plate',       icon:'🛡️', dropZone:4},
+    'dragon-scale':    {name:'Dragon Scale',      icon:'🐲', dropZone:5},
+    'void-mantle':     {name:'Void Mantle',       icon:'🌌', dropZone:6},
+    'cloth-cap':       {name:'Cloth Cap',         icon:'🎩', dropZone:1},
+    'iron-helm':       {name:'Iron Helm',         icon:'⛑️', dropZone:2},
+    'enchanted-crown': {name:'Enchanted Crown',   icon:'👑', dropZone:3},
+    'storm-helm':      {name:'Storm Helm',        icon:'🔵', dropZone:4},
+    'dragon-crest':    {name:'Dragon Crest',      icon:'🐲', dropZone:5},
+    'void-crown':      {name:'Void Crown',        icon:'⚫', dropZone:6},
+    'worn-boots':      {name:'Worn Boots',        icon:'👟', dropZone:1},
+    'iron-boots':      {name:'Iron Boots',        icon:'🥾', dropZone:2},
+    'enchanted-boots': {name:'Enchanted Boots',   icon:'✨', dropZone:3},
+    'storm-boots':     {name:'Storm Boots',       icon:'⚡', dropZone:4},
+    'dragon-boots':    {name:'Dragon Boots',      icon:'🐉', dropZone:5},
+    'void-treads':     {name:'Void Treads',       icon:'🌑', dropZone:6},
+    'lucky-charm':     {name:'Lucky Charm',       icon:'🍀', dropZone:1},
+    'power-ring':      {name:'Power Ring',        icon:'💍', dropZone:2},
+    'mage-pendant':    {name:'Mage Pendant',      icon:'🔮', dropZone:2},
+    'shield-brooch':   {name:'Shield Brooch',     icon:'🔰', dropZone:3},
+    'berserker-ring':  {name:'Berserker Ring',    icon:'🔴', dropZone:4},
+    'hero-amulet':     {name:"Hero's Amulet",     icon:'⭐', dropZone:5},
+    'void-eye':        {name:'Void Eye',          icon:'👁️', dropZone:6},
+  };
+}
+
+function renderGiftsTab() {
+  const noClient = document.getElementById('gifts-no-client');
+  const content  = document.getElementById('gifts-content');
+  if (!activeChild) {
+    noClient.style.display = 'block'; content.style.display = 'none'; return;
+  }
+  noClient.style.display = 'none'; content.style.display = 'block';
+
+  const adv       = activeChild.adventure || {};
+  const inventory = adv.inventory || [];
+  const childZone = adv.zone || 1;
+  const childLevel= activeChild.level || 1;
+  const allItems  = _getAllItems();
+
+  // Banner
+  document.getElementById('gifts-client-emoji').textContent = activeChild.char === 'fox' ? '🦊' : activeChild.char === 'owl' ? '🦉' : activeChild.char === 'bear' ? '🐻' : '🐸';
+  document.getElementById('gifts-client-name').textContent  = activeChild.name || 'Unknown';
+  document.getElementById('gifts-client-meta').textContent  = `Level ${childLevel} · Zone ${childZone} · ${inventory.length} items in inventory`;
+
+  // Consumables
+  document.getElementById('gifts-consumables').innerHTML = GIFT_CONSUMABLES.map(c => `
+    <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:.65rem;padding:.6rem .75rem;display:flex;flex-direction:column;gap:.25rem;">
+      <div style="font-size:1.3rem;">${c.icon}</div>
+      <div style="font-weight:700;font-size:.8rem;color:var(--dark);">${c.name}</div>
+      <div style="font-size:.68rem;color:#94a3b8;flex:1;">${c.desc}</div>
+      <div style="display:flex;align-items:center;gap:.4rem;margin-top:.3rem;">
+        <input type="number" id="qty-${c.id}" value="1" min="1" max="20" style="width:44px;padding:.25rem;border:1px solid #e2e8f0;border-radius:.35rem;font-size:.8rem;text-align:center;" />
+        <button onclick="giftConsumable('${c.id}')" class="btn btn-primary btn-sm" style="flex:1;">Gift</button>
+      </div>
+    </div>`).join('');
+
+  // Equipment by slot
+  const equipHtml = GIFT_EQUIPMENT.map(group => {
+    const available = group.items.filter(id => {
+      const item = allItems[id];
+      if (!item) return false;
+      const minLevel = ZONE_LEVEL[item.dropZone] || 1;
+      return childLevel >= minLevel;
+    });
+    if (!available.length) return `<div style="margin-bottom:.9rem;"><div style="font-weight:700;font-size:.8rem;color:#94a3b8;margin-bottom:.4rem;">${group.label}</div><div style="font-size:.75rem;color:#cbd5e1;font-style:italic;">Locked — client needs higher level</div></div>`;
+
+    return `<div style="margin-bottom:.9rem;">
+      <div style="font-weight:700;font-size:.8rem;color:var(--dark);margin-bottom:.4rem;">${group.label}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+        ${available.map(id => {
+          const item = allItems[id];
+          const inInv = inventory.some(i => i.id === id);
+          const equipped = adv.equipment && Object.values(adv.equipment).includes(id);
+          const badge = equipped ? '<span style="font-size:.6rem;background:#16a34a;color:white;border-radius:999px;padding:.1rem .35rem;font-weight:700;">EQUIPPED</span>' : inInv ? '<span style="font-size:.6rem;background:#e2e8f0;color:#64748b;border-radius:999px;padding:.1rem .35rem;font-weight:700;">IN BAG</span>' : '';
+          return `<button onclick="giftEquipment('${id}')" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .6rem;background:${inInv||equipped?'rgba(22,163,74,.06)':'#f8fafc'};border:1.5px solid ${inInv||equipped?'rgba(22,163,74,.25)':'#e2e8f0'};border-radius:.5rem;cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:600;color:var(--dark);transition:background .12s;">
+            <span>${item.icon}</span><span>${item.name}</span>${badge}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('gifts-equipment').innerHTML = equipHtml;
+}
+
+async function giftConsumable(itemId) {
+  if (!activeChild) return;
+  const qty = Math.max(1, Math.min(20, parseInt(document.getElementById('qty-'+itemId).value) || 1));
+  const adv = JSON.parse(JSON.stringify(activeChild.adventure || {}));
+  if (!adv.inventory) adv.inventory = [];
+  const existing = adv.inventory.find(i => i.id === itemId);
+  if (existing) existing.qty = (existing.qty || 1) + qty;
+  else adv.inventory.push({id: itemId, qty});
+  const { error } = await db.from('child_profiles').update({ adventure: adv }).eq('id', activeChild.id);
+  if (error) { toast('Error: ' + error.message); return; }
+  activeChild.adventure = adv;
+  toast(`Gifted ${qty}× ${GIFT_CONSUMABLES.find(c=>c.id===itemId)?.name || itemId} to ${activeChild.name}!`);
+  renderGiftsTab();
+}
+
+async function giftEquipment(itemId) {
+  if (!activeChild) return;
+  const adv = JSON.parse(JSON.stringify(activeChild.adventure || {}));
+  if (!adv.inventory) adv.inventory = [];
+  const existing = adv.inventory.find(i => i.id === itemId);
+  if (existing) { toast(`${activeChild.name} already has this item.`); return; }
+  adv.inventory.push({id: itemId, qty: 1});
+  const { error } = await db.from('child_profiles').update({ adventure: adv }).eq('id', activeChild.id);
+  if (error) { toast('Error: ' + error.message); return; }
+  activeChild.adventure = adv;
+  const item = _getAllItems()[itemId];
+  toast(`Gifted ${item?.icon || ''} ${item?.name || itemId} to ${activeChild.name}!`);
+  renderGiftsTab();
+}
+
+// ── PROGRESS REPORT ────────────────────────────────────────────────
+async function renderProgressTab() {
+  const noClient = document.getElementById('progress-no-client');
+  const content  = document.getElementById('progress-content');
+  if (!activeChild) {
+    noClient.style.display = 'block';
+    content.style.display  = 'none';
+    return;
+  }
+  noClient.style.display = 'none';
+  content.style.display  = 'block';
+
+  const ch    = CHARS[activeChild.char] || CHARS.fox;
+  const scale = activeChild.xp_scale || 1;
+  const needed = Math.round((activeChild.level || 1) * 100 * scale);
+  const xpPct  = Math.min(100, Math.round(((activeChild.xp || 0) / needed) * 100));
+
+  // ── STAT TILES ──────────────────────────────────────────────────
+  document.getElementById('prog-stat-grid').innerHTML = `
+    <div class="stat-tile">
+      <div class="stat-val" style="color:var(--teal);">${activeChild.level || 1}</div>
+      <div class="stat-lbl">LEVEL</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-val" style="color:var(--green);">${activeChild.total_tasks || 0}</div>
+      <div class="stat-lbl">TASKS COMPLETED</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-val" style="color:var(--orange);">${activeChild.total_gold || 0}</div>
+      <div class="stat-lbl">GOLD EARNED</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-val" style="color:var(--red);">${activeChild.streak || 0}</div>
+      <div class="stat-lbl">DAY STREAK 🔥</div>
+    </div>`;
+
+  // ── ENGAGEMENT ──────────────────────────────────────────────────
+  const lastDate = activeChild.last_date ? new Date(activeChild.last_date) : null;
+  const daysSince = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / 86400000) : null;
+  const engagementColor = daysSince === null ? '#94a3b8' : daysSince === 0 ? '#16a34a' : daysSince <= 2 ? '#f59e0b' : '#ef4444';
+  const engagementLabel = daysSince === null ? 'Never opened' : daysSince === 0 ? 'Active today' : `${daysSince} day${daysSince !== 1 ? 's' : ''} since last session`;
+  document.getElementById('prog-engagement').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:.5rem;">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${engagementColor};flex-shrink:0;"></div>
+        <span style="font-size:.85rem;font-weight:700;color:${engagementColor};">${engagementLabel}</span>
+      </div>
+      ${lastDate ? `<div style="font-size:.73rem;color:#94a3b8;">Last session: ${lastDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>` : ''}
+      <div style="margin-top:.4rem;">
+        <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.25rem;">XP PROGRESS TO LEVEL ${(activeChild.level || 1) + 1}</div>
+        <div style="display:flex;align-items:center;gap:.65rem;">
+          <div class="bar-track" style="flex:1;height:10px;"><div class="bar-fill" style="background:linear-gradient(90deg,#6db33f,#86efac);width:${xpPct}%;"></div></div>
+          <span style="font-size:.72rem;font-weight:700;color:#64748b;flex-shrink:0;">${xpPct}%</span>
+        </div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:.2rem;">${activeChild.xp || 0} / ${needed} XP</div>
+      </div>
+      <div style="font-size:.73rem;color:#64748b;">Development stage: <strong>${DIFF_LABELS[scale] || '⚡ Building Skills'}</strong></div>
+    </div>`;
+
+  // ── TASK SUMMARY ────────────────────────────────────────────────
+  const allTasks = [...(activeTasks.habits||[]), ...(activeTasks.dailies||[]), ...(activeTasks.todos||[])];
+  const taskRows = [
+    { label: '⚡ Habits',  tasks: activeTasks.habits  || [], color: 'var(--teal)' },
+    { label: '📅 Dailies', tasks: activeTasks.dailies || [], color: 'var(--orange)' },
+    { label: '✅ To-Dos',  tasks: activeTasks.todos   || [], color: 'var(--green)' },
+  ];
+  document.getElementById('prog-tasks').innerHTML = !allTasks.length
+    ? '<p style="color:#94a3b8;font-size:.78rem;">No tasks configured yet.</p>'
+    : taskRows.map(r => r.tasks.length ? `
+        <div style="margin-bottom:.55rem;">
+          <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.25rem;">${r.label} (${r.tasks.length})</div>
+          <div style="display:flex;flex-direction:column;gap:.2rem;">
+            ${r.tasks.slice(0,5).map(t => `<div style="font-size:.78rem;color:#475569;">• ${t.text}</div>`).join('')}
+            ${r.tasks.length > 5 ? `<div style="font-size:.7rem;color:#94a3b8;font-style:italic;">+${r.tasks.length - 5} more…</div>` : ''}
+          </div>
+        </div>` : '').join('');
+
+  // ── CHIRP SKILL JOURNEY ─────────────────────────────────────────
+  const petData    = activeChild.pet || {};
+  const pkgId      = activeChild.current_package || petData.packageId || 'calm-body';
+  const currPkg    = SKILL_PACKAGES.find(p => p.id === pkgId) || SKILL_PACKAGES[0];
+  const progress   = activeChild.package_progress || petData.packageProgress || [];
+  const history    = activeChild.package_history  || petData.packageHistory  || [];
+  const totalCorrect = activeChild.total_correct  || petData.totalCorrect    || 0;
+  const historyPkgs = history.map(id => SKILL_PACKAGES.find(p => p.id === id)).filter(Boolean);
+  const tiers = [1,2,3,4];
+  const tierNames = {1:'Foundations', 2:'Building Skills', 3:'Growing Strong', 4:'Master Hero'};
+  const tierColors = {1:'var(--teal)', 2:'var(--orange)', 3:'var(--navy)', 4:'var(--gold)'};
+  const completedSet = new Set(history);
+
+  const chirpHtml = `
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;padding:.75rem;background:#f0fafb;border-radius:.65rem;border:1px solid rgba(58,190,202,.2);">
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-size:2rem;font-weight:900;color:var(--teal);">${history.length}</div>
+        <div style="font-size:.65rem;color:#64748b;font-weight:700;">PACKAGES<br>COMPLETED</div>
+      </div>
+      <div style="width:1px;height:40px;background:#e2e8f0;flex-shrink:0;"></div>
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-size:2rem;font-weight:900;color:var(--green);">${totalCorrect}</div>
+        <div style="font-size:.65rem;color:#64748b;font-weight:700;">TOTAL CORRECT<br>ANSWERS</div>
+      </div>
+      <div style="width:1px;height:40px;background:#e2e8f0;flex-shrink:0;"></div>
+      <div style="flex:1;min-width:180px;">
+        <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.3rem;">CURRENT PACKAGE</div>
+        <div style="display:flex;align-items:center;gap:.4rem;">
+          <span style="font-size:1.2rem;">${currPkg.icon}</span>
+          <div>
+            <div style="font-weight:800;font-size:.88rem;color:var(--dark);">${currPkg.name}</div>
+            <div style="font-size:.7rem;color:#64748b;">${currPkg.tierName} · ${progress.length}/6 lessons done</div>
+          </div>
+        </div>
+        <div class="bar-track" style="margin-top:.45rem;"><div class="bar-fill" style="background:linear-gradient(90deg,${currPkg.color},#86efac);width:${Math.round(progress.length/6*100)}%;"></div></div>
+      </div>
+    </div>
+    ${tiers.map(tier => {
+      const pkgsInTier = SKILL_PACKAGES.filter(p => p.tier === tier);
+      const doneInTier = pkgsInTier.filter(p => completedSet.has(p.id)).length;
+      return `<div style="margin-bottom:.85rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
+          <span style="font-size:.68rem;font-weight:700;color:${tierColors[tier]};letter-spacing:.05em;">TIER ${tier} — ${tierNames[tier].toUpperCase()}</span>
+          <span style="font-size:.65rem;color:#94a3b8;">${doneInTier}/${pkgsInTier.length} complete</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;">
+          ${pkgsInTier.map(p => {
+            const done = completedSet.has(p.id);
+            const isCurrent = p.id === pkgId;
+            const pct = isCurrent ? Math.round(progress.length/6*100) : done ? 100 : 0;
+            return `<div style="display:flex;align-items:center;gap:.35rem;padding:.3rem .6rem;border-radius:.5rem;border:1.5px solid ${done?'rgba(109,179,63,.4)':isCurrent?`${p.color}55`:'#e2e8f0'};background:${done?'rgba(109,179,63,.08)':isCurrent?`${p.color}11`:'#f8fafc'};">
+              <span style="font-size:.85rem;">${p.icon}</span>
+              <div>
+                <div style="font-size:.73rem;font-weight:700;color:${done?'#166534':isCurrent?p.color:'#94a3b8'};">${p.name}</div>
+                ${isCurrent ? `<div style="font-size:.62rem;color:#64748b;">${progress.length}/6 · ${pct}%</div>` : done ? `<div style="font-size:.62rem;color:#16a34a;">✓ Complete</div>` : `<div style="font-size:.62rem;color:#d1d5db;">Not started</div>`}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('')}`;
+  document.getElementById('prog-chirp').innerHTML = chirpHtml;
+
+  // ── ADVENTURE PROGRESS ──────────────────────────────────────────
+  const adv = activeChild.adventure || {};
+  const zone = adv.zone || 1;
+  const equipment = adv.equipment || {};
+  const inventory = adv.inventory || [];
+  const bossesDefeated = adv.bossesDefeated || 0;
+  const allItems = _getAllItems();
+  const ZONE_NAMES = {1:'Whispering Glade',2:'Sunken Ruins',3:'Crystal Caverns',4:'Storm Peaks',5:'Dragon\'s Lair',6:'Void Realm'};
+  const SLOT_LABELS = {weapon:'⚔️ Weapon',armor:'🛡️ Armor',helm:'⛑️ Helm',boots:'👟 Boots',accessory:'💍 Accessory'};
+  const equippedItems = Object.entries(equipment).map(([slot, id]) => {
+    const item = allItems[id];
+    return item ? `<div style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .55rem;background:rgba(58,190,202,.08);border:1px solid rgba(58,190,202,.25);border-radius:.45rem;font-size:.75rem;font-weight:600;color:var(--dark);margin:.2rem;">
+      <span>${item.icon}</span><span>${item.name}</span><span style="font-size:.62rem;color:#94a3b8;">${SLOT_LABELS[slot]||slot}</span>
+    </div>` : '';
+  }).join('');
+  const bagItems = inventory.filter(i => !Object.values(equipment).includes(i.id));
+  document.getElementById('prog-adventure').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:.9rem;">
+      <div style="text-align:center;padding:.65rem;background:#f8fafc;border-radius:.6rem;border:1px solid #e2e8f0;">
+        <div style="font-size:1.6rem;font-weight:900;color:var(--teal);">${zone}</div>
+        <div style="font-size:.65rem;color:#64748b;font-weight:700;">CURRENT ZONE</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:.1rem;">${ZONE_NAMES[zone]||'Zone '+zone}</div>
+      </div>
+      <div style="text-align:center;padding:.65rem;background:#f8fafc;border-radius:.6rem;border:1px solid #e2e8f0;">
+        <div style="font-size:1.6rem;font-weight:900;color:var(--orange);">${bossesDefeated}</div>
+        <div style="font-size:.65rem;color:#64748b;font-weight:700;">BOSSES DEFEATED</div>
+      </div>
+      <div style="text-align:center;padding:.65rem;background:#f8fafc;border-radius:.6rem;border:1px solid #e2e8f0;">
+        <div style="font-size:1.6rem;font-weight:900;color:var(--green);">${bagItems.length}</div>
+        <div style="font-size:.65rem;color:#64748b;font-weight:700;">ITEMS IN BAG</div>
+      </div>
+    </div>
+    <div style="margin-bottom:.6rem;">
+      <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.35rem;">EQUIPPED GEAR</div>
+      ${equippedItems || '<div style="font-size:.78rem;color:#94a3b8;font-style:italic;">No equipment equipped yet.</div>'}
+    </div>
+    ${bagItems.length ? `<div>
+      <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.35rem;">INVENTORY</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;">
+        ${bagItems.slice(0,12).map(i => {
+          const item = allItems[i.id] || {icon:'?',name:i.id};
+          return `<div style="display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .55rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:.45rem;font-size:.75rem;color:#475569;">
+            ${item.icon} ${item.name}${(i.qty>1)?` ×${i.qty}`:''}
+          </div>`;
+        }).join('')}
+        ${bagItems.length > 12 ? `<div style="font-size:.7rem;color:#94a3b8;font-style:italic;padding:.25rem .5rem;">+${bagItems.length-12} more</div>` : ''}
+      </div>
+    </div>` : ''}`;
+
+  // ── COMPLETION CALENDAR ─────────────────────────────────────────
+  const calEl  = document.getElementById('prog-calendar');
+  const calSub = document.getElementById('prog-cal-sub');
+  calEl.innerHTML = '<div style="font-size:.78rem;color:#94a3b8;">Loading…</div>';
+  _calSelected = null;
+  document.getElementById('prog-cal-detail').style.display = 'none';
+
+  const nowCal = new Date(); nowCal.setHours(23,59,59,999);
+  const todayKey = nowCal.getFullYear()+'-'+String(nowCal.getMonth()+1).padStart(2,'0')+'-'+String(nowCal.getDate()).padStart(2,'0');
+
+  // Determine date range from the range picker (defaults to 6 weeks ending today)
+  const calRangeEl = document.getElementById('cal-range');
+  const calWeeks   = calRangeEl ? parseInt(calRangeEl.value) || 6 : 6;
+
+  // End grid on the Sunday at or after today so today is never clipped
+  const gridEnd = new Date(nowCal);
+  const endDow  = gridEnd.getDay();
+  if (endDow !== 0) gridEnd.setDate(gridEnd.getDate() + (7 - endDow));
+
+  // Start grid: calWeeks full weeks back from gridEnd
+  const gridStart = new Date(gridEnd);
+  gridStart.setDate(gridStart.getDate() - (calWeeks * 7 - 1));
+  gridStart.setHours(0,0,0,0);
+
+  const { data: completions } = await db.from('task_completions')
+    .select('task_text, task_type, category, completed_at')
+    .eq('child_id', activeChild.id)
+    .gte('completed_at', gridStart.toISOString())
+    .order('completed_at', { ascending: true });
+
+  _calByDate = {};
+  (completions || []).forEach(c => {
+    const d = new Date(c.completed_at);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if (!_calByDate[key]) _calByDate[key] = [];
+    _calByDate[key].push(c);
+  });
+
+  const totalCompletions = Object.values(_calByDate).reduce((s,a)=>s+a.length,0);
+  calSub.textContent = completions?.length
+    ? `${totalCompletions} completions across ${calWeeks} weeks — click any day for details.`
+    : `No completions logged in the last ${calWeeks} weeks yet.`;
+
+  // Pre-compute which week rows need month labels
+  const totalCells = calWeeks * 7;
+  const weekLabels = {};
+  for (let i = 0; i < totalCells; i += 7) {
+    const ws = new Date(gridStart); ws.setDate(ws.getDate() + i);
+    if (i === 0) {
+      weekLabels[0] = ws.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    } else {
+      for (let j = 0; j < 7; j++) {
+        const wd = new Date(gridStart); wd.setDate(wd.getDate() + i + j);
+        if (wd.getDate() === 1) {
+          weekLabels[i] = wd.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+          break;
+        }
+      }
+    }
+  }
+
+  let calHtml = '<div class="cal-grid">';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    calHtml += `<div class="cal-dow">${d}</div>`;
+  });
+
+  for (let i = 0; i < totalCells; i++) {
+    // Month label row
+    if (i % 7 === 0 && weekLabels[i]) {
+      calHtml += `<div style="grid-column:span 7;font-size:.72rem;font-weight:800;color:var(--dark);letter-spacing:.03em;padding:${i>0?'.6rem':'.1rem'} .2rem .15rem;border-top:${i>0?'1px solid #e2e8f0':'none'};margin-top:${i>0?'.25rem':'0'};">${weekLabels[i]}</div>`;
+    }
+
+    const d = new Date(gridStart); d.setDate(d.getDate() + i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const entries = _calByDate[key] || [];
+    const count = entries.length;
+    const isFuture = d > nowCal;
+    const isToday  = key === todayKey;
+
+    const habitCount = entries.filter(e => e.task_type==='habit').length;
+    const dailyCount = entries.filter(e => e.task_type==='daily').length;
+    const todoCount  = entries.filter(e => e.task_type==='todo').length;
+
+    const alpha = count===0 ? 0 : count<=2 ? 0.18 : count<=5 ? 0.38 : count<=9 ? 0.6 : 0.82;
+    const bg    = (count>0 && !isFuture) ? `rgba(58,190,202,${alpha})` : '#f8fafc';
+    const countColor = alpha >= 0.5 ? 'white' : (count>0 ? 'var(--teal-dk)' : '#cbd5e1');
+    const dots = [
+      habitCount ? `<div class="cal-dot" style="background:#3abeca;"></div>` : '',
+      dailyCount ? `<div class="cal-dot" style="background:#F7941D;"></div>` : '',
+      todoCount  ? `<div class="cal-dot" style="background:#6db33f;"></div>`  : '',
+    ].join('');
+
+    const classes = ['cal-cell', isToday?'cal-today':'', isFuture?'cal-future':''].filter(Boolean).join(' ');
+    calHtml += `<div class="${classes}" style="background:${bg};" onclick="${isFuture?'':'selectCalDay(\''+key+'\')'}">
+      <span class="cal-day-num" style="color:${isToday?'var(--teal)':'#94a3b8'};font-weight:${isToday?'700':'500'};">${d.getDate()}</span>
+      <span class="cal-count" style="color:${countColor};">${count > 0 ? count : ''}</span>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  calHtml += '</div>';
+  calEl.innerHTML = calHtml;
+
+  // ── CLAN CONTRIBUTIONS ─────────────────────────────────────────
+  const clanEl  = document.getElementById('prog-clan');
+  const clanSub = document.getElementById('prog-clan-sub');
+  clanEl.innerHTML = '<div style="font-size:.78rem;color:#94a3b8;">Loading…</div>';
+  const { data: contribs, error: cErr } = await db.from('clan_contributions')
+    .select('damage, source, created_at')
+    .eq('child_id', activeChild.id)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  if (cErr || !contribs?.length) {
+    clanEl.innerHTML = '<div class="empty" style="padding:.75rem 0;">No clan activity recorded yet.</div>';
+    clanSub.textContent = 'No contributions on record.';
+    return;
+  }
+  const totalDmg   = contribs.reduce((s,c) => s+c.damage, 0);
+  const firstDate  = new Date(contribs[contribs.length-1].created_at);
+  const lastDate2  = new Date(contribs[0].created_at);
+  clanSub.textContent = `${contribs.length} contributions · ${totalDmg.toLocaleString()} total damage · last active ${lastDate2.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+  const SOURCE_ICONS = { habit:'⚡', daily:'📅', todo:'✅', default:'⚔️' };
+  clanEl.innerHTML = `
+    <div style="display:flex;gap:1rem;margin-bottom:.85rem;flex-wrap:wrap;">
+      <div style="text-align:center;padding:.5rem .9rem;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:.6rem;">
+        <div style="font-size:1.4rem;font-weight:900;color:var(--red);">${totalDmg.toLocaleString()}</div>
+        <div style="font-size:.62rem;color:#64748b;font-weight:700;">TOTAL DMG</div>
+      </div>
+      <div style="text-align:center;padding:.5rem .9rem;background:rgba(58,190,202,.06);border:1px solid rgba(58,190,202,.2);border-radius:.6rem;">
+        <div style="font-size:1.4rem;font-weight:900;color:var(--teal);">${contribs.length}</div>
+        <div style="font-size:.62rem;color:#64748b;font-weight:700;">CONTRIBUTIONS</div>
+      </div>
+      <div style="text-align:center;padding:.5rem .9rem;background:rgba(109,179,63,.06);border:1px solid rgba(109,179,63,.2);border-radius:.6rem;">
+        <div style="font-size:1.4rem;font-weight:900;color:var(--green);">${Math.round(totalDmg/contribs.length)}</div>
+        <div style="font-size:.62rem;color:#64748b;font-weight:700;">AVG DMG</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.3rem;max-height:260px;overflow-y:auto;padding-right:.3rem;">
+      ${contribs.map(c => {
+        const d = new Date(c.created_at);
+        const timeStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+        const icon = SOURCE_ICONS[c.source] || SOURCE_ICONS.default;
+        return `<div style="display:flex;align-items:center;gap:.55rem;padding:.35rem .5rem;border-radius:.5rem;background:#f8fafc;border:1px solid #f1f5f9;">
+          <span style="font-size:.85rem;">${icon}</span>
+          <div style="flex:1;">
+            <span style="font-size:.78rem;font-weight:700;color:var(--dark);">+${c.damage} dmg</span>
+            <span style="font-size:.7rem;color:#94a3b8;margin-left:.35rem;">${c.source || 'task'}</span>
+          </div>
+          <span style="font-size:.7rem;color:#94a3b8;flex-shrink:0;">${timeStr}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function selectCalDay(key) {
+  const entries = _calByDate[key] || [];
+  const detailEl    = document.getElementById('prog-cal-detail');
+  const detailTitle = document.getElementById('prog-cal-detail-title');
+  const detailList  = document.getElementById('prog-cal-detail-list');
+
+  // Deselect if clicking same day
+  if (_calSelected === key) {
+    _calSelected = null;
+    detailEl.style.display = 'none';
+    document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('cal-selected'));
+    return;
+  }
+  _calSelected = key;
+  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('cal-selected'));
+  // Highlight selected cell (find by onclick attribute match)
+  document.querySelectorAll('.cal-cell').forEach(c => {
+    if (c.getAttribute('onclick') && c.getAttribute('onclick').includes(key)) c.classList.add('cal-selected');
+  });
+
+  const d = new Date(key + 'T12:00:00');
+  const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  detailTitle.textContent = entries.length
+    ? `${dayLabel} — ${entries.length} completion${entries.length!==1?'s':''}`
+    : `${dayLabel} — nothing logged`;
+
+  if (!entries.length) {
+    detailList.innerHTML = '<div style="font-size:.78rem;color:#94a3b8;font-style:italic;">No tasks completed this day.</div>';
+  } else {
+    const TYPE_ICON = { habit:'⚡', daily:'📅', todo:'✅' };
+    const TYPE_COLOR = { habit:'#3abeca', daily:'#F7941D', todo:'#6db33f' };
+    const CAT_LABEL = { communication:'💬 Communication', social:'👋 Social', selfcare:'🌟 Self-Care', academic:'📚 Academic', behavior:'🧠 Behavior', other:'⭐ Other' };
+    detailList.innerHTML = entries.map(e => {
+      const t = new Date(e.completed_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      return `<div class="cal-detail">
+        <div style="display:flex;align-items:center;gap:.45rem;">
+          <span style="font-size:.82rem;">${TYPE_ICON[e.task_type]||'📌'}</span>
+          <span style="font-weight:700;color:var(--dark);font-size:.83rem;">${e.task_text}</span>
+          <span style="margin-left:auto;font-size:.68rem;color:#94a3b8;flex-shrink:0;">${t}</span>
+        </div>
+        <div style="margin-top:.2rem;display:flex;gap:.4rem;align-items:center;">
+          <span style="font-size:.65rem;font-weight:700;color:${TYPE_COLOR[e.task_type]||'#64748b'};text-transform:uppercase;letter-spacing:.04em;">${e.task_type}</span>
+          ${e.category ? `<span style="font-size:.65rem;color:#94a3b8;">· ${CAT_LABEL[e.category]||e.category}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  detailEl.style.display = 'block';
+  detailEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── BOSS QUESTIONS ──────────────────────────────────────────────────
+const BOSS_CAT_INFO_ADMIN = {
+  communication: {label:'💬 Communication', color:'#3abeca'},
+  social:        {label:'👋 Social Skills',  color:'#6db33f'},
+  selfcare:      {label:'🌟 Self-Care',       color:'#f59e0b'},
+  behavior:      {label:'🧠 Behavior',        color:'#8b5cf6'},
+  academic:      {label:'📚 Academic',        color:'#F7941D'},
+};
+const DEFAULT_BOSS_QUESTIONS_ADMIN = {
+  communication: [
+    {q:"When you need something, the best way to ask is:",opts:["Say 'Can I please have…?'","Grab it yourself","Scream until you get it","Give up and walk away"],ans:0},
+    {q:"If someone doesn't understand you, you should:",opts:["Try explaining a different way","Walk away frustrated","Yell louder","Stop talking"],ans:0},
+    {q:"When you need help, the best thing to say is:",opts:["'Can you help me please?'","Do nothing and hope someone notices","Cry loudly","Break something to get attention"],ans:0},
+    {q:"When someone is talking, the polite thing to do is:",opts:["Listen and wait your turn","Talk over them","Walk away","Ignore them"],ans:0},
+    {q:"If you're frustrated and can't find words, you should:",opts:["Take a breath, then try your best","Stay silent forever","Have a meltdown","Throw something"],ans:0},
+  ],
+  social: [
+    {q:"When a friend looks upset, a kind thing to do is:",opts:["Ask 'Are you okay?'","Ignore them","Laugh at them","Walk away"],ans:0},
+    {q:"Taking turns in a game means:",opts:["Everyone gets a chance to go","You always go first","Only the winner plays","The fastest player goes most"],ans:0},
+    {q:"To join a group that's already playing, you should:",opts:["Say 'Can I play too?'","Push your way in","Take their stuff","Walk away"],ans:0},
+    {q:"A good friend:",opts:["Listens and is kind even when it's hard","Only plays when they feel like it","Takes the best toys","Wins every argument"],ans:0},
+    {q:"When someone does something nice for you, you should:",opts:["Say thank you!","Ignore it","Ask for more","Say 'That's not enough'"],ans:0},
+  ],
+  selfcare: [
+    {q:"When you feel really overwhelmed, a good first step is:",opts:["Take a deep breath and find a calm spot","Yell at everyone around you","Run out of the room","Throw something"],ans:0},
+    {q:"Getting enough sleep helps you:",opts:["Focus better and feel happier","Nothing — sleep doesn't matter","Feel groggy all day","Forget everything you learned"],ans:0},
+    {q:"When your body feels tense and stressed, you can try:",opts:["Squeezing your muscles then relaxing them","Hitting something","Screaming as loud as you can","Holding everything inside"],ans:0},
+    {q:"Eating healthy food helps your brain:",opts:["Think clearly and stay focused","Nothing — food doesn't affect thinking","Make you sleepy","Feel worse"],ans:0},
+    {q:"A quick way to calm down is:",opts:["Count to 10 slowly while breathing","Run around until you're tired","Ignore the feeling","Hold everything inside"],ans:0},
+  ],
+  behavior: [
+    {q:"When you don't get what you want, the best choice is:",opts:["Take a breath and try to accept it","Have a meltdown","Hit something","Grab it anyway"],ans:0},
+    {q:"When you make a mistake, you should:",opts:["Admit it and try to fix it","Blame someone else","Hide it","Pretend it didn't happen"],ans:0},
+    {q:"Waiting patiently means:",opts:["Staying calm while it's someone else's turn","Pushing to get your turn faster","Crying until you go next","Refusing to wait"],ans:0},
+    {q:"When a rule feels unfair, the best thing to do is:",opts:["Calmly tell an adult how you feel","Break the rule anyway","Yell until you get your way","Refuse to do anything"],ans:0},
+    {q:"When you feel angry, a safe way to handle it is:",opts:["Squeeze something soft or take deep breaths","Hit the nearest person","Break your toys","Scream at the top of your lungs"],ans:0},
+  ],
+  academic: [
+    {q:"When you don't understand something, you should:",opts:["Raise your hand and ask for help","Pretend you understand","Give up","Distract kids next to you"],ans:0},
+    {q:"Finishing your work helps:",opts:["You learn more and feel proud","Nobody — it doesn't matter","Only the teacher","Make school longer"],ans:0},
+    {q:"A good way to remember important things is:",opts:["Write them down","Hope you remember","Tell a friend to remember","Ignore them"],ans:0},
+    {q:"When something is hard, the best approach is:",opts:["Keep trying and ask for help if needed","Give up right away","Complain until someone else does it","Pretend to work"],ans:0},
+    {q:"Paying attention in class means:",opts:["Looking, listening, and not interrupting","Only listening to parts you like","Doing whatever you want quietly","Raising your hand for everything"],ans:0},
+  ],
+};
+
+async function renderBossQuestionsPanel() {
+  const panel = document.getElementById('boss-q-panel');
+  if (!panel) return;
+  if (!activeChild) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  document.getElementById('boss-q-client-label').textContent = `Custom questions override defaults for ${activeChild.name}.`;
+  document.getElementById('boss-q-name-lbl').textContent = activeChild.name.toUpperCase();
+
+  const cat = document.getElementById('boss-q-cat')?.value || 'communication';
+  const defaults = DEFAULT_BOSS_QUESTIONS_ADMIN[cat] || [];
+  const { data: customs } = await db.from('client_questions')
+    .select('*').eq('child_id', activeChild.id).eq('category', cat).order('created_at');
+
+  // Defaults preview
+  const defEl = document.getElementById('boss-q-defaults');
+  defEl.innerHTML = `
+    <div style="font-size:.68rem;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:.5rem;">DEFAULT QUESTIONS (${defaults.length}) — used when no custom questions exist</div>
+    ${defaults.map(d => `
+      <div style="padding:.4rem .65rem;background:#f8fafc;border-radius:.45rem;border:1px solid #e2e8f0;margin-bottom:.3rem;">
+        <div style="font-size:.78rem;font-weight:600;color:var(--dark);">${d.q}</div>
+        <div style="font-size:.68rem;color:#16a34a;margin-top:.15rem;">✓ ${d.opts[0]}</div>
+      </div>`).join('')}`;
+
+  // Custom questions
+  const custEl = document.getElementById('boss-q-custom-list');
+  if (!customs?.length) {
+    custEl.innerHTML = '<div style="font-size:.78rem;color:#94a3b8;font-style:italic;margin-bottom:.5rem;">No custom questions yet — defaults will be used.</div>';
+  } else {
+    custEl.innerHTML = customs.map(q => `
+      <div style="display:flex;align-items:flex-start;gap:.5rem;padding:.5rem .65rem;background:rgba(58,190,202,.05);border:1.5px solid rgba(58,190,202,.2);border-radius:.55rem;margin-bottom:.4rem;">
+        <div style="flex:1;">
+          <div style="font-size:.8rem;font-weight:700;color:var(--dark);">${esc(q.question)}</div>
+          <div style="font-size:.68rem;color:#16a34a;margin-top:.1rem;">✓ ${esc(q.options[0])}</div>
+          <div style="font-size:.65rem;color:#94a3b8;margin-top:.1rem;">${q.options.slice(1).map(o=>esc(o)).join(' · ')}</div>
+        </div>
+        <button onclick="deleteClientQuestion('${q.id}')" class="btn btn-danger btn-sm" style="flex-shrink:0;">✕</button>
+      </div>`).join('');
+  }
+}
+
+async function addClientQuestion() {
+  if (!activeChild) return;
+  const cat  = document.getElementById('boss-q-cat')?.value || 'communication';
+  const q    = document.getElementById('bq-new-q')?.value.trim();
+  const o0   = document.getElementById('bq-opt0')?.value.trim();
+  const o1   = document.getElementById('bq-opt1')?.value.trim();
+  const o2   = document.getElementById('bq-opt2')?.value.trim();
+  const o3   = document.getElementById('bq-opt3')?.value.trim();
+  if (!q || !o0 || !o1 || !o2 || !o3) { toast('Fill in the question and all 4 options.'); return; }
+  const { error } = await db.from('client_questions').insert({
+    child_id: activeChild.id, category: cat,
+    question: q, options: [o0,o1,o2,o3], correct_index: 0,
+    created_by: currentUser?.id || null,
+  });
+  if (error) { toast('Error: '+error.message); return; }
+  ['bq-new-q','bq-opt0','bq-opt1','bq-opt2','bq-opt3'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
+  toast('Question added!');
+  renderBossQuestionsPanel();
+}
+
+async function deleteClientQuestion(id) {
+  const { error } = await db.from('client_questions').delete().eq('id', id);
+  if (error) { toast('Error: '+error.message); return; }
+  renderBossQuestionsPanel();
+}
+
+function populateSettingsTab() {
+  const ta = document.getElementById('notif-emails');
+  if (ta && activeChild) ta.value = activeChild.notification_emails || '';
+  const ni = document.getElementById('display-name-input');
+  if (ni && activeChild && currentUser) {
+    const nicknames = activeChild.therapist_nicknames || {};
+    ni.value = nicknames[currentUser.id] || userProfile?.full_name || '';
+  }
+}
+
+async function saveDisplayName() {
+  if (!activeChild || !currentUser) return;
+  const name = document.getElementById('display-name-input').value.trim();
+  const nicknames = { ...(activeChild.therapist_nicknames || {}), [currentUser.id]: name || null };
+  const { error } = await db.from('child_profiles').update({ therapist_nicknames: nicknames }).eq('id', activeChild.id);
+  if (!error) {
+    activeChild.therapist_nicknames = nicknames;
+    toast('Name saved for ' + activeChild.name + '!');
+  }
+}
+
+async function awardGold() {
+  if (!activeChild) return;
+  const amount = Math.max(1, parseInt(document.getElementById('award-gold-amt').value) || 25);
+  const reason = document.getElementById('award-gold-reason').value.trim();
+  const resultEl = document.getElementById('award-gold-result');
+  if (!reason) { document.getElementById('award-gold-reason').focus(); return; }
+  const nicknames = activeChild.therapist_nicknames || {};
+  const fromName = (currentUser && nicknames[currentUser.id]) || userProfile?.full_name || currentUser?.email || 'Your Therapist';
+  const newAward = { amount, reason, from: fromName, awardedAt: new Date().toISOString() };
+  const { data: current } = await db.from('child_profiles').select('pending_gold').eq('id', activeChild.id).single();
+  const existing = Array.isArray(current?.pending_gold) ? current.pending_gold : (current?.pending_gold ? [current.pending_gold] : []);
+  const { error } = await db.from('child_profiles').update({ pending_gold: [...existing, newAward] }).eq('id', activeChild.id);
+  if (error) {
+    resultEl.style.display = 'block'; resultEl.style.background = '#fef2f2'; resultEl.style.color = '#dc2626';
+    resultEl.textContent = 'Error: ' + error.message; return;
+  }
+  document.getElementById('award-gold-reason').value = '';
+  resultEl.style.display = 'block'; resultEl.style.background = '#fffbeb'; resultEl.style.color = '#92400e';
+  resultEl.textContent = `+${amount} gold queued for ${activeChild.name} — they'll see your message next time they open the game!`;
+  toast(`+${amount} gold awarded to ${activeChild.name}!`);
+  setTimeout(() => { resultEl.style.display = 'none'; }, 5000);
+}
+
+async function saveNotifEmails() {
+  if (!activeChild) return;
+  const emails = document.getElementById('notif-emails').value.trim();
+  await db.from('child_profiles').update({ notification_emails: emails || null }).eq('id', activeChild.id);
+  activeChild.notification_emails = emails || null;
+  toast('Notification emails saved!');
+}
+
+async function testNotification() {
+  if (!activeChild) return;
+  const resultEl = document.getElementById('notif-test-result');
+  resultEl.style.display = 'block';
+  resultEl.style.background = '#f1f5f9';
+  resultEl.style.color = '#475569';
+  resultEl.textContent = 'Sending test email…';
+  try {
+    const res = await fetch(`${SUPA_URL}/functions/v1/notify-reward-claimed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      body: JSON.stringify({ child_id: activeChild.id, child_name: activeChild.name, reward_icon: '🧪', reward_text: 'Test Notification', reward_cost: 0 }),
+    });
+    const data = await res.json();
+    if (data.ok && data.sent > 0) {
+      resultEl.style.background = '#f0fdf4'; resultEl.style.color = '#16a34a';
+      resultEl.textContent = `Sent to ${data.sent} address(es)! Check your inbox.`;
+    } else if (data.skipped) {
+      resultEl.style.background = '#fffbeb'; resultEl.style.color = '#92400e';
+      resultEl.textContent = 'Skipped — no notification emails saved for this client. Save emails above first.';
+    } else {
+      resultEl.style.background = '#fef2f2'; resultEl.style.color = '#dc2626';
+      resultEl.textContent = 'Error: ' + JSON.stringify(data);
+    }
+  } catch(e) {
+    resultEl.style.background = '#fef2f2'; resultEl.style.color = '#dc2626';
+    resultEl.textContent = 'Failed to reach edge function: ' + e.message;
+  }
+}
+
+// ── CONFIRM MODAL ─────────────────────────────────────────────────
+let _confirmCb=null;
+function doConfirm(title,body,cb) {
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-body').textContent=body;
+  _confirmCb=cb;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.add('hidden'); _confirmCb=null; }
+document.getElementById('confirm-ok').onclick=()=>{ closeConfirm(); if(_confirmCb)_confirmCb(); };
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function toast(msg) {
+  const el=document.createElement('div'); el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),350); },2400);
+}
+
+// ── UTIL ──────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── INIT ──────────────────────────────────────────────────────────
+(async()=>{
+  showOv('ov-loading');
+  const { data:{ session } } = await db.auth.getSession();
+  if (session) { currentUser=session.user; await afterAuth(); }
+  else { hideAllOv(); showOv('ov-auth'); }
+  // Keep session in sync
+  db.auth.onAuthStateChange((event,session)=>{
+    if (event==='SIGNED_OUT') { document.getElementById('app').classList.remove('active'); showOv('ov-auth'); }
+  });
+})();
+</script>
+</body>
+</html>
