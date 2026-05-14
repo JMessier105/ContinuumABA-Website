@@ -1,0 +1,2960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>CLP Assessments — Continuum ABA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+* { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+:root {
+  --navy: #2c4a7c; --teal: #3abeca; --teal-dk: #228798; --teal-lt: #d0eff4;
+  --green: #1a6b3c; --green-lt: #e8f5ee;
+  --yellow: #7a6b00; --yellow-lt: #fdf9e3;
+  --orange: #8c4000; --orange-lt: #fdf0e3;
+  --red: #8c0000; --red-lt: #fde8e8;
+  --bg: #f4f8fb; --dark: #0d1b2e;
+}
+body { background: var(--bg); min-height: 100vh; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; animation: fadeUp .22s ease; }
+#view-login.active { display: flex; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── SCORE BUTTONS ─────────────────────────────────────────
+   Each button is a full-width row: big score numeral on the left,
+   label + criteria text on the right. The selected button fills solid. */
+.score-btn {
+  display: flex; align-items: flex-start; gap: 0; width: 100%;
+  border: 2px solid transparent; border-radius: 1rem; cursor: pointer;
+  transition: all .14s cubic-bezier(.4,0,.2,1);
+  touch-action: manipulation; text-align: left; overflow: hidden;
+}
+.score-btn:hover { filter: brightness(.96); transform: translateX(3px); }
+.score-btn:active { transform: scale(.98); }
+
+.score-btn .s-num {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 60px; width: 60px; align-self: stretch;
+  font-size: 1.75rem; font-weight: 900; border-right: 2px solid rgba(0,0,0,.08);
+  flex-shrink: 0;
+}
+.score-btn .s-body {
+  padding: .75rem 1rem; flex: 1; min-width: 0;
+}
+.score-btn .s-label {
+  font-size: .8rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: .25rem; display: block;
+}
+.score-btn .s-criteria {
+  font-size: .8rem; line-height: 1.5; font-weight: 500; display: block;
+}
+
+/* unselected colours */
+.score-3 { background: var(--green-lt); border-color: #b4dcc6; color: var(--green); }
+.score-2 { background: var(--yellow-lt); border-color: #d4c870; color: var(--yellow); }
+.score-1 { background: var(--orange-lt); border-color: #d4a870; color: var(--orange); }
+.score-0 { background: var(--red-lt); border-color: #d4a0a0; color: var(--red); }
+
+/* selected: solid fill */
+.score-3.selected { background: var(--green); color: white; border-color: var(--green); }
+.score-2.selected { background: #b8860b; color: white; border-color: #b8860b; }
+.score-1.selected { background: var(--orange); color: white; border-color: var(--orange); }
+.score-0.selected { background: var(--red); color: white; border-color: var(--red); }
+.score-3.selected .s-num, .score-2.selected .s-num,
+.score-1.selected .s-num, .score-0.selected .s-num { border-color: rgba(255,255,255,.25); }
+
+/* ── DOMAIN NAV PILL ───────────────────────────────────────*/
+.domain-pill {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .35rem .8rem; border-radius: 9999px; cursor: pointer;
+  font-size: .78rem; font-weight: 700; white-space: nowrap;
+  border: 2px solid transparent; transition: all .12s;
+  touch-action: manipulation;
+}
+.domain-pill.done    { background: var(--green-lt); color: var(--green); border-color: #b4dcc6; }
+.domain-pill.partial { background: var(--yellow-lt); color: var(--yellow); border-color: #d4c870; }
+.domain-pill.empty   { background: #f0f4f8; color: #64748b; border-color: #d1d9e0; }
+.domain-pill.active  { background: var(--teal-dk); color: white; border-color: var(--teal-dk); }
+
+/* ── MISC ──────────────────────────────────────────────────*/
+.card { background: white; border-radius: 1.25rem; box-shadow: 0 2px 12px rgba(13,27,46,.07); }
+.btn-primary {
+  background: linear-gradient(135deg,var(--teal),var(--teal-dk));
+  color: white; font-weight: 700; border-radius: .875rem;
+  box-shadow: 0 4px 14px rgba(58,190,202,.28);
+  transition: filter .15s, transform .1s, box-shadow .15s;
+  touch-action: manipulation;
+}
+.btn-primary:hover  { filter: brightness(1.08); box-shadow: 0 6px 20px rgba(58,190,202,.4); }
+.btn-primary:active { transform: scale(.96); }
+.btn-ghost {
+  background: #eef3f8; color: #334155; font-weight: 600; border-radius: .875rem;
+  transition: background .12s, transform .1s; touch-action: manipulation;
+}
+.btn-ghost:hover  { background: #dde7f0; }
+.btn-ghost:active { transform: scale(.96); }
+.btn-danger { background: #fff1f2; color: #be123c; font-weight: 600; border-radius: .875rem; transition: background .12s; }
+.btn-danger:hover { background: #ffe4e6; }
+
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea {
+  width:100%; padding:.7rem 1rem; border:2px solid #dde7ef; border-radius:.75rem;
+  font-size:.95rem; color:var(--dark); outline:none; background:white;
+  transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus { border-color:var(--teal); }
+.font-display { font-family: 'Playfair Display', serif; }
+
+.modal-bg {
+  position:fixed; inset:0; z-index:60; background:rgba(13,27,46,.5);
+  backdrop-filter:blur(4px); display:none;
+  align-items:center; justify-content:center; padding:1rem;
+}
+.modal-bg.open { display:flex; }
+.modal-box {
+  background:white; border-radius:1.5rem;
+  box-shadow:0 24px 60px rgba(13,27,46,.2);
+  width:100%; max-width:460px; padding:2rem;
+  animation:fadeUp .22s ease; max-height:90vh; overflow-y:auto;
+}
+
+nav { background: linear-gradient(135deg,var(--navy) 0%,#1d3566 100%); }
+
+/* domain progress bar */
+.dpbar { height: 5px; background: #e2e8f0; border-radius: 9999px; overflow:hidden; margin-top:.3rem; }
+.dpbar-fill { height:100%; border-radius:9999px; transition:width .4s ease; background: var(--teal-dk); }
+
+/* report chart container */
+.domain-report-row {
+  display:flex; align-items:center; gap:.75rem; padding:.55rem 0;
+  border-bottom:1px solid #f1f5f9;
+}
+.domain-report-row:last-child { border-bottom:none; }
+
+/* ── ISP GOAL CARDS ──────────────────────────────────────── */
+.isp-goal-card { transition: opacity .2s; }
+.isp-goal-card.excluded { opacity: .42; }
+.priority-badge-1 { background:#fff1f2; color:#be123c; border:1.5px solid #fecdd3; }
+.priority-badge-2 { background:#fffbeb; color:#b45309; border:1.5px solid #fde68a; }
+.priority-badge-3 { background:#f0fdf4; color:#15803d; border:1.5px solid #bbf7d0; }
+
+/* print styles */
+@media print {
+  nav, .no-print, #view-login, #view-clients, #view-client, #view-score { display:none !important; }
+  body { background:white; }
+  .card { box-shadow:none; border:1px solid #e2e8f0; }
+  #view-report, #view-isp { display:none !important; }
+  #view-report.active, #view-isp.active { display:block !important; }
+  .isp-goal-card.excluded { display:none !important; }
+  textarea { border:none !important; padding:0 !important; resize:none !important; background:transparent !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     SUPABASE CONFIG — fill in your project URL and anon key
+     after creating the project at https://supabase.com
+     ══════════════════════════════════════════════════════════ -->
+<script>
+const SUPABASE_URL  = 'https://esssgxsauxkrjfenlfpl.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzc3NneHNhdXhrcmpmZW5sZnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTg0MDgsImV4cCI6MjA5NDE5NDQwOH0._35oeQs6B96JJ6Wlwht5zjueYSZfBQrmzkEW2TN7mNw';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storage: window.sessionStorage, persistSession: true, detectSessionInUrl: false }
+});
+
+// Unregister any stale service workers that interfere with fetch requests
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+}
+
+window.onerror = function(msg, src, line) {
+  const el = document.getElementById('login-err');
+  if (el) {
+    el.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
+    el.style.color = '#be123c';
+    el.style.background = '#fff1f2';
+    el.classList.remove('hidden');
+  }
+};
+window.onunhandledrejection = function(e) {
+  const el = document.getElementById('login-err');
+  if (el) {
+    el.textContent = 'Async Error: ' + (e.reason?.message || e.reason);
+    el.style.color = '#be123c';
+    el.style.background = '#fff1f2';
+    el.classList.remove('hidden');
+  }
+};
+</script>
+
+<!-- ══ LOAD LOGIN VIEW before auth ══ -->
+<div id="view-login" class="view active items-center justify-center min-h-screen p-4" style="background:linear-gradient(160deg,#e8f6f8 0%,#f4f8fb 60%,#dff0f5 100%);">
+  <div class="card p-8 w-full max-w-sm text-center" style="box-shadow:0 8px 40px rgba(44,74,124,.13);">
+    <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-16 object-contain mx-auto mb-4"/>
+    <h1 class="font-display text-2xl font-bold mb-1" style="color:var(--dark)">CLP Assessments</h1>
+    <p class="text-sm mb-6 font-semibold" style="color:var(--teal-dk)">Continuum ABA Therapy</p>
+    <div class="space-y-3 text-left">
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Email</label>
+        <input id="login-email" type="email" placeholder="bcba@example.com" autocomplete="email"/>
+      </div>
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Password</label>
+        <div style="position:relative;">
+          <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:2.75rem;"/>
+          <button type="button" onclick="togglePassVis()" tabindex="-1"
+            style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
+                   background:none;border:none;cursor:pointer;padding:0;line-height:1;font-size:1.1rem;color:#94a3b8;"
+            title="Show/hide password" id="pass-eye">👁</button>
+        </div>
+      </div>
+      <p id="login-err" class="hidden text-sm font-semibold text-center mt-1 px-2 py-2 rounded-lg" style="color:#be123c;background:#fff1f2;border-radius:.5rem;"></p>
+    </div>
+    <button id="login-btn" onclick="doLogin()" class="btn-primary w-full py-3 mt-4 text-base">Sign In</button>
+    <button onclick="toggleSignup()" class="text-xs mt-3 text-teal-600 hover:underline font-semibold">New account? Register here</button>
+
+    <div id="signup-extra" class="hidden space-y-3 mt-4 text-left border-t border-slate-100 pt-4">
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Your Full Name</label>
+        <input id="signup-name" type="text" placeholder="Dr. Jane Smith"/>
+      </div>
+      <button onclick="doSignup()" class="btn-primary w-full py-3 text-base">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL (shown after login) ══ -->
+<div id="app-shell" class="hidden">
+
+  <nav class="sticky top-0 z-40 shadow-md">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <button onclick="showView('clients')" class="flex items-center gap-2 text-white hover:opacity-80 focus-visible:outline-none">
+        <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-8 object-contain brightness-0 invert"/>
+        <span class="font-display font-bold text-base hidden sm:inline" style="letter-spacing:-.01em">CLP Assessments</span>
+      </button>
+      <div class="flex items-center gap-2">
+        <span id="nav-user" class="text-xs font-semibold text-white/70 hidden sm:inline"></span>
+        <button onclick="openResourcesView()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors whitespace-nowrap">
+          📚 <span class="hidden sm:inline">Cards</span>
+        </button>
+        <a href="admin.html" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors">
+          ← Admin
+        </a>
+        <button onclick="doLogout()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors">
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+
+    <!-- ── VIEW: CLIENTS ──────────────────────────────────── -->
+    <div id="view-clients" class="view">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+          <h1 class="font-display text-2xl sm:text-3xl font-bold" style="color:var(--dark)">My Clients</h1>
+          <p class="text-sm mt-0.5 text-slate-500">Select a client to view assessments or start a new one</p>
+        </div>
+        <button onclick="openNewClientModal()" class="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm">
+          <span class="text-lg font-light">+</span> New Client
+        </button>
+      </div>
+
+      <div id="client-search-row" class="mb-4">
+        <input type="text" placeholder="Search clients..." oninput="filterClients(this.value)"
+          class="max-w-xs" style="padding:.55rem 1rem;font-size:.9rem;"/>
+      </div>
+
+      <div id="client-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+      <div id="no-clients" class="hidden text-center py-20">
+        <div class="text-5xl mb-4">🌱</div>
+        <p class="text-lg font-bold" style="color:var(--dark)">No clients yet</p>
+        <p class="text-sm text-slate-500 mt-1">Click "New Client" to get started</p>
+      </div>
+    </div>
+
+    <!-- ── VIEW: CLIENT PROFILE ──────────────────────────── -->
+    <div id="view-client" class="view">
+      <div class="flex items-center gap-3 mb-5">
+        <button onclick="showView('clients')" class="btn-ghost px-3 py-2 text-sm">← Back</button>
+        <div class="flex-1 min-w-0">
+          <h2 id="cp-name" class="text-xl font-black truncate" style="color:var(--dark)"></h2>
+          <p id="cp-meta" class="text-xs text-slate-500 mt-0.5"></p>
+        </div>
+        <button onclick="openEditClientModal()" class="btn-ghost p-2 text-lg" title="Edit client">✏️</button>
+      </div>
+
+      <!-- Summary bar -->
+      <div id="cp-summary" class="card p-4 mb-5 grid grid-cols-3 gap-3 text-center hidden">
+        <div><div id="cp-sessions-count" class="text-2xl font-black" style="color:var(--navy)">0</div><div class="text-xs text-slate-500 font-semibold uppercase tracking-wide mt-0.5">Sessions</div></div>
+        <div><div id="cp-last-date" class="text-sm font-bold" style="color:var(--dark)">—</div><div class="text-xs text-slate-500 font-semibold uppercase tracking-wide mt-0.5">Last Assessed</div></div>
+        <div><div id="cp-domains-count" class="text-2xl font-black" style="color:var(--teal)">25</div><div class="text-xs text-slate-500 font-semibold uppercase tracking-wide mt-0.5">CLP Domains</div></div>
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-base" style="color:var(--dark)">Assessment History</h3>
+        <button onclick="startNewSession()" class="btn-primary px-4 py-2 text-sm">+ New Assessment</button>
+      </div>
+      <div id="sessions-list" class="space-y-3"></div>
+      <div id="no-sessions" class="hidden text-center py-12 card mt-2">
+        <div class="text-4xl mb-3">📝</div>
+        <p class="font-semibold" style="color:var(--dark)">No assessments yet</p>
+        <p class="text-sm text-slate-500 mt-1">Click "New Assessment" to begin</p>
+      </div>
+    </div>
+
+    <!-- ── VIEW: SCORE ASSESSMENT ────────────────────────── -->
+    <div id="view-score" class="view">
+      <!-- Top bar -->
+      <div class="flex items-center gap-3 mb-4 flex-wrap">
+        <button onclick="confirmLeaveScoring()" class="btn-ghost px-3 py-2 text-sm shrink-0">← Back</button>
+        <div class="flex-1 min-w-0">
+          <p id="sc-client-name" class="text-xs text-slate-500 font-semibold"></p>
+          <h2 id="sc-session-date" class="text-lg font-black" style="color:var(--dark)"></h2>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span id="sc-save-status" class="text-xs font-semibold text-slate-400"></span>
+          <button onclick="completeSession()" class="btn-primary px-4 py-2 text-sm">Mark Complete ✓</button>
+        </div>
+      </div>
+
+      <!-- Domain pill strip -->
+      <div id="domain-strip" class="flex gap-2 overflow-x-auto pb-2 mb-5" style="scrollbar-width:thin;"></div>
+
+      <!-- Domain progress -->
+      <div class="card p-4 mb-4">
+        <div class="flex items-center justify-between mb-1">
+          <p id="sc-domain-name" class="font-black text-base" style="color:var(--dark)"></p>
+          <span id="sc-domain-progress" class="text-xs font-bold text-slate-500"></span>
+        </div>
+        <div class="dpbar"><div id="sc-domain-bar" class="dpbar-fill" style="width:0%"></div></div>
+        <p id="sc-domain-purpose" class="text-xs text-slate-500 mt-2 leading-relaxed"></p>
+      </div>
+
+      <!-- Item card -->
+      <div id="sc-item-card" class="card p-4 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span id="sc-item-code" class="text-xs font-bold text-white px-2 py-0.5 rounded-md" style="background:var(--navy)"></span>
+          <span id="sc-item-name" class="font-bold text-base flex-1" style="color:var(--dark)"></span>
+          <span id="sc-item-pos" class="text-xs text-slate-400 shrink-0"></span>
+        </div>
+        <div id="sc-admin-block" class="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg px-3 py-2 mb-4 border border-slate-100"></div>
+
+        <!-- Stimulus bar: digital card buttons + physical kit reminder -->
+        <div id="sc-stimulus-bar" class="no-print hidden mb-3"></div>
+
+        <!-- Score buttons — criteria text is ON each button -->
+        <div id="sc-score-btns" class="space-y-2.5"></div>
+
+        <!-- Notes input -->
+        <div class="mt-4">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 block">Notes (optional)</label>
+          <textarea id="sc-notes" rows="2" placeholder="Clinical notes for this item..."
+            oninput="scheduleNoteSave()" style="resize:vertical;min-height:56px;font-size:.85rem;"></textarea>
+        </div>
+      </div>
+
+      <!-- Item navigation -->
+      <div class="flex items-center justify-between gap-3">
+        <button id="sc-prev" onclick="navItem(-1)" class="btn-ghost px-4 py-2.5 text-sm flex items-center gap-1.5">← Prev</button>
+        <div id="sc-all-items-nav" class="flex items-center gap-1 overflow-x-auto flex-1 justify-center" style="scrollbar-width:none;"></div>
+        <button id="sc-next" onclick="navItem(1)" class="btn-primary px-4 py-2.5 text-sm flex items-center gap-1.5">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── VIEW: REPORT ──────────────────────────────────── -->
+    <div id="view-report" class="view">
+      <div class="flex items-center gap-3 mb-5 no-print flex-wrap">
+        <button onclick="showView('client')" class="btn-ghost px-3 py-2 text-sm">← Back</button>
+        <div class="flex-1 min-w-0">
+          <p id="rp-client-name" class="text-xs text-slate-500 font-semibold"></p>
+          <h2 id="rp-session-date" class="text-lg font-black" style="color:var(--dark)"></h2>
+        </div>
+        <button onclick="openISPView()" class="btn-ghost px-4 py-2 text-sm no-print">📋 ISP Goals</button>
+        <button onclick="window.print()" class="btn-primary px-4 py-2 text-sm no-print">🖨 Print Report</button>
+      </div>
+
+      <!-- Report header (printable) -->
+      <div class="card p-6 mb-5">
+        <div class="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-10 object-contain mb-2"/>
+            <h2 class="font-display text-2xl font-bold" style="color:var(--dark)">CLP Assessment Report</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Continuum Learner Profile — Version 1.0</p>
+          </div>
+          <div class="text-right text-sm text-slate-500 space-y-0.5">
+            <p><span class="font-semibold text-slate-700">Client:</span> <span id="rp-client-name-2"></span></p>
+            <p><span class="font-semibold text-slate-700">Date:</span> <span id="rp-date-2"></span></p>
+            <p><span class="font-semibold text-slate-700">BCBA:</span> <span id="rp-bcba"></span></p>
+            <p><span class="font-semibold text-slate-700">Status:</span> <span id="rp-status" class="font-bold text-teal-700"></span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div id="rp-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5"></div>
+
+      <!-- Category breakdown chart -->
+      <div class="card p-5 mb-5">
+        <h3 class="font-black text-base mb-4" style="color:var(--dark)">Domain Scores</h3>
+        <div id="rp-domain-bars"></div>
+      </div>
+
+      <!-- Skills heatmap -->
+      <div class="card p-5 mb-5">
+        <h3 class="font-black text-base mb-0.5" style="color:var(--dark)">Skills Heatmap</h3>
+        <p class="text-xs text-slate-400 mb-3">Each cell represents one assessment item. Hover for details.</p>
+        <div id="rp-heatmap"></div>
+      </div>
+
+      <!-- Compare to previous session if available -->
+      <div id="rp-compare-wrap" class="card p-5 mb-5 hidden">
+        <h3 class="font-black text-base mb-4" style="color:var(--dark)">Progress Since Last Assessment</h3>
+        <canvas id="rp-compare-chart" height="220"></canvas>
+      </div>
+
+      <!-- Notes -->
+      <div id="rp-notes-wrap" class="card p-5 mb-5 hidden">
+        <h3 class="font-black text-base mb-2" style="color:var(--dark)">Session Notes</h3>
+        <p id="rp-notes-text" class="text-sm text-slate-600 leading-relaxed"></p>
+      </div>
+
+      <!-- Domain detail table -->
+      <div class="card p-5 mb-5">
+        <h3 class="font-black text-base mb-4" style="color:var(--dark)">Domain Detail</h3>
+        <div id="rp-domain-table" class="space-y-0"></div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: ISP RECOMMENDATIONS ─────────────────────── -->
+    <div id="view-isp" class="view">
+      <div class="flex items-center gap-3 mb-5 no-print flex-wrap">
+        <button onclick="showView('report')" class="btn-ghost px-3 py-2 text-sm">← Back to Report</button>
+        <div class="flex-1 min-w-0">
+          <p id="isp-subtitle" class="text-xs text-slate-500 font-semibold"></p>
+          <h2 class="text-lg font-black" style="color:var(--dark)">ISP Goal Recommendations</h2>
+        </div>
+        <button onclick="window.print()" class="btn-primary px-4 py-2 text-sm no-print">🖨 Print ISP</button>
+      </div>
+
+      <!-- ISP printable header -->
+      <div class="card p-6 mb-5">
+        <div class="flex items-start justify-between flex-wrap gap-3 mb-4">
+          <div>
+            <img src="Brand_assets/continuum logo no padding.png" alt="Continuum ABA" class="h-10 object-contain mb-2"/>
+            <h2 class="font-display text-2xl font-bold" style="color:var(--dark)">Individualized Support Plan</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Goal Recommendations — Continuum Learner Profile</p>
+          </div>
+          <div class="text-right text-sm text-slate-500 space-y-0.5">
+            <p><span class="font-semibold text-slate-700">Client:</span> <span id="isp-client-name"></span></p>
+            <p><span class="font-semibold text-slate-700">Assessment Date:</span> <span id="isp-date"></span></p>
+            <p><span class="font-semibold text-slate-700">BCBA:</span> <span id="isp-bcba"></span></p>
+          </div>
+        </div>
+        <div class="no-print rounded-xl p-3 text-xs font-semibold" style="background:#fffbeb;border:1.5px solid #fde68a;color:#92400e;">
+          ⚠️ These goals are generated from assessment data as a starting point. Review, edit, and approve each goal before including in the official ISP.
+        </div>
+      </div>
+
+      <!-- Goal list -->
+      <div id="isp-goals-list" class="mb-4"></div>
+
+      <!-- BCBA clinical notes -->
+      <div class="card p-5 mb-4">
+        <h3 class="font-black text-base mb-2" style="color:var(--dark)">BCBA Clinical Notes</h3>
+        <textarea id="isp-clinical-notes" rows="4"
+          placeholder="Clinical observations, goal modifications, parent priorities, environmental considerations..."></textarea>
+      </div>
+    </div>
+
+    <!-- ── VIEW: STIMULUS CARD LIBRARY ────────────────────── -->
+    <div id="view-resources" class="view">
+      <div class="flex items-center gap-3 mb-5 flex-wrap">
+        <button onclick="showView(window._resourcesReturn||'clients')" class="btn-ghost px-3 py-2 text-sm">← Back</button>
+        <div class="flex-1 min-w-0">
+          <h2 class="font-display text-2xl font-bold" style="color:var(--dark)">Stimulus Card Library</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Tap any set to display cards fullscreen — flip tablet toward client</p>
+        </div>
+      </div>
+      <div id="resources-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODAL: NEW / EDIT CLIENT ══ -->
+<div id="modal-client" class="modal-bg">
+  <div class="modal-box">
+    <h2 id="modal-client-title" class="text-lg font-black mb-5" style="color:var(--dark)">New Client</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Full Name *</label>
+        <input id="mc-name" type="text" placeholder="Client's full name"/>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Date of Birth</label>
+          <input id="mc-dob" type="date"/>
+        </div>
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Diagnosis</label>
+          <input id="mc-diagnosis" type="text" placeholder="e.g. ASD Level 2"/>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Notes</label>
+        <textarea id="mc-notes" rows="2" placeholder="Clinical notes, communication style, preferences..."></textarea>
+      </div>
+      <p id="mc-err" class="hidden text-xs font-semibold text-red-600"></p>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModal('modal-client')" class="btn-ghost flex-1 py-2.5 text-sm">Cancel</button>
+      <button id="mc-delete-btn" onclick="deleteCurrentClient()" class="btn-danger px-4 py-2.5 text-sm hidden">Archive</button>
+      <button id="mc-save-btn" onclick="saveClient()" class="btn-primary flex-1 py-2.5 text-sm">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: CONFIRM LEAVE ══ -->
+<div id="modal-leave" class="modal-bg">
+  <div class="modal-box text-center">
+    <div class="text-4xl mb-3">⚠️</div>
+    <h2 class="text-lg font-black mb-2" style="color:var(--dark)">Leave Scoring?</h2>
+    <p class="text-sm text-slate-500 mb-6 leading-relaxed">All scored items are auto-saved. You can return and continue scoring at any time.</p>
+    <div class="flex gap-3">
+      <button onclick="closeModal('modal-leave')" class="btn-ghost flex-1 py-2.5 text-sm">Keep Scoring</button>
+      <button onclick="leaveScoring()" class="btn-primary flex-1 py-2.5 text-sm">Yes, Leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CARD VIEWER (fullscreen stimulus display) ══ -->
+<div id="card-viewer"
+  style="display:none;position:fixed;inset:0;z-index:1000;background:#0d1b2e;
+         flex-direction:column;align-items:center;justify-content:center;
+         user-select:none;-webkit-user-select:none;">
+
+  <!-- Header -->
+  <div style="position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;
+    justify-content:space-between;padding:0 18px;z-index:2;">
+    <span id="cv-set-name" style="color:rgba(255,255,255,.5);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;"></span>
+    <span id="cv-counter" style="color:rgba(255,255,255,.5);font-size:12px;font-weight:800;"></span>
+    <button onclick="closeCardViewer()"
+      style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.8);
+             width:38px;height:38px;border-radius:50%;font-size:15px;cursor:pointer;
+             display:flex;align-items:center;justify-content:center;transition:background .15s;"
+      onmouseover="this.style.background='rgba(255,255,255,.22)'"
+      onmouseout="this.style.background='rgba(255,255,255,.1)'">✕</button>
+  </div>
+
+  <!-- Card -->
+  <div id="cv-card" style="display:flex;align-items:center;justify-content:center;
+    width:100%;height:100%;padding:60px 76px 68px;box-sizing:border-box;"></div>
+
+  <!-- Prev zone -->
+  <button id="cv-prev" onclick="navCard(-1)" aria-label="Previous card"
+    style="position:absolute;left:0;top:54px;bottom:60px;width:13%;
+           background:transparent;border:none;cursor:pointer;
+           display:flex;align-items:center;justify-content:flex-start;padding-left:8px;">
+    <span style="font-size:54px;font-weight:100;color:rgba(255,255,255,.22);line-height:1;">‹</span>
+  </button>
+
+  <!-- Next zone -->
+  <button id="cv-next" onclick="navCard(1)" aria-label="Next card"
+    style="position:absolute;right:0;top:54px;bottom:60px;width:13%;
+           background:transparent;border:none;cursor:pointer;
+           display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
+    <span style="font-size:54px;font-weight:100;color:rgba(255,255,255,.22);line-height:1;">›</span>
+  </button>
+
+  <!-- Dot nav -->
+  <div id="cv-dots" style="position:absolute;bottom:14px;left:0;right:0;
+    display:flex;justify-content:center;gap:5px;flex-wrap:wrap;padding:0 60px;"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APPLICATION LOGIC
+     ══════════════════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let currentUser    = null;
+let currentProfile = null;
+let clpData        = null;        // loaded from JSON
+let allClients     = [];
+let currentClient  = null;
+let currentSession = null;        // { id, client_id, status, session_date }
+let sessionScores  = {};          // { item_code: { score, notes } }
+let currentDomain  = null;        // domain object from clpData
+let currentItemIdx = 0;
+let noteSaveTimer  = null;
+let compareChart   = null;
+let ispGoals       = [];
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+async function init() {
+  clpData = await fetch('continuum-skill-assessment.json').then(r => r.json())
+    .catch(() => null);
+
+  db.auth.onAuthStateChange(async (event, session) => {
+    try {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' && session) {
+        currentUser = session.user;
+        await ensureProfile();
+        await loadProfile();
+        showAppShell();
+        showView('clients');
+        loadClients();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null; currentProfile = null;
+        document.getElementById('app-shell').classList.add('hidden');
+        showView('login');
+      }
+    } catch(e) {
+      showErr('login-err', 'Error loading app: ' + e.message);
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = eid('login-email').value.trim();
+  const pass  = eid('login-pass').value;
+  eid('login-err').classList.add('hidden');
+  const btn = eid('login-btn');
+  if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+
+  if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+
+  if (error) {
+    const msg = error.message.toLowerCase().includes('confirm')
+      ? 'Please confirm your email first — check your inbox for the confirmation link.'
+      : error.message;
+    showErr('login-err', msg);
+    return;
+  }
+
+  if (data?.session) {
+    try {
+      currentUser = data.session.user;
+      await ensureProfile();
+      await loadProfile();
+      showAppShell();
+      showView('clients');
+      loadClients();
+    } catch(e) {
+      showErr('login-err', 'Signed in but error loading app: ' + e.message);
+    }
+  } else {
+    showErr('login-err', 'No session returned — please try again.');
+  }
+}
+
+async function doSignup() {
+  const email = eid('login-email').value.trim();
+  const pass  = eid('login-pass').value;
+  const name  = eid('signup-name').value.trim();
+  eid('login-err').classList.add('hidden');
+  if (!name) { showErr('login-err', 'Please enter your full name.'); return; }
+  const { data, error } = await db.auth.signUp({ email, password: pass });
+  if (error) { showErr('login-err', error.message); return; }
+  // create profile
+  await db.from('profiles').insert({ id: data.user.id, full_name: name, role: 'bcba' });
+  // show confirmation message
+  showErr('login-err', '✓ Account created! Check your email to confirm, then sign in.', true);
+  eid('signup-extra').classList.add('hidden');
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+}
+
+function toggleSignup() {
+  eid('signup-extra').classList.toggle('hidden');
+}
+
+async function ensureProfile() {
+  const { data } = await db.from('profiles').select('id').eq('id', currentUser.id).maybeSingle();
+  if (!data) {
+    const name = eid('signup-name')?.value?.trim() || currentUser.email;
+    await db.from('profiles').insert({ id: currentUser.id, full_name: name, role: 'bcba' });
+  }
+}
+
+async function loadProfile() {
+  const { data } = await db.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+  currentProfile = data;
+  const name = data?.full_name || currentUser.email;
+  eid('nav-user').textContent = name;
+}
+
+function showAppShell() {
+  eid('view-login').classList.remove('active');
+  document.getElementById('app-shell').classList.remove('hidden');
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLIENTS
+// ─────────────────────────────────────────────────────────────
+async function loadClients() {
+  const { data, error } = await db
+    .from('clients')
+    .select('*')
+    .eq('bcba_id', currentUser.id)
+    .is('archived_at', null)
+    .order('full_name');
+
+  if (error) { console.error(error); return; }
+  allClients = data || [];
+  renderClientGrid(allClients);
+}
+
+function renderClientGrid(clients) {
+  const grid = eid('client-grid');
+  const none = eid('no-clients');
+  if (!clients.length) { grid.innerHTML = ''; none.classList.remove('hidden'); return; }
+  none.classList.add('hidden');
+  grid.innerHTML = clients.map(c => {
+    const initials = c.full_name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const color = clientColor(c.id);
+    return `
+    <button onclick="openClient('${c.id}')"
+      class="card p-4 text-left hover:-translate-y-1 transition-transform duration-200 cursor-pointer border-2 border-transparent hover:border-teal-200"
+      style="touch-action:manipulation;">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg text-white mb-3"
+        style="background:${color};">${initials}</div>
+      <p class="font-bold text-sm truncate" style="color:var(--dark)">${escHtml(c.full_name)}</p>
+      <p class="text-xs text-slate-400 mt-0.5 truncate">${escHtml(c.diagnosis || 'No diagnosis listed')}</p>
+    </button>`;
+  }).join('');
+}
+
+function filterClients(q) {
+  const filtered = allClients.filter(c =>
+    c.full_name.toLowerCase().includes(q.toLowerCase()) ||
+    (c.diagnosis || '').toLowerCase().includes(q.toLowerCase())
+  );
+  renderClientGrid(filtered);
+}
+
+async function openClient(id) {
+  currentClient = allClients.find(c => c.id === id);
+  if (!currentClient) return;
+
+  eid('cp-name').textContent = currentClient.full_name;
+  const dob = currentClient.date_of_birth
+    ? 'DOB: ' + new Date(currentClient.date_of_birth + 'T12:00:00').toLocaleDateString('en-CA')
+    : '';
+  eid('cp-meta').textContent = [dob, currentClient.diagnosis].filter(Boolean).join(' · ');
+
+  showView('client');
+  loadSessions();
+}
+
+async function loadSessions() {
+  const { data } = await db
+    .from('clp_sessions')
+    .select('*')
+    .eq('client_id', currentClient.id)
+    .order('session_date', { ascending: false });
+
+  const sessions = data || [];
+  const list = eid('sessions-list');
+  const none = eid('no-sessions');
+  const summ = eid('cp-summary');
+
+  if (sessions.length) {
+    summ.classList.remove('hidden');
+    eid('cp-sessions-count').textContent = sessions.length;
+    eid('cp-last-date').textContent = new Date(sessions[0].session_date + 'T12:00:00')
+      .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    none.classList.add('hidden');
+    list.innerHTML = sessions.map(s => {
+      const dateStr = new Date(s.session_date + 'T12:00:00')
+        .toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+      const statusBadge = s.status === 'complete'
+        ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e8f5ee;color:var(--green)">✓ Complete</span>`
+        : `<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:#fff8e1;color:#b45309">In Progress</span>`;
+      return `
+      <div class="card p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div class="text-3xl select-none">📋</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm" style="color:var(--dark)">${dateStr}</p>
+          <div class="flex items-center gap-2 mt-0.5">${statusBadge}</div>
+          ${s.notes ? `<p class="text-xs text-slate-400 mt-1 truncate">${escHtml(s.notes)}</p>` : ''}
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button onclick="openSession('${s.id}','score')" class="btn-ghost px-3 py-1.5 text-xs font-semibold">
+            ${s.status === 'complete' ? '✏️ Edit' : '▶ Score'}
+          </button>
+          <button onclick="openSession('${s.id}','report')" class="btn-primary px-3 py-1.5 text-xs">
+            📊 Report
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    summ.classList.add('hidden');
+    list.innerHTML = '';
+    none.classList.remove('hidden');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SESSIONS
+// ─────────────────────────────────────────────────────────────
+async function startNewSession() {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await db.from('clp_sessions').insert({
+    client_id: currentClient.id,
+    bcba_id: currentUser.id,
+    session_date: today,
+    status: 'in_progress'
+  }).select().single();
+  if (error) { alert('Error creating session: ' + error.message); return; }
+  await openSession(data.id, 'score');
+}
+
+async function openSession(sessionId, dest) {
+  const { data: session } = await db
+    .from('clp_sessions').select('*').eq('id', sessionId).single();
+  currentSession = session;
+
+  // load existing scores into memory
+  const { data: scores } = await db
+    .from('clp_scores').select('*').eq('session_id', sessionId);
+  sessionScores = {};
+  (scores || []).forEach(s => {
+    sessionScores[s.item_code] = { score: s.score, notes: s.item_notes || '' };
+  });
+
+  if (dest === 'score') openScoringView();
+  else openReportView();
+}
+
+// ─────────────────────────────────────────────────────────────
+// SCORING VIEW
+// ─────────────────────────────────────────────────────────────
+function openScoringView() {
+  const domains = clpData.assessment.domains;
+  eid('sc-client-name').textContent = currentClient.full_name;
+  const dateStr = new Date(currentSession.session_date + 'T12:00:00')
+    .toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+  eid('sc-session-date').textContent = 'Assessment — ' + dateStr;
+
+  buildDomainStrip();
+
+  // go to first unscored domain, or first domain
+  const firstPartial = domains.find(d => {
+    const scored = d.items.filter(i => sessionScores[i.code] !== undefined).length;
+    return scored > 0 && scored < d.items.length;
+  }) || domains[0];
+
+  selectDomain(firstPartial);
+  showView('score');
+}
+
+function buildDomainStrip() {
+  const strip = eid('domain-strip');
+  const domains = clpData.assessment.domains;
+  strip.innerHTML = domains.map(d => {
+    const total  = d.items.length;
+    const scored = d.items.filter(i => sessionScores[i.code] !== undefined).length;
+    const cls = scored === total ? 'done' : scored > 0 ? 'partial' : 'empty';
+    const isActive = currentDomain && currentDomain.code === d.code ? ' active' : '';
+    return `<button class="domain-pill ${cls}${isActive}" onclick="selectDomain('${d.code}')"
+      id="pill-${d.code}" title="${d.name}">
+      ${cls === 'done' ? '✓' : scored+'/'+total} ${d.code}
+    </button>`;
+  }).join('');
+}
+
+function selectDomain(domain) {
+  if (typeof domain === 'string') {
+    domain = clpData.assessment.domains.find(d => d.code === domain);
+  }
+  currentDomain = domain;
+  currentItemIdx = 0;
+  updateDomainStrip();
+  renderCurrentItem();
+  updateDomainProgress();
+}
+
+function updateDomainStrip() {
+  const domains = clpData.assessment.domains;
+  domains.forEach(d => {
+    const pill = document.getElementById('pill-' + d.code);
+    if (!pill) return;
+    const total  = d.items.length;
+    const scored = d.items.filter(i => sessionScores[i.code] !== undefined).length;
+    const cls = scored === total ? 'done' : scored > 0 ? 'partial' : 'empty';
+    pill.className = 'domain-pill ' + cls + (d.code === currentDomain.code ? ' active' : '');
+    pill.textContent = (cls === 'done' ? '✓ ' : scored+'/'+total+' ') + d.code;
+  });
+  // scroll active pill into view
+  const activePill = document.getElementById('pill-' + currentDomain.code);
+  if (activePill) activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function updateDomainProgress() {
+  const items  = currentDomain.items;
+  const scored = items.filter(i => sessionScores[i.code] !== undefined).length;
+  eid('sc-domain-name').textContent = currentDomain.code + ' — ' + currentDomain.name;
+  eid('sc-domain-progress').textContent = scored + ' / ' + items.length + ' scored';
+  eid('sc-domain-bar').style.width = (scored / items.length * 100) + '%';
+  eid('sc-domain-purpose').textContent = currentDomain.purpose || '';
+}
+
+function renderCurrentItem() {
+  const item = currentDomain.items[currentItemIdx];
+  if (!item) return;
+
+  eid('sc-item-code').textContent = item.code;
+  eid('sc-item-name').textContent = item.name;
+  eid('sc-item-pos').textContent = (currentItemIdx + 1) + ' / ' + currentDomain.items.length;
+  eid('sc-admin-block').textContent = item.administration || '';
+  eid('sc-notes').value = sessionScores[item.code]?.notes || '';
+  eid('sc-save-status').textContent = '';
+
+  // build score buttons with criteria text ON them
+  const currentScore = sessionScores[item.code]?.score;
+  const btns = eid('sc-score-btns');
+  btns.innerHTML = [3, 2, 1, 0].map(score => {
+    const cls = ['score-3','score-2','score-1','score-0'][3 - score];
+    const labels = ['Not Yet', 'Attempted', 'Emerging', 'Mastered'];
+    const selected = currentScore === score ? ' selected' : '';
+    const criteria = item.criteria?.[String(score)] || '';
+    return `
+    <button class="score-btn ${cls}${selected}" onclick="setScore(${score})" style="touch-action:manipulation;">
+      <div class="s-num">${score}</div>
+      <div class="s-body">
+        <span class="s-label">${labels[score]}</span>
+        <span class="s-criteria">${escHtml(criteria)}</span>
+      </div>
+    </button>`;
+  }).join('');
+
+  // item mini-nav dots
+  const navDots = eid('sc-all-items-nav');
+  navDots.innerHTML = currentDomain.items.map((it, idx) => {
+    const sc = sessionScores[it.code];
+    const hasScore = sc !== undefined;
+    const isActive = idx === currentItemIdx;
+    const dotColor = !hasScore ? '#e2e8f0' :
+      sc.score === 3 ? '#1a6b3c' : sc.score === 2 ? '#b8860b' :
+      sc.score === 1 ? '#8c4000' : '#8c0000';
+    return `<button onclick="goToItem(${idx})" title="${it.code}"
+      style="width:${isActive?'24px':'10px'};height:10px;border-radius:9999px;
+             background:${isActive ? 'var(--navy)' : dotColor};
+             border:none;cursor:pointer;padding:0;flex-shrink:0;
+             transition:all .2s;touch-action:manipulation;"></button>`;
+  }).join('');
+
+  updateStimulusBar();
+  eid('sc-prev').disabled = currentItemIdx === 0;
+  eid('sc-next').textContent = currentItemIdx < currentDomain.items.length - 1 ? 'Next →' : 'Next Domain →';
+}
+
+async function setScore(score) {
+  const item = currentDomain.items[currentItemIdx];
+  sessionScores[item.code] = { score, notes: sessionScores[item.code]?.notes || '' };
+
+  // update button UI immediately
+  document.querySelectorAll('#sc-score-btns .score-btn').forEach((btn, i) => {
+    const btnScore = [3, 2, 1, 0][i];
+    btn.classList.toggle('selected', btnScore === score);
+  });
+
+  // update dots
+  renderCurrentItem(); // re-render dots with new score
+
+  // auto-advance after short delay
+  setTimeout(() => navItem(1), 300);
+
+  // save to Supabase
+  eid('sc-save-status').textContent = 'Saving...';
+  const { error } = await db.from('clp_scores').upsert({
+    session_id: currentSession.id,
+    domain_code: currentDomain.code,
+    item_code: item.code,
+    score,
+    item_notes: sessionScores[item.code].notes || null,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'session_id,item_code' });
+  eid('sc-save-status').textContent = error ? '⚠ Error' : '✓ Saved';
+  updateDomainProgress();
+  updateDomainStrip();
+}
+
+function navItem(dir) {
+  const items = currentDomain.items;
+  const newIdx = currentItemIdx + dir;
+  if (newIdx >= 0 && newIdx < items.length) {
+    currentItemIdx = newIdx;
+    renderCurrentItem();
+  } else if (dir > 0) {
+    // move to next domain
+    const domains = clpData.assessment.domains;
+    const curIdx = domains.findIndex(d => d.code === currentDomain.code);
+    if (curIdx < domains.length - 1) selectDomain(domains[curIdx + 1]);
+  }
+}
+
+function goToItem(idx) {
+  currentItemIdx = idx;
+  renderCurrentItem();
+}
+
+function scheduleNoteSave() {
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(saveCurrentNotes, 1200);
+}
+
+async function saveCurrentNotes() {
+  const item = currentDomain.items[currentItemIdx];
+  const notes = eid('sc-notes').value;
+  if (!sessionScores[item.code]) return; // don't save notes without a score
+  sessionScores[item.code].notes = notes;
+  await db.from('clp_scores').upsert({
+    session_id: currentSession.id,
+    domain_code: currentDomain.code,
+    item_code: item.code,
+    score: sessionScores[item.code].score,
+    item_notes: notes || null,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'session_id,item_code' });
+  eid('sc-save-status').textContent = '✓ Saved';
+}
+
+async function completeSession() {
+  const totalItems = clpData.assessment.domains.reduce((s, d) => s + d.items.length, 0);
+  const scoredItems = Object.keys(sessionScores).length;
+  if (scoredItems < totalItems) {
+    const pct = Math.round(scoredItems / totalItems * 100);
+    if (!confirm(`${scoredItems} of ${totalItems} items scored (${pct}%). Mark as complete anyway?`)) return;
+  }
+  await db.from('clp_sessions').update({
+    status: 'complete',
+    completed_at: new Date().toISOString()
+  }).eq('id', currentSession.id);
+  currentSession.status = 'complete';
+  openReportView();
+}
+
+function confirmLeaveScoring() {
+  eid('modal-leave').classList.add('open');
+}
+
+function leaveScoring() {
+  closeModal('modal-leave');
+  showView('client');
+  loadSessions();
+}
+
+// ─────────────────────────────────────────────────────────────
+// REPORT VIEW
+// ─────────────────────────────────────────────────────────────
+async function openReportView() {
+  const dateStr = new Date(currentSession.session_date + 'T12:00:00')
+    .toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+
+  eid('rp-client-name').textContent  = currentClient.full_name;
+  eid('rp-session-date').textContent = 'Report — ' + dateStr;
+  eid('rp-client-name-2').textContent = currentClient.full_name;
+  eid('rp-date-2').textContent = dateStr;
+  eid('rp-bcba').textContent = currentProfile?.full_name || currentUser.email;
+  eid('rp-status').textContent = currentSession.status === 'complete' ? 'Complete' : 'In Progress';
+
+  const domains = clpData.assessment.domains;
+  const totalItems  = domains.reduce((s, d) => s + d.items.length, 0);
+  const scoredItems = Object.keys(sessionScores).length;
+  const totalPossible = totalItems * 3;
+  const totalEarned   = Object.values(sessionScores).reduce((s, v) => s + (v.score || 0), 0);
+  const overallPct    = scoredItems > 0 ? Math.round(totalEarned / (scoredItems * 3) * 100) : 0;
+
+  // stats
+  eid('rp-stats').innerHTML = [
+    { label: 'Items Scored', value: scoredItems + ' / ' + totalItems, color: 'var(--navy)' },
+    { label: 'Overall Score', value: totalEarned + ' / ' + (scoredItems * 3), color: 'var(--teal)' },
+    { label: 'Avg %', value: overallPct + '%', color: overallPct >= 70 ? 'var(--green)' : overallPct >= 40 ? '#b8860b' : 'var(--red)' },
+    { label: 'Domains', value: domains.length, color: 'var(--navy)' }
+  ].map(s => `
+    <div class="card p-4 text-center">
+      <div class="text-2xl font-black" style="color:${s.color}">${s.value}</div>
+      <div class="text-xs text-slate-500 font-semibold uppercase tracking-wide mt-0.5">${s.label}</div>
+    </div>`).join('');
+
+  // domain bars
+  const catColors = {
+    'Basic Learning Skills': '#1e4d8c',
+    'Academic Skills':       '#2d7a4f',
+    'Self-Care Skills':      '#7a3d2d',
+    'Motor Skills':          '#5a2d7a',
+  };
+
+  const domainBarsHtml = domains.map(d => {
+    const maxScore = d.items.length * 3;
+    const earned = d.items.reduce((s, i) => s + (sessionScores[i.code]?.score || 0), 0);
+    const scored = d.items.filter(i => sessionScores[i.code] !== undefined).length;
+    const pct = scored > 0 ? Math.round(earned / (scored * 3) * 100) : 0;
+    const barW = scored > 0 ? pct : 0;
+    const color = catColors[d.category] || '#1e4d8c';
+    const pctColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? '#b8860b' : pct > 0 ? 'var(--red)' : '#94a3b8';
+    return `
+    <div class="domain-report-row">
+      <span class="text-xs font-bold w-16 shrink-0" style="color:${color}">${d.code}</span>
+      <span class="text-xs text-slate-600 w-40 truncate shrink-0 hidden sm:block">${d.name}</span>
+      <div class="flex-1 min-w-0 mx-2">
+        <div style="height:10px;background:#f1f5f9;border-radius:9999px;overflow:hidden;">
+          <div style="height:100%;width:${barW}%;background:${color};border-radius:9999px;transition:width .6s ease;"></div>
+        </div>
+      </div>
+      <span class="text-xs font-bold w-12 text-right shrink-0" style="color:${pctColor}">
+        ${scored > 0 ? pct + '%' : '—'}
+      </span>
+      <span class="text-xs text-slate-400 w-16 text-right shrink-0 hidden sm:block">
+        ${scored > 0 ? earned + '/' + (scored * 3) : '—'}
+      </span>
+    </div>`;
+  }).join('');
+  eid('rp-domain-bars').innerHTML = domainBarsHtml;
+
+  // notes
+  if (currentSession.notes) {
+    eid('rp-notes-wrap').classList.remove('hidden');
+    eid('rp-notes-text').textContent = currentSession.notes;
+  }
+
+  // domain detail table
+  eid('rp-domain-table').innerHTML = domains.map(d => {
+    const scored = d.items.filter(i => sessionScores[i.code] !== undefined).length;
+    const earned = d.items.reduce((s, i) => s + (sessionScores[i.code]?.score || 0), 0);
+    const pct    = scored > 0 ? Math.round(earned / (scored * 3) * 100) : null;
+    const color  = catColors[d.category] || '#1e4d8c';
+    const priority = pct !== null && pct < 40 ? ' ⚑' : '';
+    return `
+    <div class="domain-report-row">
+      <span class="text-xs font-bold w-14 shrink-0" style="color:${color}">${d.code}</span>
+      <span class="flex-1 text-xs font-semibold text-slate-700">${d.name}${priority}</span>
+      <span class="text-xs text-slate-500 w-20 text-right shrink-0">${scored}/${d.items.length} items</span>
+      <span class="text-xs font-bold w-14 text-right shrink-0" style="color:${pct !== null && pct < 40 ? 'var(--red)' : 'var(--dark)'}">
+        ${pct !== null ? pct + '%' : '—'}
+      </span>
+    </div>`;
+  }).join('');
+
+  // skills heatmap
+  renderSkillsHeatmap();
+
+  // previous session comparison
+  await renderCompareChart();
+
+  showView('report');
+}
+
+async function renderCompareChart() {
+  // get previous session for same client
+  const { data: prevSessions } = await db
+    .from('clp_sessions')
+    .select('id, session_date')
+    .eq('client_id', currentClient.id)
+    .eq('status', 'complete')
+    .neq('id', currentSession.id)
+    .order('session_date', { ascending: false })
+    .limit(1);
+
+  if (!prevSessions || !prevSessions.length) {
+    eid('rp-compare-wrap').classList.add('hidden');
+    return;
+  }
+
+  const prev = prevSessions[0];
+  const { data: prevScores } = await db
+    .from('clp_scores').select('*').eq('session_id', prev.id);
+
+  const prevMap = {};
+  (prevScores || []).forEach(s => { prevMap[s.item_code] = s.score; });
+
+  const domains = clpData.assessment.domains;
+  const labels = domains.map(d => d.code);
+  const curr = domains.map(d => {
+    const sc = d.items.filter(i => sessionScores[i.code] !== undefined).length;
+    return sc > 0 ? Math.round(d.items.reduce((s,i) => s + (sessionScores[i.code]?.score||0),0) / (sc*3) * 100) : 0;
+  });
+  const previous = domains.map(d => {
+    const sc = d.items.filter(i => prevMap[i.code] !== undefined).length;
+    return sc > 0 ? Math.round(d.items.reduce((s,i) => s + (prevMap[i.code]||0),0) / (sc*3) * 100) : 0;
+  });
+
+  eid('rp-compare-wrap').classList.remove('hidden');
+  if (compareChart) compareChart.destroy();
+  const ctx = document.getElementById('rp-compare-chart').getContext('2d');
+  compareChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Previous (' + prev.session_date + ')', data: previous, backgroundColor: '#e2e8f0', borderRadius: 4 },
+        { label: 'Current (' + currentSession.session_date + ')', data: curr, backgroundColor: '#2a8a9c', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { min: 0, max: 100, ticks: { callback: v => v + '%', font: { size: 11 } }, grid: { color: '#f1f5f9' } },
+        x: { ticks: { font: { size: 9 } } }
+      },
+      plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 12 } } }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// SKILLS HEATMAP
+// ─────────────────────────────────────────────────────────────
+function renderSkillsHeatmap() {
+  const el = eid('rp-heatmap');
+  if (!el || !clpData) return;
+  const domains = clpData.assessment.domains;
+
+  const C = {
+    3: { bg:'#bbf7d0', bd:'#15803d' },
+    2: { bg:'#fef08a', bd:'#a16207' },
+    1: { bg:'#fed7aa', bd:'#c2410c' },
+    0: { bg:'#fecaca', bd:'#b91c1c' },
+  };
+  const unscored = { bg:'#f0f4f8', bd:'#cbd5e1' };
+
+  const cols = domains.map(d => {
+    const cells = d.items.map(item => {
+      const sc = sessionScores[item.code];
+      const s  = sc !== undefined ? sc.score : null;
+      const c  = s !== null ? C[s] : unscored;
+      const lbl = s !== null ? ['Not Yet','Attempted','Emerging','Mastered'][s] : 'Not scored';
+      return `<div title="${item.code}: ${escHtml(item.name)} — ${lbl}"
+        style="width:14px;height:14px;border-radius:2px;background:${c.bg};
+               border:1px solid ${c.bd};cursor:default;flex-shrink:0;"></div>`;
+    }).join('');
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      ${cells}
+      <div style="writing-mode:vertical-rl;transform:rotate(180deg);
+                  font-size:8px;font-weight:800;color:#475569;
+                  height:50px;overflow:hidden;margin-top:3px;
+                  display:flex;align-items:center;" title="${escHtml(d.name)}">${d.code}</div>
+    </div>`;
+  }).join('');
+
+  const legend = [
+    [3,'Mastered'],[2,'Emerging'],[1,'Attempted'],[0,'Not Yet'],[null,'Not Scored']
+  ].map(([s, lbl]) => {
+    const c = s !== null ? C[s] : unscored;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#475569;">
+      <span style="width:12px;height:12px;border-radius:2px;background:${c.bg};border:1px solid ${c.bd};display:inline-block;flex-shrink:0;"></span>
+      ${lbl}${s !== null ? ' ('+s+')' : ''}
+    </span>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="overflow-x:auto;padding-bottom:4px;">
+      <div style="display:inline-flex;gap:3px;align-items:flex-end;">${cols}</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 16px;margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;">
+      <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;align-self:center;">Legend:</span>
+      ${legend}
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ISP RECOMMENDATIONS
+// ─────────────────────────────────────────────────────────────
+function openISPView() {
+  ispGoals = generateISPGoals();
+
+  const dateStr = new Date(currentSession.session_date + 'T12:00:00')
+    .toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  eid('isp-subtitle').textContent    = currentClient.full_name + ' — ' + dateStr;
+  eid('isp-client-name').textContent = currentClient.full_name;
+  eid('isp-date').textContent        = dateStr;
+  eid('isp-bcba').textContent        = currentProfile?.full_name || currentUser.email;
+
+  renderISPGoals();
+  showView('isp');
+}
+
+// Domain-specific antecedents and teaching strategies
+const ISP_CONTEXT = {
+  CP: {
+    antecedent: 'Given preferred reinforcers identified through preference assessments and structured 1:1 teaching sessions',
+    criterion: '80% correct across 3 consecutive sessions',
+    measurement: 'Frequency/percent correct data per session',
+    strategies: [
+      'Pairing procedures to build therapist as conditioned reinforcer',
+      'Errorless teaching with gradual reduction of prompts',
+      'Differential reinforcement of compliance and on-task behavior (DRA)',
+      'Behavioral momentum using high-probability requests before low-probability targets',
+    ],
+  },
+  VP: {
+    antecedent: 'Given 1:1 table-top instruction with visual materials presented at eye level',
+    criterion: '90% correct across 3 consecutive sessions',
+    measurement: 'Percent correct per probe session',
+    strategies: [
+      'Discrete Trial Training (DTT) with clear stimulus presentation',
+      'Errorless learning with most-to-least prompt fading',
+      'Simultaneous prompting or graduated guidance for visual matching',
+      'Reinforcement of correct independent responses',
+    ],
+  },
+  LR: {
+    antecedent: 'Given verbal instructions delivered in natural and structured settings, with materials present',
+    criterion: '80% correct across 3 consecutive sessions',
+    measurement: 'Percent correct per probe session',
+    strategies: [
+      'Receptive discrimination training using array of 2–5 stimuli',
+      'Errorless learning progressing to error correction procedures',
+      'Natural Environment Teaching (NET) to build generalization',
+      'Stimulus rotation and varied practice to prevent rote responding',
+    ],
+  },
+  MI: {
+    antecedent: 'Given a live model demonstrating a motor action and an instruction to "do this"',
+    criterion: '80% correct within 3 seconds across 3 consecutive sessions',
+    measurement: 'Percent independent correct imitations per session',
+    strategies: [
+      'Graduated guidance fading from full physical to gestural prompts',
+      'Immediate reinforcement of successive approximations (shaping)',
+      'Video modeling as supplementary teaching tool',
+      'Generalization across multiple models and novel actions',
+    ],
+  },
+  VI: {
+    antecedent: 'Given a vocal model presented clearly and at a normal pace in a quiet setting',
+    criterion: 'Intelligible approximation or correct production on 80% of trials across 3 sessions',
+    measurement: 'Percent correct vocal imitations per session',
+    strategies: [
+      'Echoic training progressing from simple to complex sounds and words',
+      'Shaping successive approximations toward target phonemes',
+      'Natural reinforcement contingent on vocal output (mand-model)',
+      'Speech-language collaboration for articulation goals as appropriate',
+    ],
+  },
+  MN: {
+    antecedent: 'Given a motivating operation (MO) present for a preferred item, activity, or information',
+    criterion: '80% unprompted mands across 3 consecutive sessions',
+    measurement: 'Frequency of unprompted vs. prompted mands per session',
+    strategies: [
+      'Mand training: contrive MOs and prompt target mand, then fade prompts',
+      'Transfer from echoic or tact control to pure mand control',
+      'Honoring all mands immediately to maintain motivation to communicate',
+      'Expand mand repertoire across modalities (vocal, AAC, sign) as appropriate',
+    ],
+  },
+  TC: {
+    antecedent: 'Given a visual stimulus (object, picture, action, or property) presented without additional contextual cues',
+    criterion: '80% correct unprompted labels across 3 consecutive sessions',
+    measurement: 'Percent correct independent tacts per probe session',
+    strategies: [
+      'Tact training: present stimulus, provide echoic prompt, reinforce correct label',
+      'Systematic prompt fading from echoic to no prompt',
+      'Generalization across multiple exemplars, settings, and people',
+      'Expand to action tacts, feature/function/class (FFC) tacting',
+    ],
+  },
+  IV: {
+    antecedent: 'Given a verbal antecedent stimulus (question, fill-in, or conversational exchange) without the item present',
+    criterion: '80% correct responses across 3 consecutive sessions',
+    measurement: 'Percent correct intraverbal responses per probe session',
+    strategies: [
+      'Intraverbal training progressing from fill-ins to WH-questions to conversation',
+      'Transfer from tact or echoic control to intraverbal control via fading',
+      'Varied practice: rotate question types and topics to prevent rote responding',
+      'Natural Environment Teaching to build conversational reciprocity',
+    ],
+  },
+  SL: {
+    antecedent: 'Given natural activities, preferred items, and social partners available without direct prompting',
+    criterion: 'Target communications observed in 3 of 4 consecutive observation intervals across 3 sessions',
+    measurement: 'Frequency of spontaneous language per observation interval',
+    strategies: [
+      'Incidental teaching: arrange environment to create communication opportunities',
+      'Time delay procedures to prompt communication without over-prompting',
+      'Reinforce all unprompted verbal behavior with natural consequences',
+      'Mand training to build motivation to communicate spontaneously',
+    ],
+  },
+  SG: {
+    antecedent: 'Given verbal models, picture stimuli, or conversational contexts requiring grammatically varied responses',
+    criterion: '80% grammatically correct use across 3 consecutive sessions',
+    measurement: 'Percent correct use of target grammar forms per session',
+    strategies: [
+      'Recasting: model correct grammar form after client produces an error',
+      'Sentence completion tasks progressing to spontaneous production',
+      'Naturalistic language teaching embedded in play and routine activities',
+      'Reinforcement of spontaneous use of target grammar forms',
+    ],
+  },
+  PL: {
+    antecedent: 'Given access to a variety of age-appropriate toys, materials, and leisure activities',
+    criterion: 'Independent engagement with target play skills for 3+ minutes across 3 sessions',
+    measurement: 'Duration and quality of independent or cooperative play per observation',
+    strategies: [
+      'Systematic instruction on toy use with graduated guidance',
+      'Video modeling of play sequences with reinforced practice',
+      'Play-based naturalistic teaching with adult facilitation then fading',
+      'Peer inclusion and facilitated play with typically developing peers',
+    ],
+  },
+  SI: {
+    antecedent: 'Given peer interaction opportunities in natural, semi-structured, and structured social settings',
+    criterion: 'Target social behavior observed on 80% of opportunities across 3 sessions',
+    measurement: 'Frequency or percent of opportunities with target social behavior per session',
+    strategies: [
+      'Social skills training: model, practice, feedback, and generalization',
+      'Peer-mediated instruction and peer buddy programs',
+      'Social narratives (Social Stories) and video modeling',
+      'Structured social games with reinforcement for target social behaviors',
+    ],
+  },
+  GI: {
+    antecedent: 'Given small or large group instruction with 2–5 peers and a group facilitator',
+    criterion: '80% on-task and responding appropriately across 3 consecutive group sessions',
+    measurement: 'Percent of intervals with appropriate group behavior per session',
+    strategies: [
+      'Shaping participation in groups starting with 1:1 then fading to group',
+      'Group contingency reinforcement systems (e.g., token economy)',
+      'Visual supports for group routines and turn-taking expectations',
+      'Differential reinforcement of group-appropriate behavior',
+    ],
+  },
+  RT: {
+    antecedent: 'Given classroom or structured activity routines with visual schedules and transition cues',
+    criterion: 'Independent completion of target routines on 80% of opportunities across 3 sessions',
+    measurement: 'Percent of routine steps completed independently per observation',
+    strategies: [
+      'Task analysis of routines with step-by-step instruction',
+      'Visual activity schedules and first-then boards',
+      'Graduated guidance fading across routine steps',
+      'Reinforcement for independent transitions and routine completion',
+    ],
+  },
+  GN: {
+    antecedent: 'Given novel stimuli, settings, people, and contexts beyond the original teaching environment',
+    criterion: 'Demonstrates skill with 3 novel stimuli/settings across 3 consecutive probes',
+    measurement: 'Percent correct across varied generalization probe conditions',
+    strategies: [
+      'Program for generalization from the start: teach with multiple exemplars',
+      'Generalization probes in natural settings with novel people and materials',
+      'Loosely structure teaching conditions to prevent narrow stimulus control',
+      'Reinforce responses to novel stimuli at the same rate as trained stimuli',
+    ],
+  },
+  RD: {
+    antecedent: 'Given written text, sight words, or phonics materials at the appropriate instructional level',
+    criterion: '90% correct identification or decoding across 3 consecutive sessions',
+    measurement: 'Percent correct words read or decoded per session',
+    strategies: [
+      'Errorless teaching of sight words with picture-to-text matching progression',
+      'Phonics instruction with systematic sound-symbol correspondence',
+      'Repeated reading practice with immediate error correction',
+      'Generalization to functional reading materials (labels, signs, books)',
+    ],
+  },
+  MT: {
+    antecedent: 'Given math materials (manipulatives, worksheets, or verbal problems) at the appropriate instructional level',
+    criterion: '90% correct across 3 consecutive sessions',
+    measurement: 'Percent correct responses per session',
+    strategies: [
+      'Concrete-Representational-Abstract (CRA) instructional sequence',
+      'Discrete Trial Training for math fact fluency',
+      'Visual supports: number lines, counting objects, place value charts',
+      'Generalization to functional math (money, time, measurement)',
+    ],
+  },
+  WT: {
+    antecedent: 'Given appropriate writing tools, paper, or assistive technology and a model or verbal prompt',
+    criterion: '80% legible and correct productions across 3 consecutive sessions',
+    measurement: 'Percent correct letter/word formations per session',
+    strategies: [
+      'Hand-over-hand guidance fading to independent writing',
+      'Visual models and tracing before independent production',
+      'Shaping successive approximations toward correct letter formation',
+      'Functional writing tasks (name, labels, messages) for motivation',
+    ],
+  },
+  SP: {
+    antecedent: 'Given a verbal or written prompt to spell target words across varied instructional formats',
+    criterion: '90% correct spelled responses across 3 consecutive sessions',
+    measurement: 'Percent correct spelled words per session',
+    strategies: [
+      'Cover-Copy-Compare procedure for spelling practice',
+      'Errorless learning with immediate error correction',
+      'Multisensory spelling (auditory, visual, tactile)',
+      'Generalization to functional writing and word use in context',
+    ],
+  },
+  DS: {
+    antecedent: 'Given natural dressing routines at appropriate times of day with necessary clothing and materials available',
+    criterion: 'Independent completion of task analysis steps on 80% of trials across 3 sessions',
+    measurement: 'Percent of dressing task analysis steps completed independently',
+    strategies: [
+      'Task analysis of dressing sequences with backward chaining',
+      'Physical guidance fading from full assist to independence',
+      'Video modeling of dressing steps',
+      'Self-monitoring checklist once partial independence is established',
+    ],
+  },
+  EM: {
+    antecedent: 'Given natural mealtime routines with appropriate utensils, foods, and seating setup',
+    criterion: 'Independent completion of target mealtime skills on 80% of opportunities across 3 sessions',
+    measurement: 'Percent of mealtime skill steps completed independently per meal',
+    strategies: [
+      'Task analysis of eating routines with graduated guidance',
+      'Food exposure hierarchy for selective eating (systematic desensitization)',
+      'Differential reinforcement of mealtime-appropriate behavior',
+      'Backward chaining for utensil use and self-feeding skills',
+    ],
+  },
+  GH: {
+    antecedent: 'Given natural daily hygiene routines (morning, bedtime, after toilet) with materials accessible',
+    criterion: 'Independent completion of task analysis steps on 80% of opportunities across 3 sessions',
+    measurement: 'Percent of hygiene routine steps completed independently',
+    strategies: [
+      'Task analysis with forward or backward chaining',
+      'Visual schedule for hygiene routine steps',
+      'Graduated guidance fading from full physical to verbal prompt',
+      'Self-monitoring using visual checklist once partial independence achieved',
+    ],
+  },
+  TL: {
+    antecedent: 'Given scheduled toilet training opportunities, environmental setup, and access to bathroom',
+    criterion: 'Independent toileting with no accidents across 5 consecutive days',
+    measurement: 'Frequency of independent toileting, prompted toileting, and accidents per day',
+    strategies: [
+      'Scheduled toilet sits with reinforcement for elimination on toilet',
+      'Urine alarm or moisture sensor for awareness training as appropriate',
+      'Graduated fading of physical and verbal prompts across routine steps',
+      'Task analysis of full toileting routine (approach, undress, eliminate, wipe, dress, flush, wash)',
+    ],
+  },
+  GM: {
+    antecedent: 'Given open physical space, appropriate equipment, and an adult model or instruction',
+    criterion: '80% correct or successful completion of target motor skill across 3 consecutive sessions',
+    measurement: 'Percent correct motor performances or duration of skill per session',
+    strategies: [
+      'Physical guidance and shaping toward target motor patterns',
+      'Video modeling of motor skill performance',
+      'Repeated practice with reinforcement for effort and improvement',
+      'Occupational or physical therapy collaboration as appropriate',
+    ],
+  },
+  FM: {
+    antecedent: 'Given age-appropriate fine motor materials (scissors, pencils, manipulatives) and a model or instruction',
+    criterion: '80% correct or successful completion of target fine motor skill across 3 consecutive sessions',
+    measurement: 'Percent correct fine motor performances per session',
+    strategies: [
+      'Hand-over-hand guidance fading to independent manipulation',
+      'Shaping successive approximations toward target grip and control',
+      'Repeated practice with preferred fine motor activities for motivation',
+      'Occupational therapy collaboration for assessment and specialized techniques',
+    ],
+  },
+};
+
+function generateISPGoals() {
+  const domains   = clpData.assessment.domains;
+  const firstName = currentClient.full_name.split(' ')[0];
+  const goals     = [];
+
+  domains.forEach(d => {
+    const scored = d.items.filter(i => sessionScores[i.code] !== undefined);
+    if (!scored.length) return;
+
+    const earned = scored.reduce((s, i) => s + sessionScores[i.code].score, 0);
+    const pct    = Math.round(earned / (scored.length * 3) * 100);
+
+    const targets = scored
+      .filter(i => sessionScores[i.code].score < 3)
+      .map(i => ({ code: i.code, name: i.name, score: sessionScores[i.code].score }))
+      .sort((a, b) => a.score - b.score);
+
+    if (!targets.length) return;
+
+    const priority = pct < 40 ? 1 : pct < 65 ? 2 : pct < 80 ? 3 : null;
+    if (priority === null) return;
+
+    const notYet    = targets.filter(t => t.score === 0).length;
+    const attempted = targets.filter(t => t.score === 1).length;
+    const emerging  = targets.filter(t => t.score === 2).length;
+    const mastered  = scored.length - targets.length;
+
+    const parts = [];
+    if (notYet)    parts.push(notYet    + (notYet    === 1 ? ' skill' : ' skills') + ' not yet acquired');
+    if (attempted) parts.push(attempted + (attempted === 1 ? ' skill' : ' skills') + ' attempted');
+    if (emerging)  parts.push(emerging  + (emerging  === 1 ? ' skill' : ' skills') + ' emerging');
+    if (mastered)  parts.push(mastered  + (mastered  === 1 ? ' skill' : ' skills') + ' mastered');
+    const baseline = 'Baseline (' + currentSession.session_date + '): ' + pct + '% — ' + parts.join(', ') + '.';
+
+    const ctx       = ISP_CONTEXT[d.code] || {
+      antecedent:  'Given structured and naturalistic teaching opportunities',
+      criterion:   '80% correct across 3 consecutive sessions',
+      measurement: 'Frequency/percent correct data per session',
+      strategies:  [
+        'Discrete Trial Training (DTT) for initial skill acquisition',
+        'Natural Environment Teaching (NET) for generalization',
+        'Systematic prompt fading (most-to-least or time delay)',
+        'Differential reinforcement of target responses',
+      ],
+    };
+
+    const skillList = targets.slice(0, 6).map(t => t.name).join('; ');
+    const moreCount = targets.length > 6 ? ' (+ ' + (targets.length - 6) + ' more targets)' : '';
+
+    const goalText =
+      ctx.antecedent + ', ' + firstName + ' will demonstrate the following ' + d.name + ' skills: ' + skillList + moreCount + '.\n\n' +
+      firstName + ' will meet the mastery criterion for each target skill as measured by direct observation and therapist data collection.\n\n' +
+      'Mastery Criterion: ' + ctx.criterion + '\n' +
+      'Measurement: ' + ctx.measurement + '\n\n' +
+      'Suggested Teaching Strategies:\n' +
+      ctx.strategies.map(s => '• ' + s).join('\n');
+
+    goals.push({ domainCode: d.code, domainName: d.name, category: d.category || '', priority, pct, targets, baseline, goalText, included: true });
+  });
+
+  goals.sort((a, b) => a.priority - b.priority || a.pct - b.pct);
+  return goals;
+}
+
+function renderISPGoals() {
+  const container = eid('isp-goals-list');
+
+  if (!ispGoals.length) {
+    container.innerHTML = `<div class="card p-8 text-center">
+      <div class="text-4xl mb-3">🎉</div>
+      <p class="font-bold text-lg" style="color:var(--dark)">No Goal Targets Found</p>
+      <p class="text-sm text-slate-500 mt-1">All scored domains are at or near mastery. Excellent progress!</p>
+    </div>`;
+    return;
+  }
+
+  const pConfig = {
+    1: { label:'Priority 1 — High Focus Skills (< 40%)',  color:'#be123c', cls:'priority-badge-1' },
+    2: { label:'Priority 2 — Developing Skills (40–64%)', color:'#b45309', cls:'priority-badge-2' },
+    3: { label:'Priority 3 — Emerging Skills (65–79%)',   color:'#15803d', cls:'priority-badge-3' },
+  };
+  const scoreBadge = {
+    0: 'background:#fee2e2;color:#be123c;',
+    1: 'background:#ffedd5;color:#c2410c;',
+    2: 'background:#fef9c3;color:#a16207;',
+  };
+
+  let html = '';
+  [1, 2, 3].forEach(p => {
+    const pg = ispGoals.filter(g => g.priority === p);
+    if (!pg.length) return;
+    const pc = pConfig[p];
+    html += `<div class="flex items-center gap-3 mt-5 mb-3 no-print">
+      <div class="h-px flex-1" style="background:#e2e8f0;"></div>
+      <span class="text-xs font-black uppercase tracking-widest shrink-0" style="color:${pc.color}">${pc.label}</span>
+      <div class="h-px flex-1" style="background:#e2e8f0;"></div>
+    </div>
+    <div class="print-section-header" style="display:none;">${pc.label}</div>`;
+
+    pg.forEach(goal => {
+      const idx         = ispGoals.indexOf(goal);
+      const excludedCls = goal.included ? '' : ' excluded';
+      const badges      = goal.targets.map(t =>
+        `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:9999px;${scoreBadge[t.score]||''}">${escHtml(t.code)}: ${escHtml(t.name)}</span>`
+      ).join('');
+
+      html += `<div class="card p-5 mb-3 isp-goal-card${excludedCls}" id="isp-goal-${idx}">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white" style="background:var(--navy)">${escHtml(goal.domainCode)}</span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${pc.cls}">P${goal.priority}</span>
+            <span class="text-sm font-semibold text-slate-600">${escHtml(goal.domainName)}</span>
+            <span class="text-xs text-slate-400">${goal.pct}% overall</span>
+          </div>
+          <label class="flex items-center gap-1.5 cursor-pointer shrink-0 no-print" style="margin-top:2px;">
+            <span class="text-xs font-semibold text-slate-500">Include</span>
+            <input type="checkbox" onchange="toggleGoalInclude(${idx})" ${goal.included ? 'checked' : ''}
+              style="width:16px;height:16px;cursor:pointer;accent-color:var(--teal-dk);"/>
+          </label>
+        </div>
+
+        <p class="text-xs italic mb-3" style="color:#64748b">${escHtml(goal.baseline)}</p>
+
+        <div class="mb-3">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 block">Goal Statement (editable)</label>
+          <textarea id="isp-ta-${idx}" rows="7" oninput="ispGoals[${idx}].goalText=this.value"
+            style="font-size:.82rem;line-height:1.65;"></textarea>
+        </div>
+
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Target Skills (${goal.targets.length})</p>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${badges}</div>
+        </div>
+      </div>`;
+    });
+  });
+
+  container.innerHTML = html;
+
+  // Set textarea values safely (avoids innerHTML injection issues)
+  ispGoals.forEach((goal, idx) => {
+    const ta = eid('isp-ta-' + idx);
+    if (ta) ta.value = goal.goalText;
+  });
+}
+
+function toggleGoalInclude(idx) {
+  if (!ispGoals[idx]) return;
+  ispGoals[idx].included = !ispGoals[idx].included;
+  const card = eid('isp-goal-' + idx);
+  if (card) card.classList.toggle('excluded', !ispGoals[idx].included);
+}
+
+// ─────────────────────────────────────────────────────────────
+// STIMULUS CARD LIBRARY
+// ─────────────────────────────────────────────────────────────
+// Per-item stimulus lookup — keyed by item code.
+// sets: card set keys to show buttons for
+// pair: true → show pair picker (two dropdowns + Present Both)
+// physical: strings to show in the "Get from kit" chip
+// bodyUnlabeled: true → open body card at unlabeled index (index 1)
+// unlabeled: true → show card without text label (child must produce the label)
+const ITEM_STIMULI = {
+  // ── VP Visual Performance ──────────────────────────────────
+  'VP-01': { physical:['bright colored object (ball or toy)'] },           // tracking task — real moving object
+  'VP-02': { sets:['objects'], pair:true },                                  // match: sample + foil pair
+  'VP-03': { sets:['objects'], pair:true },                                  // match identical pictures: sample vs. array
+  'VP-04': { sets:['objects'], multi:3 },                                    // 3D object → 3-picture array
+  'VP-05': { sets:['colors'], physical:['mixed color tokens (2-3 colors)', 'sorting containers'] },
+  'VP-06': { sets:['shapes'], physical:['flat shape pieces (circle, square, triangle)', 'sorting areas'] },
+  'VP-07': { sets:['concepts'], physical:['identical objects in 2 sizes (large & small)'] },
+  'VP-08': { sets:['colors','shapes'] },                                     // match by shared feature
+  'VP-09': { physical:['puzzle (2-4 pieces)'] },
+  'VP-10': { physical:['puzzle (5-12 pieces)'] },
+  'VP-11': { physical:['picture sequence cards (3-4 step event)'] },        // cracking egg → cooking → eating
+  'VP-12': { physical:['picture cards with missing elements'] },             // car with 3 wheels, face with no mouth
+
+  // ── LR Listener Responding ─────────────────────────────────
+  'LR-03': { sets:['objects'], pair:true, unlabeled:true },                  // "give me the ball" — label gives away answer
+  'LR-04': { sets:['objects'], multi:5, unlabeled:true },                    // "give me the ball" — label gives away answer
+  'LR-05': { sets:['body'] },                                                // therapist reference only — labeled is correct
+  'LR-06': { sets:['body'], bodyUnlabeled:true },                            // identify body part in picture (no labels)
+  'LR-07': { sets:['objects'], pair:true, unlabeled:true },                  // "which one do you use to eat?" — no labels
+  'LR-08': { sets:['objects'], multi:5, unlabeled:true },                    // "point to the animal" — no labels
+  'LR-09': { physical:['2+ common objects (cup, book, ball, block)', 'table surface'] }, // 2-step instructions
+  'LR-10': { sets:['colors','shapes','concepts'], pair:true, unlabeled:true }, // "touch the red one" — label gives away answer
+  'LR-11': { physical:['small block','container (cup or box)'] },
+  'LR-12': { sets:['actions'], multi:4, unlabeled:true },                    // identify action from unlabeled array of 4
+  'LR-13': { featureArray:true, count:4 },                                   // identify by 2+ features — compound shape+color+size cards
+  'LR-14': { physical:['pencil','box or container'] },
+  'LR-15': { sets:['colors','objects'], pair:true, unlabeled:true },         // "touch NOT red" — label defeats purpose
+
+  // ── TC Labeling (child produces the label → cards must be unlabeled) ──
+  'TC-01': { sets:['objects'], physical:['common 3D objects: cup, ball, shoe, spoon, book'], unlabeled:true },
+  'TC-02': { sets:['objects'], unlabeled:true },                             // "what is this?" — picture without label
+  'TC-03': { sets:['actions'], unlabeled:true },                             // "what is she doing?" — no label
+  'TC-04': { sets:['body'] },                                                // point to body part on learner / picture (labeled ref)
+  'TC-05': { sets:['colors'], unlabeled:true },                              // "what color is this?"
+  'TC-06': { sets:['shapes'], unlabeled:true },                              // "what shape is this?"
+  'TC-07': { sets:['concepts'], physical:['pairs of identical objects in 2 sizes (4 pairs)'], unlabeled:true },
+  'TC-08': { sets:['emotions'], unlabeled:true },                            // "how does she feel?"
+  'TC-09': { sets:['objects'], unlabeled:true },                             // "what category is this?"
+  'TC-10': { physical:['scissors','phone (toy)','toothbrush','cup','key','umbrella','pencil'] },
+  'TC-11': { physical:['soft item (plush)','hard item (block)','rough surface (sandpaper)','smooth surface'] },
+  'TC-12': { photos:[
+    { label:'Park Scene',      url:'https://source.unsplash.com/900x700/?park,children,outdoor,playing' },
+    { label:'Kitchen Scene',   url:'https://source.unsplash.com/900x700/?kitchen,family,cooking,home' },
+    { label:'Classroom Scene', url:'https://source.unsplash.com/900x700/?classroom,school,children,learning' },
+  ]},
+  'TC-13': { sets:['objects'], unlabeled:true },                             // "big ball", "red car" — objects only, child produces adjective+noun
+
+  // ── SG Syntax & Grammar ────────────────────────────────────
+  'SG-03': { sets:['objects'], unlabeled:true },                             // regular plurals — pictures of multiple items
+  'SG-04': { physical:['irregular plural picture cards (feet, teeth, mice, children, geese)'] },
+  'SG-05': { sets:['actions'], unlabeled:true },                             // present progressive: "what is he doing?"
+  'SG-06': { sets:['actions'], unlabeled:true },                             // past tense: "what happened?"
+  'SG-07': { sets:['actions'], unlabeled:true },                             // irregular past tense: ran, fell, ate
+
+  // ── PL Play & Leisure ──────────────────────────────────────
+  'PL-03': { physical:['cause-effect toys (pop-up toy, light-up button, jack-in-the-box)'] },
+  'PL-04': { physical:['blocks'] },
+  'PL-05': { physical:['functional toy set (toy phone, cup, spoon, toy car)'] },
+  'PL-06': { physical:['blocks'] },
+  'PL-07': { physical:['dress-up items or props'] },
+  'PL-08': { physical:['ball'] },
+
+  // ── RD Reading ────────────────────────────────────────────
+  'RD-01': { sets:['letters'], pair:true },                                  // discriminate letters: "point to B"
+  'RD-02': { sets:['letters'] },                                             // name uppercase letters
+  'RD-03': { sets:['letters'] },                                             // name lowercase letters
+  'RD-04': { sets:['sightwords','objects'] },                                // match printed word to picture
+  'RD-05': { sets:['sightwords'] },
+  'RD-06': { sets:['sightwords'] },
+  'RD-07': { sets:['letters'] },
+  'RD-08': { sets:['sightwords'] },
+  'RD-09': { sets:['sightwords'] },
+  'RD-10': { sets:['sightwords'] },
+
+  // ── MT Mathematics ─────────────────────────────────────────
+  'MT-01': { sets:['numbers'], physical:['small counting objects'] },
+  'MT-02': { sets:['numbers'] },
+  'MT-03': { sets:['numbers'], physical:['small counting objects (up to 5)'] },
+  'MT-04': { physical:['small counting objects (10+)'] },
+  'MT-05': { sets:['numbers'] },
+  'MT-06': { sets:['numbers'] },
+  'MT-07': { sets:['numbers'], physical:['two groups of small objects'] },
+  'MT-08': { sets:['numbers'], physical:['small counting objects'] },
+  'MT-09': { sets:['numbers'] },
+  'MT-10': { sets:['numbers'], physical:['small counting objects'] },
+  'MT-11': { sets:['coins'] },
+  'MT-12': { physical:['analog clock'] },                                    // tells time to the hour
+
+  // ── WT Writing ────────────────────────────────────────────
+  'WT-01': { physical:['pencil & paper'] },
+  'WT-02': { physical:['pencil & paper'] },
+  'WT-03': { sets:['shapes'], physical:['pencil & paper'] },
+  'WT-04': { sets:['letters'], physical:['pencil & paper'] },
+  'WT-05': { sets:['letters'], physical:['pencil & paper'] },
+  'WT-06': { sets:['letters'], physical:['pencil & paper'] },
+  'WT-07': { sets:['letters'], physical:['pencil & paper'] },
+  'WT-08': { physical:['pencil & paper'] },
+  'WT-09': { sets:['letters'], physical:['pencil & paper'] },
+  'WT-10': { physical:['pencil & paper'] },
+
+  // ── DS Dressing ────────────────────────────────────────────
+  'DS-01': { physical:['socks'] },
+  'DS-02': { physical:['shoes (velcro or slip-on)'] },
+  'DS-03': { physical:['pants'] },
+  'DS-04': { physical:['pants'] },
+  'DS-05': { physical:['shirt'] },
+  'DS-06': { physical:['shoes with velcro'] },
+  'DS-07': { physical:['item with zipper'] },
+  'DS-08': { physical:['item with zipper'] },
+  'DS-09': { physical:['item with large buttons'] },
+  'DS-10': { physical:['item with standard buttons'] },
+  'DS-11': { physical:['clothing selection (2+ options)'] },
+  'DS-12': { physical:['shirt, pants, shoes, socks'] },
+
+  // ── EM Eating & Mealtime ───────────────────────────────────
+  'EM-01': { physical:['soft finger foods', 'plate or bowl'] },
+  'EM-02': { physical:['open cup', 'liquid'] },
+  'EM-03': { physical:['spoon', 'soft food', 'bowl'] },
+  'EM-04': { physical:['fork', 'solid food', 'plate'] },
+  'EM-05': { physical:['varied food textures'] },
+  'EM-06': { physical:['napkin', 'food'] },
+  'EM-07': { physical:['meal setup'] },
+  'EM-08': { physical:['small pitcher', 'cup', 'liquid'] },
+  'EM-09': { physical:['snack items', 'utensils'] },
+  'EM-10': { physical:['dishes to clear'] },
+
+  // ── GH Grooming & Hygiene ──────────────────────────────────
+  'GH-01': { physical:['soap & water', 'hand towel'] },
+  'GH-02': { physical:['soap & water', 'hand towel'] },
+  'GH-03': { physical:['toothbrush', 'toothpaste'] },
+  'GH-04': { physical:['toothbrush', 'toothpaste'] },
+  'GH-05': { physical:['tissue'] },
+  'GH-06': { physical:['tissue'] },
+  'GH-07': { physical:['comb or hairbrush'] },
+
+  // ── TL Toileting ──────────────────────────────────────────
+  'TL-01': { physical:['toilet access'] },
+  'TL-02': { physical:['toilet access'] },
+  'TL-03': { physical:['toilet access'] },
+  'TL-04': { physical:['toilet access'] },
+  'TL-05': { physical:['toilet access'] },
+  'TL-06': { physical:['toilet access'] },
+  'TL-07': { physical:['toilet access', 'toilet paper'] },
+  'TL-08': { physical:['toilet access', 'toilet paper'] },
+  'TL-09': { physical:['toilet access'] },
+
+  // ── GM Gross Motor ─────────────────────────────────────────
+  'GM-07': { physical:['ball'] },
+  'GM-08': { physical:['ball'] },
+  'GM-09': { physical:['large ball'] },
+
+  // ── FM Fine Motor ──────────────────────────────────────────
+  'FM-02': { physical:['small objects (beads, pegs, coins)'] },
+  'FM-03': { physical:['blocks'] },
+  'FM-04': { physical:['large beads', 'lace'] },
+  'FM-06': { physical:['scissors', 'paper'] },
+  'FM-07': { physical:['scissors', 'paper with straight line'] },
+  'FM-08': { sets:['shapes'], physical:['scissors', 'paper'] },
+  'FM-09': { physical:['pencil & paper'] },
+  'FM-10': { sets:['shapes'], physical:['crayons or markers', 'paper'] },
+  'FM-11': { physical:['paper'] },
+  'FM-12': { physical:['containers with lids'] },
+  'FM-13': { physical:['tongs or tweezers', 'small objects'] },
+
+  // ── IV Intraverbal ─────────────────────────────────────────
+  'IV-01': { sets:['phrases'] },       // fill-in from familiar phrase/song
+  'IV-02': { sets:['stems'] },         // open fill-in (function/characteristic stems)
+  'IV-03': { sets:['what_q'] },        // answers 'what' questions about objects
+  'IV-04': { sets:['where_q'] },       // answers 'where' questions
+  'IV-05': { sets:['categories'] },    // names items within a category — 30s timer per card
+};
+
+const STIMULUS_SETS = {
+  colors: {
+    name: 'Colors', icon: '🎨',
+    cards: [
+      { label:'Red',    bg:'#ef4444', tc:'#fff' },
+      { label:'Blue',   bg:'#2563eb', tc:'#fff' },
+      { label:'Yellow', bg:'#eab308', tc:'#0a0a00' },
+      { label:'Green',  bg:'#16a34a', tc:'#fff' },
+      { label:'Orange', bg:'#ea580c', tc:'#fff' },
+      { label:'Purple', bg:'#7c3aed', tc:'#fff' },
+      { label:'Black',  bg:'#111827', tc:'#fff' },
+      { label:'White',  bg:'#f8fafc', tc:'#111', brd:true },
+      { label:'Pink',   bg:'#db2777', tc:'#fff' },
+      { label:'Brown',  bg:'#92400e', tc:'#fff' },
+    ]
+  },
+  shapes: {
+    name: 'Shapes', icon: '⬟',
+    cards: [
+      { label:'Circle' }, { label:'Square' }, { label:'Triangle' },
+      { label:'Rectangle' }, { label:'Oval' }, { label:'Diamond' },
+      { label:'Star' }, { label:'Heart' },
+    ]
+  },
+  numbers: {
+    name: 'Numbers', icon: '🔢',
+    cards: [1,2,3,4,5,6,7,8,9,10].map(n => ({ label: String(n), n }))
+  },
+  emotions: {
+    name: 'Emotions', icon: '😊',
+    cards: [
+      { label:'Happy', e:'happy' }, { label:'Sad', e:'sad' },
+      { label:'Angry', e:'angry' }, { label:'Scared', e:'scared' },
+      { label:'Surprised', e:'surprised' }, { label:'Tired', e:'tired' },
+    ]
+  },
+  coins: {
+    name: 'Coins', icon: '🪙',
+    cards: [
+      { label:'Penny', value:'1¢' }, { label:'Nickel', value:'5¢' },
+      { label:'Dime', value:'10¢' }, { label:'Quarter', value:'25¢' },
+    ]
+  },
+  objects: {
+    name: 'Objects', icon: '🖼️',
+    cards: [
+      { label:'Ball', em:'⚽' }, { label:'Cup', em:'🥤' }, { label:'Book', em:'📚' },
+      { label:'Shoe', em:'👟' }, { label:'Car', em:'🚗' }, { label:'Dog', em:'🐕' },
+      { label:'Cat', em:'🐈' }, { label:'House', em:'🏠' }, { label:'Tree', em:'🌳' },
+      { label:'Apple', em:'🍎' }, { label:'Chair', em:'🪑' }, { label:'Bed', em:'🛏️' },
+      { label:'Door', em:'🚪' }, { label:'Spoon', em:'🥄' }, { label:'Phone', em:'📱' },
+      { label:'Shirt', em:'👕' }, { label:'Hat', em:'🎩' }, { label:'Boat', em:'⛵' },
+      { label:'Sun', em:'☀️' }, { label:'Moon', em:'🌙' },
+    ]
+  },
+  actions: {
+    name: 'Actions', icon: '🏃',
+    cards: [
+      { label:'Running', em:'🏃' }, { label:'Jumping', em:'🦘' },
+      { label:'Eating', em:'🍽️' }, { label:'Drinking', em:'🥤' },
+      { label:'Sleeping', em:'😴' }, { label:'Reading', em:'📖' },
+      { label:'Writing', em:'✍️' }, { label:'Crying', em:'😢' },
+      { label:'Laughing', em:'😄' }, { label:'Throwing', em:'🤾' },
+      { label:'Sitting', em:'🧘' }, { label:'Standing', em:'🧍' },
+    ]
+  },
+  letters: {
+    name: 'Letters', icon: '🔤',
+    cards: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => ({ label: l }))
+  },
+  sightwords: {
+    name: 'Sight Words', icon: '📖',
+    cards: ['a','the','I','is','can','go','see','like','my','come',
+            'here','you','at','big','little','in','on','up','run','jump'].map(w => ({ label: w }))
+  },
+  concepts: {
+    name: 'Concepts', icon: '📐',
+    cards: [
+      { label:'Big', pair:'big' }, { label:'Little', pair:'little' },
+      { label:'Long', pair:'long' }, { label:'Short', pair:'short2' },
+      { label:'Full', pair:'full' }, { label:'Empty', pair:'empty' },
+      { label:'Open', pair:'open' }, { label:'Closed', pair:'closed' },
+      { label:'Hot', pair:'hot' }, { label:'Cold', pair:'cold' },
+      { label:'Fast', pair:'fast' }, { label:'Slow', pair:'slow' },
+    ]
+  },
+  body: {
+    name: 'Body Parts', icon: '🧍',
+    cards: [
+      { label:'Labeled',   labeled: true  },
+      { label:'Unlabeled', labeled: false },
+    ]
+  },
+  phrases: {
+    name: 'Phrases & Songs', icon: '🎵',
+    cards: [
+      { phrase:'Row, row, row your',                         last:'boat'   },
+      { phrase:'Ready, set,',                                last:'go'     },
+      { phrase:'Twinkle, twinkle, little',                   last:'star'   },
+      { phrase:'Old MacDonald had a',                        last:'farm'   },
+      { phrase:'Wheels on the bus go round and',             last:'round'  },
+      { phrase:'Itsy bitsy',                                 last:'spider' },
+      { phrase:'Happy birthday to',                          last:'you'    },
+      { phrase:'Mary had a little',                          last:'lamb'   },
+      { phrase:'Head, shoulders, knees and',                 last:'toes'   },
+      { phrase:'If you\'re happy and you know it clap your', last:'hands'  },
+      { phrase:'London Bridge is falling',                   last:'down'   },
+      { phrase:'Ring around the',                            last:'rosie'  },
+    ]
+  },
+  stems: {
+    name: 'Open Fill-In Stems', icon: '✏️',
+    cards: [
+      { phrase:'You sleep in a',       last:'bed'      },
+      { phrase:'You eat with a',        last:'spoon'    },
+      { phrase:'The sky is',            last:'blue'     },
+      { phrase:'You drink from a',      last:'cup'      },
+      { phrase:'A dog says',            last:'woof'     },
+      { phrase:'You wear shoes on your',last:'feet'     },
+      { phrase:'You brush your',        last:'teeth'    },
+      { phrase:'Birds can',             last:'fly'      },
+      { phrase:'You ride in a',         last:'car'      },
+      { phrase:'The sun is',            last:'hot'      },
+    ]
+  },
+  what_q: {
+    name: '\'What\' Questions', icon: '❓',
+    cards: [
+      { phrase:'What do you eat?',               last:'food'    },
+      { phrase:'What do you sit on?',            last:'chair'   },
+      { phrase:'What do you wear on your feet?', last:'shoes'   },
+      { phrase:'What do you drink?',             last:'water'   },
+      { phrase:'What do you sleep in?',          last:'bed'     },
+      { phrase:'What do you write with?',        last:'pencil'  },
+      { phrase:'What do you use to cut?',        last:'scissors'},
+      { phrase:'What do you read?',              last:'book'    },
+      { phrase:'What do you wear on your head?', last:'hat'     },
+      { phrase:'What do you ride in?',           last:'car'     },
+    ]
+  },
+  where_q: {
+    name: '\'Where\' Questions', icon: '📍',
+    cards: [
+      { phrase:'Where do you sleep?',             last:'bedroom'  },
+      { phrase:'Where do you eat?',               last:'kitchen'  },
+      { phrase:'Where do you play outside?',      last:'playground'},
+      { phrase:'Where do you swim?',              last:'pool'     },
+      { phrase:'Where do you buy food?',          last:'store'    },
+      { phrase:'Where do you go to learn?',       last:'school'   },
+      { phrase:'Where do you take a bath?',       last:'bathroom' },
+      { phrase:'Where do you wash your hands?',   last:'sink'     },
+      { phrase:'Where does the doctor work?',     last:'hospital' },
+      { phrase:'Where do you park a car?',        last:'garage'   },
+    ]
+  },
+  categories: {
+    name: 'Category Naming', icon: '🗂️',
+    cards: [
+      { phrase:'Name some animals',               category:'Animals'   },
+      { phrase:'Name some foods',                 category:'Foods'     },
+      { phrase:'What are some things you wear?',  category:'Clothing'  },
+      { phrase:'Name some vehicles',              category:'Vehicles'  },
+      { phrase:'Name some body parts',            category:'Body Parts'},
+      { phrase:'Name some things in a kitchen',   category:'Kitchen'   },
+      { phrase:'Name some toys',                  category:'Toys'      },
+      { phrase:'Name some things outside',        category:'Outdoors'  },
+    ]
+  },
+};
+
+// ── Card viewer state ──────────────────────────────────────
+let cvCurrentSet = null;
+let cvCurrentIdx = 0;
+let cvTouchX     = 0;
+let cvPairMode   = false;
+let cvPairSet    = null;
+let cvPairIdx    = [0, 1];
+let cvMultiMode    = false;
+let cvMultiSet     = null;
+let cvMultiIdx     = [];
+let cvUnlabeled    = false;
+let cvFeatureMode  = false;
+let cvFeatureSlots = [];
+let cvPhotoMode    = false;
+let cvPhotos       = [];
+let cvPhotoIdx     = 0;
+
+function openResourcesView() {
+  window._resourcesReturn = (currentSession && eid('view-score').classList.contains('active')) ? 'score' : 'clients';
+  renderResourcesGrid();
+  showView('resources');
+}
+
+function renderResourcesGrid() {
+  const grid = eid('resources-grid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(STIMULUS_SETS).map(([key, set]) => `
+    <button onclick="openCardViewer('${key}',0)"
+      class="card p-4 text-center hover:-translate-y-1 transition-transform duration-200"
+      style="touch-action:manipulation;cursor:pointer;border:2px solid transparent;"
+      onmouseover="this.style.borderColor='var(--teal-lt)'" onmouseout="this.style.borderColor='transparent'">
+      <div style="font-size:2.5rem;margin-bottom:8px;">${set.icon}</div>
+      <p class="font-bold text-sm" style="color:var(--dark)">${set.name}</p>
+      <p class="text-xs text-slate-400 mt-1">${set.cards.length} cards</p>
+    </button>`).join('');
+}
+
+function openCardViewer(setKey, startIdx, unlabeled) {
+  const set = STIMULUS_SETS[setKey];
+  if (!set) return;
+  cvCurrentSet = setKey;
+  cvCurrentIdx = startIdx || 0;
+  cvUnlabeled  = !!unlabeled;
+  const viewer = eid('card-viewer');
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  viewer.ontouchstart = e => { cvTouchX = e.touches[0].clientX; };
+  viewer.ontouchend   = e => {
+    const dx = e.changedTouches[0].clientX - cvTouchX;
+    if (Math.abs(dx) > 50) navCard(dx < 0 ? 1 : -1);
+  };
+  renderCVCard();
+}
+
+function renderCVCard() {
+  clearInterval(_catTimerIval); _catTimerRunning = false; _catTimerSec = 30;
+  const set = STIMULUS_SETS[cvCurrentSet];
+  const card = set.cards[cvCurrentIdx];
+  const total = set.cards.length;
+  eid('cv-set-name').textContent = set.icon + '  ' + set.name.toUpperCase();
+  eid('cv-counter').textContent  = (cvCurrentIdx + 1) + ' / ' + total;
+  eid('cv-card').innerHTML       = renderCardHTML(card, cvCurrentSet, null, cvUnlabeled);
+  eid('cv-prev').style.opacity   = cvCurrentIdx === 0 ? '.2' : '.9';
+  eid('cv-next').style.opacity   = cvCurrentIdx === total - 1 ? '.2' : '.9';
+  const dots = eid('cv-dots');
+  if (total <= 26) {
+    dots.innerHTML = set.cards.map((_,i) => `<button onclick="cvGoTo(${i})" style="width:${i===cvCurrentIdx?'22px':'8px'};height:8px;border-radius:9999px;background:${i===cvCurrentIdx?'rgba(255,255,255,.9)':'rgba(255,255,255,.28)'};border:none;cursor:pointer;padding:0;flex-shrink:0;transition:all .2s;"></button>`).join('');
+  } else { dots.innerHTML = ''; }
+}
+
+function navCard(dir) {
+  if (cvPhotoMode) {
+    cvPhotoIdx = Math.max(0, Math.min(cvPhotos.length - 1, cvPhotoIdx + dir));
+    renderCVPhoto();
+    return;
+  }
+  const set = STIMULUS_SETS[cvCurrentSet];
+  if (!set) return;
+  cvCurrentIdx = Math.max(0, Math.min(set.cards.length - 1, cvCurrentIdx + dir));
+  renderCVCard();
+}
+
+function cvGoTo(idx) { cvCurrentIdx = idx; renderCVCard(); }
+
+function closeCardViewer() {
+  eid('card-viewer').style.display = 'none';
+  document.body.style.overflow = '';
+  speechSynthesis.cancel();
+  clearInterval(_catTimerIval); _catTimerRunning = false; _catTimerSec = 30;
+  cvPairMode    = false;
+  cvMultiMode   = false;
+  cvFeatureMode = false;
+  cvPhotoMode   = false;
+  cvUnlabeled   = false;
+  eid('cv-prev').style.display = '';
+  eid('cv-next').style.display = '';
+}
+
+function presentPair(setKey, unlabeled) {
+  const s0 = document.getElementById('pair-sel-' + setKey + '-0');
+  const s1 = document.getElementById('pair-sel-' + setKey + '-1');
+  const idx0 = s0 ? parseInt(s0.value) || 0 : 0;
+  const idx1 = s1 ? parseInt(s1.value) || 1 : 1;
+  openPairViewer(setKey, idx0, idx1, unlabeled);
+}
+
+function openPairViewer(setKey, idx0, idx1, unlabeled) {
+  const set = STIMULUS_SETS[setKey];
+  if (!set) return;
+  cvPairMode  = true;
+  cvPairSet   = setKey;
+  cvPairIdx   = [idx0, idx1];
+  cvUnlabeled = !!unlabeled;
+  const viewer = eid('card-viewer');
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderCVPair();
+}
+
+function renderCVPair() {
+  const set = STIMULUS_SETS[cvPairSet];
+  const total = set.cards.length;
+  eid('cv-set-name').textContent = set.icon + '  ' + set.name.toUpperCase() + ' — ARRAY';
+  eid('cv-counter').textContent  = '';
+  eid('cv-prev').style.display   = 'none';
+  eid('cv-next').style.display   = 'none';
+  eid('cv-dots').innerHTML       = '';
+
+  const PS = 'min(40vmin,340px)';
+  const navBtn = (slot, dir, label) =>
+    `<button onclick="navPairCard(${slot},${dir})"
+      style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.75);
+             width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;
+             display:flex;align-items:center;justify-content:center;flex-shrink:0;
+             transition:background .12s;"
+      onmouseover="this.style.background='rgba(255,255,255,.25)'"
+      onmouseout="this.style.background='rgba(255,255,255,.12)'">${label}</button>`;
+
+  function slotHTML(slot) {
+    const card = set.cards[cvPairIdx[slot]];
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      ${renderCardHTML(card, cvPairSet, PS, cvUnlabeled)}
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${navBtn(slot, -1, '‹')}
+        <span style="color:rgba(255,255,255,.5);font-size:11px;font-weight:700;min-width:60px;text-align:center;">
+          ${cvPairIdx[slot] + 1} / ${total}
+        </span>
+        ${navBtn(slot, 1, '›')}
+      </div>
+    </div>`;
+  }
+
+  eid('cv-card').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;gap:4vmin;width:100%;">
+      ${slotHTML(0)}
+      <span style="color:rgba(255,255,255,.2);font-size:clamp(28px,6vmin,56px);font-weight:100;flex-shrink:0;">vs</span>
+      ${slotHTML(1)}
+    </div>`;
+}
+
+function navPairCard(slot, dir) {
+  const set = STIMULUS_SETS[cvPairSet];
+  cvPairIdx[slot] = Math.max(0, Math.min(set.cards.length - 1, cvPairIdx[slot] + dir));
+  renderCVPair();
+}
+
+function presentMulti(setKey, count, unlabeled) {
+  const idxs = [];
+  for (let i = 0; i < count; i++) {
+    const el = document.getElementById('multi-sel-' + setKey + '-' + i);
+    idxs.push(el ? (parseInt(el.value) || i) : i);
+  }
+  openMultiViewer(setKey, idxs, unlabeled);
+}
+
+function openMultiViewer(setKey, idxs, unlabeled) {
+  const set = STIMULUS_SETS[setKey];
+  if (!set) return;
+  cvMultiMode = true;
+  cvMultiSet  = setKey;
+  cvMultiIdx  = idxs.slice();
+  cvUnlabeled = !!unlabeled;
+  const viewer = eid('card-viewer');
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderCVMulti();
+}
+
+function renderCVMulti() {
+  const set   = STIMULUS_SETS[cvMultiSet];
+  const total = set.cards.length;
+  const count = cvMultiIdx.length;
+  eid('cv-set-name').textContent = set.icon + '  ' + set.name.toUpperCase() + ' — ARRAY OF ' + count;
+  eid('cv-counter').textContent  = '';
+  eid('cv-prev').style.display   = 'none';
+  eid('cv-next').style.display   = 'none';
+  eid('cv-dots').innerHTML       = '';
+
+  // Cards spread full-width: size scales with count
+  const MS = count <= 3 ? 'min(26vmin,220px)' : count <= 5 ? 'min(18vmin,160px)' : 'min(13vmin,120px)';
+  const navBtn = (slot, dir, label) =>
+    `<button onclick="navMultiCard(${slot},${dir})"
+      style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.75);
+             width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;
+             display:flex;align-items:center;justify-content:center;flex-shrink:0;
+             transition:background .12s;"
+      onmouseover="this.style.background='rgba(255,255,255,.25)'"
+      onmouseout="this.style.background='rgba(255,255,255,.12)'">${label}</button>`;
+
+  const slots = cvMultiIdx.map((cardIdx, slot) => {
+    const card = set.cards[cardIdx];
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      ${renderCardHTML(card, cvMultiSet, MS, cvUnlabeled)}
+      <div style="display:flex;align-items:center;gap:5px;">
+        ${navBtn(slot, -1, '‹')}
+        <span style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700;min-width:36px;text-align:center;">${cardIdx+1}/${total}</span>
+        ${navBtn(slot, 1, '›')}
+      </div>
+    </div>`;
+  }).join('');
+
+  eid('cv-card').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-evenly;width:100%;flex-wrap:nowrap;padding:0 3vmin;box-sizing:border-box;">
+      ${slots}
+    </div>`;
+}
+
+function navMultiCard(slot, dir) {
+  const set = STIMULUS_SETS[cvMultiSet];
+  cvMultiIdx[slot] = Math.max(0, Math.min(set.cards.length - 1, cvMultiIdx[slot] + dir));
+  renderCVMulti();
+}
+
+// ── Feature Array (LR-13: identify by 2+ features) ─────────
+function presentFeatureArray(count) {
+  const colorHex = { Red:'#ef4444', Blue:'#2563eb', Yellow:'#eab308', Green:'#16a34a', Orange:'#ea580c', Purple:'#7c3aed' };
+  const slots = [];
+  for (let i = 0; i < count; i++) {
+    const shape = (document.getElementById('feat-shape-' + i) || {}).value || 'circle';
+    const color = (document.getElementById('feat-color-' + i) || {}).value || 'Red';
+    const size  = (document.getElementById('feat-size-'  + i) || {}).value || 'Big';
+    slots.push({ shape, color, colorHex: colorHex[color] || '#888', size });
+  }
+  openFeatureArrayViewer(slots);
+}
+
+function openFeatureArrayViewer(slots) {
+  cvFeatureMode  = true;
+  cvFeatureSlots = slots;
+  const viewer = eid('card-viewer');
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  eid('cv-prev').style.display = 'none';
+  eid('cv-next').style.display = 'none';
+  renderCVFeature();
+}
+
+function renderCVFeature() {
+  const count  = cvFeatureSlots.length;
+  const shadow = '0 24px 80px rgba(0,0,0,.55)';
+  eid('cv-set-name').textContent = '🧩  FEATURE ARRAY';
+  eid('cv-counter').textContent  = '';
+  eid('cv-prev').style.display   = 'none';
+  eid('cv-next').style.display   = 'none';
+  eid('cv-dots').innerHTML       = '';
+  const FS = count <= 3 ? 'min(26vmin,220px)' : 'min(18vmin,160px)';
+  const cards = cvFeatureSlots.map(slot => renderFeatureCardHTML(slot, FS, shadow)).join('');
+  eid('cv-card').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-evenly;width:100%;flex-wrap:nowrap;padding:0 3vmin;box-sizing:border-box;">
+      ${cards}
+    </div>`;
+}
+
+function renderFeatureCardHTML(slot, S, shadow) {
+  const pad = slot.size === 'Big' ? '10%' : '28%';
+  return `<div style="width:${S};height:${S};border-radius:28px;background:${slot.colorHex};display:flex;align-items:center;justify-content:center;padding:${pad};box-shadow:${shadow},inset 0 -80px 80px rgba(0,0,0,.14);">${shapeSVGWhite(slot.shape)}</div>`;
+}
+
+function shapeSVGWhite(s) {
+  const f = 'rgba(255,255,255,0.92)', k = 'rgba(255,255,255,0.45)', w = '6';
+  const m = {
+    circle:    `<circle cx="100" cy="100" r="80" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    square:    `<rect x="14" y="14" width="172" height="172" rx="10" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    triangle:  `<polygon points="100,14 190,186 10,186" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    rectangle: `<rect x="8" y="50" width="184" height="100" rx="8" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    oval:      `<ellipse cx="100" cy="100" rx="90" ry="58" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    diamond:   `<polygon points="100,8 192,100 100,192 8,100" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    star:      `<polygon points="100,12 122,72 188,72 136,110 156,172 100,134 44,172 64,110 12,72 78,72" fill="${f}" stroke="${k}" stroke-width="5"/>`,
+    heart:     `<path d="M100,176 C100,176 12,118 12,62 C12,32 38,12 64,24 C80,32 100,52 100,52 C100,52 120,32 136,24 C162,12 188,32 188,62 C188,118 100,176 100,176Z" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+  };
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">${m[s]||m.circle}</svg>`;
+}
+
+// ── Photo Viewer (TC-12 scene photos) ──────────────────────
+function presentPhotos(itemCode) {
+  const entry = ITEM_STIMULI[itemCode];
+  if (!entry || !entry.photos) return;
+  openPhotoViewer(entry.photos);
+}
+
+function openPhotoViewer(photos) {
+  cvPhotoMode = true;
+  cvPhotos    = photos;
+  cvPhotoIdx  = 0;
+  const viewer = eid('card-viewer');
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderCVPhoto();
+}
+
+function renderCVPhoto() {
+  const photo = cvPhotos[cvPhotoIdx];
+  const total = cvPhotos.length;
+  eid('cv-set-name').textContent = '📷  SCENE PHOTOS';
+  eid('cv-counter').textContent  = (cvPhotoIdx + 1) + ' / ' + total;
+  eid('cv-prev').style.opacity   = cvPhotoIdx === 0 ? '.2' : '.9';
+  eid('cv-next').style.opacity   = cvPhotoIdx === total - 1 ? '.2' : '.9';
+  eid('cv-prev').style.display   = '';
+  eid('cv-next').style.display   = '';
+  eid('cv-dots').innerHTML = cvPhotos.map((_,i) =>
+    `<button onclick="cvPhotoGoTo(${i})" style="width:${i===cvPhotoIdx?'22px':'8px'};height:8px;border-radius:9999px;background:${i===cvPhotoIdx?'rgba(255,255,255,.9)':'rgba(255,255,255,.28)'};border:none;cursor:pointer;padding:0;flex-shrink:0;transition:all .2s;"></button>`
+  ).join('');
+  const W = 'min(85vmin,800px)', H = 'min(64vmin,600px)';
+  eid('cv-card').innerHTML = `
+    <div style="width:${W};height:${H};border-radius:24px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55);position:relative;">
+      <img src="${photo.url}" alt="${photo.label}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.parentElement.style.background='#334155'"/>
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:28px 24px 18px;background:linear-gradient(transparent,rgba(0,0,0,.65));pointer-events:none;">
+        <span style="color:white;font-size:clamp(16px,3.5vmin,26px);font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.6);">${photo.label}</span>
+      </div>
+    </div>`;
+}
+
+function cvPhotoGoTo(idx) { cvPhotoIdx = idx; renderCVPhoto(); }
+
+// ── TTS helper for phrase cards ─────────────────────────────
+function _playPhrase(text) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/&#39;/g, "'"));
+  u.rate = 0.82;
+  u.pitch = 1.05;
+  speechSynthesis.speak(u);
+}
+
+// ── Category timer (IV-05) ──────────────────────────────────
+let _catTimerIval    = null;
+let _catTimerSec     = 30;
+let _catTimerRunning = false;
+
+function _catTimerToggle() {
+  if (_catTimerRunning) {
+    clearInterval(_catTimerIval);
+    _catTimerRunning = false;
+    const btn = document.getElementById('cat-timer-btn');
+    if (btn) btn.textContent = '▶ Start';
+  } else {
+    _catTimerRunning = true;
+    const btn = document.getElementById('cat-timer-btn');
+    if (btn) btn.textContent = '⏸ Pause';
+    _catTimerIval = setInterval(() => {
+      _catTimerSec = Math.max(0, _catTimerSec - 1);
+      const disp = document.getElementById('cat-timer-disp');
+      if (_catTimerSec === 0) {
+        clearInterval(_catTimerIval);
+        _catTimerRunning = false;
+        if (disp) { disp.textContent = 'TIME!'; disp.style.color = '#ef4444'; }
+        const b = document.getElementById('cat-timer-btn');
+        if (b) b.textContent = '▶ Start';
+      } else {
+        if (disp) disp.textContent = _catTimerSec + 's';
+      }
+    }, 1000);
+  }
+}
+
+function _catTimerReset() {
+  clearInterval(_catTimerIval);
+  _catTimerRunning = false;
+  _catTimerSec     = 30;
+  const disp = document.getElementById('cat-timer-disp');
+  if (disp) { disp.textContent = '30s'; disp.style.color = '#3abeca'; }
+  const btn = document.getElementById('cat-timer-btn');
+  if (btn) btn.textContent = '▶ Start';
+}
+
+function updateStimulusBar() {
+  const bar = eid('sc-stimulus-bar');
+  if (!bar || !currentDomain) { if (bar) bar.classList.add('hidden'); return; }
+  const item = currentDomain.items ? currentDomain.items[currentItemIdx] : null;
+  if (!item) { bar.classList.add('hidden'); return; }
+
+  const entry = ITEM_STIMULI[item.code];
+  if (!entry) { bar.classList.add('hidden'); return; }
+
+  const sets     = entry.sets     || [];
+  const physical = entry.physical || [];
+  const isPair   = !!entry.pair;
+
+  if (!sets.length && !physical.length && !entry.featureArray && !(entry.photos && entry.photos.length)) { bar.classList.add('hidden'); return; }
+
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">';
+
+  if (physical.length) {
+    html += `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:9999px;background:#fffbeb;border:1.5px solid #fde68a;color:#92400e;white-space:nowrap;">🎒 Get from kit: ${physical.join(', ')}</span>`;
+  }
+
+  const multiCount = entry.multi || 0;
+  const isUnlabeled = !!entry.unlabeled;
+
+  // ── Feature Array builder (LR-13) ──────────────────────────
+  if (entry.featureArray) {
+    const count   = entry.count || 4;
+    const shapes  = ['circle','square','triangle','oval','rectangle','diamond','star','heart'];
+    const colors  = ['Red','Blue','Yellow','Green','Orange','Purple'];
+    const defaults = [
+      { shape:'circle',    color:'Red',    size:'Big'   },
+      { shape:'circle',    color:'Blue',   size:'Big'   },
+      { shape:'circle',    color:'Red',    size:'Small' },
+      { shape:'square',    color:'Red',    size:'Big'   },
+    ];
+    const shapeOpts = shapes.map(s => `<option value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('');
+    const colorOpts = colors.map(c => `<option value="${c}">${c}</option>`).join('');
+    const sizeOpts  = `<option value="Big">Big</option><option value="Small">Small</option>`;
+    const selStyle  = 'font-size:11px;font-weight:700;padding:2px 5px;border-radius:7px;border:1.5px solid #d1d9e0;background:#f8fafc;color:#334155;cursor:pointer;';
+    const rowLabels = ['🎯 Target','↔ Dist 1','↔ Dist 2','↔ Dist 3'];
+    const rows = defaults.slice(0, count).map((def, i) => `
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="font-size:10px;font-weight:800;color:#64748b;min-width:56px;white-space:nowrap;">${rowLabels[i]}</span>
+        <select id="feat-shape-${i}" style="${selStyle}">${shapeOpts}</select>
+        <select id="feat-color-${i}" style="${selStyle}">${colorOpts}</select>
+        <select id="feat-size-${i}"  style="${selStyle}">${sizeOpts}</select>
+      </div>`).join('');
+    const btnStyle = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:9999px;background:#2c4a7c;border:none;color:#fff;cursor:pointer;white-space:nowrap;touch-action:manipulation;transition:background .12s;';
+    html += `
+      <div style="display:flex;flex-direction:column;gap:5px;width:100%;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;">🧩 Feature Array (${count} cards):</span>
+          <button onclick="presentFeatureArray(${count})" style="${btnStyle}" onmouseover="this.style.background='#3d5fa0'" onmouseout="this.style.background='#2c4a7c'">🃏 Present</button>
+        </div>
+        ${rows}
+      </div>`;
+    setTimeout(() => {
+      defaults.slice(0, count).forEach((def, i) => {
+        const se = document.getElementById('feat-shape-' + i);
+        const ce = document.getElementById('feat-color-' + i);
+        const ze = document.getElementById('feat-size-'  + i);
+        if (se) se.value = def.shape;
+        if (ce) ce.value = def.color;
+        if (ze) ze.value = def.size;
+      });
+    }, 0);
+  }
+
+  // ── Photo scenes (TC-12) ────────────────────────────────────
+  if (entry.photos && entry.photos.length) {
+    const btnStyle = 'display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:9999px;background:#2c4a7c;border:none;color:#fff;cursor:pointer;white-space:nowrap;touch-action:manipulation;transition:background .12s;';
+    const tags = entry.photos.map(p => `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:9999px;background:#eff6ff;border:1.5px solid #bfdbfe;color:#1d4ed8;white-space:nowrap;">📷 ${p.label}</span>`).join('');
+    html += `${tags} <button onclick="presentPhotos('${item.code}')" style="${btnStyle}" onmouseover="this.style.background='#3d5fa0'" onmouseout="this.style.background='#2c4a7c'">🖼️ View Scenes</button>`;
+  }
+
+  sets.forEach(key => {
+    const s = STIMULUS_SETS[key];
+    if (!s) return;
+    const unlabeledFlag = isUnlabeled ? ',true' : '';
+    const unlabeledTag  = isUnlabeled ? ' <span style="font-size:9px;font-weight:800;opacity:.65;letter-spacing:.04em;">NO LABEL</span>' : '';
+    if (multiCount >= 3 && (key === 'objects' || key === 'actions')) {
+      // Multi-picker: N dropdowns + Present All button
+      const cards = s.cards;
+      const total = cards.length;
+      // Pick N random distinct indices
+      const pool = Array.from({length: total}, (_, i) => i);
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+      const randIdxs = pool.slice(0, multiCount);
+      const opts = cards.map((c, i) => `<option value="${i}">${c.em || s.icon} ${c.label}</option>`).join('');
+      const selStyle = `font-size:11px;font-weight:700;padding:3px 6px;border-radius:8px;border:1.5px solid #d1d9e0;background:#f8fafc;color:#334155;cursor:pointer;max-width:110px;`;
+      const btnStyle = `display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:9999px;background:#2c4a7c;border:none;color:#fff;cursor:pointer;white-space:nowrap;touch-action:manipulation;transition:background .12s;`;
+      const selects = randIdxs.map((_, slot) =>
+        `<select id="multi-sel-${key}-${slot}" style="${selStyle}"><option value="" disabled>Item ${slot+1}</option>${opts}</select>`
+      ).join('');
+      html += `
+        <span style="font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;">${s.icon} Array of ${multiCount}:${unlabeledTag}</span>
+        ${selects}
+        <button onclick="presentMulti('${key}',${multiCount}${unlabeledFlag})" style="${btnStyle}" onmouseover="this.style.background='#3d5fa0'" onmouseout="this.style.background='#2c4a7c'">🃏 Present All</button>`;
+      const _k = key, _idxs = randIdxs;
+      setTimeout(() => {
+        _idxs.forEach((idx, slot) => {
+          const el = document.getElementById('multi-sel-' + _k + '-' + slot);
+          if (el) el.value = idx;
+        });
+      }, 0);
+    } else if (isPair) {
+      const cards = s.cards;
+      const total = cards.length;
+      const r0 = Math.floor(Math.random() * total);
+      let r1 = Math.floor(Math.random() * (total - 1));
+      if (r1 >= r0) r1++;
+      const opts = cards.map((c, i) => `<option value="${i}">${c.em || s.icon} ${c.label}</option>`).join('');
+      const selStyle = `font-size:12px;font-weight:700;padding:4px 8px;border-radius:8px;border:1.5px solid #d1d9e0;background:#f8fafc;color:#334155;cursor:pointer;`;
+      const btnStyle = `display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:9999px;background:#2c4a7c;border:none;color:#fff;cursor:pointer;white-space:nowrap;touch-action:manipulation;transition:background .12s;`;
+      html += `
+        <span style="font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;">${s.icon} ${s.name}:${unlabeledTag}</span>
+        <select id="pair-sel-${key}-0" style="${selStyle}"><option value="" disabled>Item 1</option>${opts}</select>
+        <span style="color:#94a3b8;font-size:11px;font-weight:700;">vs</span>
+        <select id="pair-sel-${key}-1" style="${selStyle}"><option value="" disabled>Item 2</option>${opts}</select>
+        <button onclick="presentPair('${key}'${unlabeledFlag})" style="${btnStyle}" onmouseover="this.style.background='#3d5fa0'" onmouseout="this.style.background='#2c4a7c'">🃏 Present</button>`;
+      const _k = key, _r0 = r0, _r1 = r1;
+      setTimeout(() => {
+        const s0 = document.getElementById('pair-sel-' + _k + '-0');
+        const s1 = document.getElementById('pair-sel-' + _k + '-1');
+        if (s0) s0.value = _r0;
+        if (s1) s1.value = _r1;
+      }, 0);
+    } else {
+      const bodyStartIdx = (key === 'body' && entry.bodyUnlabeled) ? 1 : 0;
+      html += `<button onclick="openCardViewer('${key}',${bodyStartIdx}${unlabeledFlag})" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:9999px;background:#f0f4f8;border:1.5px solid #d1d9e0;color:#334155;cursor:pointer;white-space:nowrap;touch-action:manipulation;transition:background .12s;" onmouseover="this.style.background='#dde7f0'" onmouseout="this.style.background='#f0f4f8'">${s.icon} ${s.name}${unlabeledTag}</button>`;
+    }
+  });
+
+  html += '</div>';
+  bar.innerHTML = html;
+  bar.classList.remove('hidden');
+}
+
+// ── Card rendering ─────────────────────────────────────────
+const CV_S = 'min(70vmin,520px)';
+
+function renderCardHTML(card, setKey, sizeOverride, unlabeled) {
+  const S = sizeOverride || CV_S;
+  const shadow = '0 24px 80px rgba(0,0,0,.55)';
+  switch (setKey) {
+    case 'colors':
+      if (unlabeled) {
+        return `<div style="width:${S};height:${S};border-radius:28px;background:${card.bg};${card.brd?'border:5px solid #d1d5db;':''}box-shadow:${shadow},inset 0 -90px 90px rgba(0,0,0,.12);"></div>`;
+      }
+      return `<div style="width:${S};height:${S};border-radius:28px;background:${card.bg};${card.brd?'border:5px solid #d1d5db;':''}display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10%;box-shadow:${shadow},inset 0 -90px 90px rgba(0,0,0,.15);"><span style="font-size:clamp(36px,9vmin,80px);font-weight:900;color:${card.tc};text-shadow:0 2px 14px rgba(0,0,0,.4);letter-spacing:-.02em;">${card.label}</span></div>`;
+    case 'shapes':
+      if (unlabeled) {
+        return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;padding:12%;box-shadow:${shadow},0 0 0 8px #d0eff4;">${shapeSVG(card.label.toLowerCase())}</div>`;
+      }
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8% 8% 6%;gap:4%;box-shadow:${shadow},0 0 0 8px #d0eff4;"><div style="flex:1;width:100%;display:flex;align-items:center;justify-content:center;">${shapeSVG(card.label.toLowerCase())}</div><span style="font-size:clamp(26px,6vmin,58px);font-weight:900;color:#0d1b2e;letter-spacing:-.02em;">${card.label}</span></div>`;
+    case 'numbers':
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6%;gap:3%;box-shadow:${shadow},0 0 0 8px #bbf7d0;"><span style="font-size:clamp(48px,14vmin,120px);font-weight:900;color:#15803d;line-height:1;">${card.n}</span><div style="flex:1;width:90%;display:flex;align-items:center;justify-content:center;">${dotsSVG(card.n)}</div></div>`;
+    case 'emotions':
+      if (unlabeled) {
+        return `<div style="width:${S};height:${S};border-radius:28px;background:#fffdf0;display:flex;align-items:center;justify-content:center;padding:10%;box-shadow:${shadow},0 0 0 8px #fef08a;">${emotionSVG(card.e)}</div>`;
+      }
+      return `<div style="width:${S};height:${S};border-radius:28px;background:#fffdf0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7% 8% 5%;gap:4%;box-shadow:${shadow},0 0 0 8px #fef08a;"><div style="flex:1;width:100%;display:flex;align-items:center;justify-content:center;">${emotionSVG(card.e)}</div><span style="font-size:clamp(26px,6vmin,58px);font-weight:900;color:#0d1b2e;letter-spacing:-.02em;">${card.label}</span></div>`;
+    case 'coins':
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8%;gap:5%;box-shadow:${shadow},0 0 0 8px #fef9c3;"><div style="flex:1;width:100%;display:flex;align-items:center;justify-content:center;">${coinSVG(card)}</div><span style="font-size:clamp(20px,5vmin,44px);font-weight:900;color:#0d1b2e;">${card.label} · ${card.value}</span></div>`;
+    case 'letters':
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8%;box-shadow:${shadow},0 0 0 8px #d0eff4;"><span style="font-size:clamp(80px,26vmin,240px);font-weight:900;color:#2c4a7c;line-height:1;letter-spacing:-.02em;">${card.label}</span><span style="font-size:clamp(42px,13vmin,120px);font-weight:700;color:#94a3b8;line-height:1;">${card.label.toLowerCase()}</span></div>`;
+    case 'sightwords':
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:${shadow},0 0 0 8px #d0eff4;"><span style="font-size:clamp(52px,17vmin,160px);font-weight:900;color:#2c4a7c;letter-spacing:-.03em;text-align:center;padding:8%;">${card.label}</span></div>`;
+    case 'objects': case 'actions':
+      if (unlabeled) {
+        return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:${shadow},0 0 0 8px #e2e8f0;"><span style="font-size:clamp(80px,26vmin,240px);line-height:1;">${card.em}</span></div>`;
+      }
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5% 8% 4%;gap:5%;box-shadow:${shadow},0 0 0 8px #e2e8f0;"><span style="font-size:clamp(70px,22vmin,200px);line-height:1;">${card.em}</span><span style="font-size:clamp(24px,6vmin,56px);font-weight:900;color:#0d1b2e;letter-spacing:-.02em;">${card.label}</span></div>`;
+    case 'concepts':
+      if (unlabeled) return conceptCardUnlabeledHTML(card, S, shadow);
+      return conceptCardHTML(card, S, shadow);
+    case 'phrases': case 'stems': case 'what_q': case 'where_q':
+      return phraseCardHTML(card, S, shadow);
+    case 'categories':
+      return categoryTimerCardHTML(card, S, shadow);
+    case 'body':     return card.labeled === false ? bodyCardUnlabeledHTML(S, shadow) : bodyCardHTML(shadow);
+    default:
+      return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:${shadow};"><span style="font-size:clamp(32px,8vmin,72px);font-weight:900;color:#0d1b2e;">${card.label}</span></div>`;
+  }
+}
+
+function phraseCardHTML(card, S, shadow) {
+  const ttsArg = (card.phrase + ' ' + card.last).replace(/'/g, '&#39;');
+  const pauseArg = card.phrase.replace(/'/g, '&#39;') + '...';
+  const isQuestion = card.phrase.trim().endsWith('?');
+  return `<div style="width:${S};height:${S};border-radius:28px;background:linear-gradient(145deg,#0d1b2e,#1a3055);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8% 9%;box-shadow:${shadow};gap:0;">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5%;text-align:center;width:100%;">
+      <span style="font-size:clamp(20px,5.2vmin,48px);font-weight:700;color:rgba(255,255,255,.88);line-height:1.45;letter-spacing:-.01em;">${card.phrase}</span>
+      <div style="display:inline-flex;align-items:center;justify-content:center;background:rgba(58,190,202,.2);border:2px solid rgba(58,190,202,.5);border-radius:14px;padding:4px 18px;min-width:80px;">
+        <span style="font-size:clamp(22px,5.8vmin,54px);font-weight:900;color:#3abeca;letter-spacing:-.01em;">${card.last}</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6%;">
+      ${!isQuestion ? `<button onclick="event.stopPropagation();_playPhrase('${pauseArg}')" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.22);color:rgba(255,255,255,.8);border-radius:9999px;padding:7px 20px;font-size:clamp(12px,2.8vmin,18px);font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;touch-action:manipulation;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">⏸ Pause</button>` : ''}
+      <button onclick="event.stopPropagation();_playPhrase('${ttsArg}')" style="background:rgba(58,190,202,.18);border:1.5px solid rgba(58,190,202,.45);color:#3abeca;border-radius:9999px;padding:7px 20px;font-size:clamp(12px,2.8vmin,18px);font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;touch-action:manipulation;" onmouseover="this.style.background='rgba(58,190,202,.32)'" onmouseout="this.style.background='rgba(58,190,202,.18)'">▶ Play</button>
+    </div>
+  </div>`;
+}
+
+function categoryTimerCardHTML(card, S, shadow) {
+  return `<div style="width:${S};height:${S};border-radius:28px;background:linear-gradient(145deg,#0d1b2e,#1a3055);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7% 8%;box-shadow:${shadow};gap:0;" onclick="event.stopPropagation()">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6%;text-align:center;width:100%;">
+      <span style="font-size:clamp(20px,5vmin,46px);font-weight:800;color:rgba(255,255,255,.9);line-height:1.3;">${card.phrase}</span>
+      <div id="cat-timer-disp" style="font-size:clamp(52px,14vmin,130px);font-weight:900;color:#3abeca;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;">30s</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:5%;">
+      <button id="cat-timer-btn" onclick="event.stopPropagation();_catTimerToggle()" style="background:rgba(58,190,202,.18);border:1.5px solid rgba(58,190,202,.45);color:#3abeca;border-radius:9999px;padding:8px 24px;font-size:clamp(13px,3vmin,20px);font-weight:800;cursor:pointer;min-width:100px;transition:background .15s;touch-action:manipulation;" onmouseover="this.style.background='rgba(58,190,202,.32)'" onmouseout="this.style.background='rgba(58,190,202,.18)'">▶ Start</button>
+      <button onclick="event.stopPropagation();_catTimerReset()" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.22);color:rgba(255,255,255,.7);border-radius:9999px;padding:8px 20px;font-size:clamp(13px,3vmin,20px);font-weight:800;cursor:pointer;transition:background .15s;touch-action:manipulation;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">↺ Reset</button>
+    </div>
+  </div>`;
+}
+
+function shapeSVG(s) {
+  const f='#d0eff4', k='#2c4a7c', w='6';
+  const m = {
+    circle:    `<circle cx="100" cy="100" r="80" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    square:    `<rect x="14" y="14" width="172" height="172" rx="10" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    triangle:  `<polygon points="100,14 190,186 10,186" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    rectangle: `<rect x="8" y="50" width="184" height="100" rx="8" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    oval:      `<ellipse cx="100" cy="100" rx="90" ry="58" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    diamond:   `<polygon points="100,8 192,100 100,192 8,100" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+    star:      `<polygon points="100,12 122,72 188,72 136,110 156,172 100,134 44,172 64,110 12,72 78,72" fill="${f}" stroke="${k}" stroke-width="5"/>`,
+    heart:     `<path d="M100,176 C100,176 12,118 12,62 C12,32 38,12 64,24 C80,32 100,52 100,52 C100,52 120,32 136,24 C162,12 188,32 188,62 C188,118 100,176 100,176Z" fill="${f}" stroke="${k}" stroke-width="${w}"/>`,
+  };
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">${m[s]||''}</svg>`;
+}
+
+const DOT_LAYOUTS_CV = {
+  1:[[50,50]],2:[[28,50],[72,50]],3:[[20,50],[50,50],[80,50]],
+  4:[[28,30],[72,30],[28,70],[72,70]],5:[[28,25],[72,25],[50,50],[28,75],[72,75]],
+  6:[[28,22],[72,22],[28,50],[72,50],[28,78],[72,78]],
+  7:[[18,20],[50,20],[82,20],[18,50],[82,50],[18,80],[82,80]],
+  8:[[18,20],[50,20],[82,20],[18,50],[82,50],[18,80],[50,80],[82,80]],
+  9:[[18,20],[50,20],[82,20],[18,50],[50,50],[82,50],[18,80],[50,80],[82,80]],
+  10:[[10,25],[30,25],[50,25],[70,25],[90,25],[10,65],[30,65],[50,65],[70,65],[90,65]],
+};
+function dotsSVG(n) {
+  const pts = DOT_LAYOUTS_CV[n] || [];
+  const r = n <= 6 ? 10 : 8;
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;max-width:260px;max-height:260px;">${pts.map(([cx,cy])=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#15803d"/>`).join('')}</svg>`;
+}
+
+function emotionSVG(e) {
+  const eye = `<circle cx="78" cy="85" r="9" fill="#1a1a1a"/><circle cx="122" cy="85" r="9" fill="#1a1a1a"/>`;
+  const m = {
+    happy:     `<path d="M72 118 Q100 148 128 118" stroke="#1a1a1a" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+    sad:       `<path d="M72 135 Q100 108 128 135" stroke="#1a1a1a" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+    angry:     `<path d="M72 130 Q100 114 128 130" stroke="#1a1a1a" stroke-width="7" fill="none" stroke-linecap="round"/><line x1="60" y1="70" x2="87" y2="78" stroke="#1a1a1a" stroke-width="6"/><line x1="140" y1="70" x2="113" y2="78" stroke="#1a1a1a" stroke-width="6"/>`,
+    scared:    `<ellipse cx="100" cy="128" rx="16" ry="13" fill="#1a1a1a"/><line x1="60" y1="76" x2="86" y2="69" stroke="#1a1a1a" stroke-width="6"/><line x1="140" y1="76" x2="114" y2="69" stroke="#1a1a1a" stroke-width="6"/>`,
+    surprised: `<ellipse cx="100" cy="125" rx="16" ry="20" fill="#1a1a1a"/>`,
+    tired:     `<path d="M72 122 Q100 112 128 122" stroke="#1a1a1a" stroke-width="7" fill="none" stroke-linecap="round"/><line x1="60" y1="82" x2="87" y2="88" stroke="#1a1a1a" stroke-width="6"/><line x1="140" y1="82" x2="113" y2="88" stroke="#1a1a1a" stroke-width="6"/>`,
+  };
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;"><circle cx="100" cy="100" r="88" fill="#FFE066" stroke="#F5B800" stroke-width="5"/>${eye}${m[e]||''}</svg>`;
+}
+
+function coinSVG(coin) {
+  const metals = { Penny:['#b87333','#8b5e3c'], Nickel:['#a8a9ad','#787880'], Dime:['#b8b8c0','#888890'], Quarter:['#a8a9ad','#787880'] };
+  const [fill, shade] = metals[coin.label] || metals.Quarter;
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;"><circle cx="100" cy="100" r="88" fill="${fill}" stroke="${shade}" stroke-width="5"/><circle cx="100" cy="100" r="72" fill="${fill}" stroke="rgba(255,255,255,.25)" stroke-width="3"/><text x="100" y="88" text-anchor="middle" font-size="19" font-weight="900" font-family="Inter,sans-serif" fill="rgba(0,0,0,.45)">${coin.label.toUpperCase()}</text><text x="100" y="122" text-anchor="middle" font-size="36" font-weight="900" font-family="Inter,sans-serif" fill="rgba(0,0,0,.55)">${coin.value}</text></svg>`;
+}
+
+function conceptCardHTML(card, S, shadow) {
+  const pairs = {
+    big:    { em1:'🐘', em2:'🐭', l1:'Big', l2:'Little' },
+    little: { em1:'🐭', em2:'🐘', l1:'Little', l2:'Big' },
+    long:   { em1:'🐍', em2:'🐛', l1:'Long', l2:'Short' },
+    short2: { em1:'🐛', em2:'🐍', l1:'Short', l2:'Long' },
+    full:   { em1:'🫙',  em2:'⬜', l1:'Full', l2:'Empty' },
+    empty:  { em1:'⬜', em2:'🫙',  l1:'Empty', l2:'Full' },
+    open:   { solo:true, em:'📬', label:'Open' },
+    closed: { solo:true, em:'📪', label:'Closed' },
+    hot:    { em1:'🔥', em2:'❄️', l1:'Hot', l2:'Cold' },
+    cold:   { em1:'❄️', em2:'🔥', l1:'Cold', l2:'Hot' },
+    fast:   { em1:'🚀', em2:'🐢', l1:'Fast', l2:'Slow' },
+    slow:   { em1:'🐢', em2:'🚀', l1:'Slow', l2:'Fast' },
+  };
+  const p = pairs[card.pair] || { solo:true, em:'❓', label:card.label };
+  if (p.solo) {
+    return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8%;padding:8%;box-shadow:${shadow},0 0 0 8px #e2e8f0;"><span style="font-size:clamp(70px,20vmin,180px);line-height:1;">${p.em}</span><span style="font-size:clamp(32px,8vmin,72px);font-weight:900;color:#0d1b2e;">${p.label}</span></div>`;
+  }
+  return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5% 6%;gap:3%;box-shadow:${shadow},0 0 0 8px #e2e8f0;"><span style="font-size:clamp(28px,7vmin,64px);font-weight:900;color:#0d1b2e;text-transform:uppercase;">${p.l1}</span><div style="display:flex;align-items:flex-end;gap:6%;width:100%;justify-content:center;"><div style="text-align:center;flex:1;"><div style="font-size:clamp(42px,13vmin,120px);line-height:1;">${p.em1}</div><div style="font-size:clamp(14px,3.5vmin,28px);font-weight:800;color:#0d1b2e;margin-top:6px;">${p.l1}</div></div><div style="font-size:clamp(16px,4vmin,32px);color:#94a3b8;font-weight:300;padding-bottom:20px;">vs</div><div style="text-align:center;flex:1;opacity:.3;"><div style="font-size:clamp(42px,13vmin,120px);line-height:1;">${p.em2}</div><div style="font-size:clamp(14px,3.5vmin,28px);font-weight:800;color:#0d1b2e;margin-top:6px;">${p.l2}</div></div></div></div>`;
+}
+
+function conceptCardUnlabeledHTML(card, S, shadow) {
+  const pairs = {
+    big:    { em1:'🐘', em2:'🐭' }, little: { em1:'🐭', em2:'🐘' },
+    long:   { em1:'🐍', em2:'🐛' }, short2: { em1:'🐛', em2:'🐍' },
+    full:   { em1:'🫙',  em2:'⬜' }, empty:  { em1:'⬜', em2:'🫙'  },
+    open:   { solo:true, em:'📬' }, closed: { solo:true, em:'📪' },
+    hot:    { em1:'🔥', em2:'❄️' }, cold:   { em1:'❄️', em2:'🔥' },
+    fast:   { em1:'🚀', em2:'🐢' }, slow:   { em1:'🐢', em2:'🚀' },
+  };
+  const p = pairs[card.pair] || { solo:true, em:'❓' };
+  if (p.solo) {
+    return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:${shadow},0 0 0 8px #e2e8f0;"><span style="font-size:clamp(80px,24vmin,210px);line-height:1;">${p.em}</span></div>`;
+  }
+  return `<div style="width:${S};height:${S};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;gap:8%;padding:8%;box-shadow:${shadow},0 0 0 8px #e2e8f0;"><span style="font-size:clamp(50px,16vmin,140px);line-height:1;">${p.em1}</span><span style="font-size:clamp(18px,4vmin,36px);color:#94a3b8;font-weight:300;">vs</span><span style="font-size:clamp(50px,16vmin,140px);line-height:1;opacity:.3;">${p.em2}</span></div>`;
+}
+
+function bodyCardHTML(shadow) {
+  const W = 'min(54vmin,400px)', H = 'min(80vmin,590px)';
+  return `<div style="width:${W};height:${H};border-radius:28px;background:white;display:flex;align-items:center;justify-content:center;padding:14px;box-shadow:${shadow},0 0 0 8px #e2e8f0;overflow:hidden;">
+  <svg viewBox="0 0 280 490" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+    <circle cx="140" cy="52" r="40" fill="#fdd9b5" stroke="#c08060" stroke-width="2.5"/>
+    <path d="M100,38 Q104,6 140,6 Q176,6 180,38" fill="#6b4226"/>
+    <circle cx="127" cy="48" r="5" fill="#2c2c2c"/><circle cx="153" cy="48" r="5" fill="#2c2c2c"/>
+    <ellipse cx="140" cy="60" rx="3" ry="4" fill="#c08060"/>
+    <path d="M130,71 Q140,78 150,71" stroke="#8b5e3c" stroke-width="2.5" fill="none"/>
+    <ellipse cx="100" cy="52" rx="8" ry="12" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="180" cy="52" rx="8" ry="12" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <rect x="131" y="88" width="18" height="20" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <path d="M80,112 Q76,178 78,243 L202,243 Q204,178 200,112 Q174,102 140,102 Q106,102 80,112Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+    <path d="M80,118 Q54,146 49,200 Q45,219 53,232 Q61,241 67,232 Q70,219 74,200 Q82,158 80,136Z" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <path d="M200,118 Q226,146 231,200 Q235,219 227,232 Q219,241 213,232 Q210,219 206,200 Q198,158 200,136Z" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="58" cy="244" rx="10" ry="14" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="222" cy="244" rx="10" ry="14" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <path d="M99,241 Q89,298 91,364 Q92,382 103,382 Q114,382 112,364 Q109,298 118,241Z" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/>
+    <path d="M161,241 Q171,298 169,364 Q168,382 177,382 Q189,382 189,364 Q191,298 181,241Z" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/>
+    <ellipse cx="101" cy="390" rx="13" ry="7" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="183" cy="390" rx="13" ry="7" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <line x1="185" y1="20" x2="165" y2="36" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="187" y="19" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Head</text>
+    <line x1="185" y1="7" x2="161" y2="15" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="187" y="7" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Hair</text>
+    <line x1="185" y1="40" x2="164" y2="48" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="187" y="40" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Eye</text>
+    <line x1="82" y1="52" x2="92" y2="52" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="46" y="56" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Ear</text>
+    <line x1="185" y1="60" x2="165" y2="61" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="187" y="64" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Nose</text>
+    <line x1="185" y1="74" x2="162" y2="72" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="187" y="78" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Mouth</text>
+    <line x1="70" y1="102" x2="80" y2="106" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="32" y="106" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Neck</text>
+    <line x1="60" y1="122" x2="80" y2="124" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="6" y="126" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Shoulder</text>
+    <line x1="32" y1="182" x2="52" y2="182" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="2" y="186" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Arm</text>
+    <line x1="32" y1="242" x2="48" y2="242" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="2" y="246" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Hand</text>
+    <line x1="204" y1="160" x2="194" y2="168" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="206" y="158" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Chest</text>
+    <line x1="204" y1="198" x2="196" y2="205" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="206" y="196" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Belly</text>
+    <line x1="204" y1="308" x2="184" y2="308" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="206" y="312" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Leg</text>
+    <line x1="204" y1="350" x2="180" y2="350" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="206" y="354" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Knee</text>
+    <line x1="204" y1="390" x2="196" y2="390" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/><text x="206" y="394" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="#0f172a">Foot</text>
+  </svg></div>`;
+}
+
+function bodyCardUnlabeledHTML(S, shadow) {
+  const W = S || 'min(54vmin,400px)', H = 'min(80vmin,590px)';
+  return `<div style="width:${W};height:${H};border-radius:28px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 18px 8px;box-shadow:${shadow},0 0 0 8px #e2e8f0;overflow:hidden;gap:6px;">
+  <svg viewBox="0 0 200 420" xmlns="http://www.w3.org/2000/svg" style="flex:1;width:100%;max-height:calc(100% - 28px);">
+    <circle cx="100" cy="44" r="34" fill="#fdd9b5" stroke="#c08060" stroke-width="2.5"/>
+    <path d="M72,32 Q75,8 100,8 Q125,8 128,32" fill="#6b4226"/>
+    <circle cx="89" cy="40" r="4" fill="#2c2c2c"/><circle cx="111" cy="40" r="4" fill="#2c2c2c"/>
+    <ellipse cx="100" cy="51" rx="3" ry="3.5" fill="#c08060"/>
+    <path d="M92,61 Q100,67 108,61" stroke="#8b5e3c" stroke-width="2" fill="none"/>
+    <ellipse cx="70" cy="44" rx="7" ry="10" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="130" cy="44" rx="7" ry="10" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <rect x="93" y="76" width="14" height="16" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <path d="M58,96 Q55,152 57,204 L143,204 Q145,152 142,96 Q122,88 100,88 Q78,88 58,96Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+    <path d="M58,102 Q38,126 34,168 Q31,184 38,194 Q45,202 50,194 Q53,181 56,168 Q62,136 60,116Z" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <path d="M142,102 Q162,126 166,168 Q169,184 162,194 Q155,202 150,194 Q147,181 144,168 Q138,136 140,116Z" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="39" cy="205" rx="9" ry="12" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="161" cy="205" rx="9" ry="12" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <path d="M72,202 Q63,250 65,308 Q65,322 74,322 Q83,322 82,308 Q79,250 86,202Z" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/>
+    <path d="M128,202 Q137,250 135,308 Q135,322 126,322 Q117,322 118,308 Q121,250 114,202Z" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/>
+    <ellipse cx="73" cy="329" rx="11" ry="6" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+    <ellipse cx="127" cy="329" rx="11" ry="6" fill="#fdd9b5" stroke="#c08060" stroke-width="1.5"/>
+  </svg>
+  <span style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;">Point to the body part</span>
+</div>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLIENT MODAL
+// ─────────────────────────────────────────────────────────────
+let editingClientId = null;
+
+function openNewClientModal() {
+  editingClientId = null;
+  eid('modal-client-title').textContent = 'New Client';
+  eid('mc-name').value = '';
+  eid('mc-dob').value = '';
+  eid('mc-diagnosis').value = '';
+  eid('mc-notes').value = '';
+  eid('mc-err').classList.add('hidden');
+  eid('mc-delete-btn').classList.add('hidden');
+  eid('modal-client').classList.add('open');
+}
+
+function openEditClientModal() {
+  if (!currentClient) return;
+  editingClientId = currentClient.id;
+  eid('modal-client-title').textContent = 'Edit Client';
+  eid('mc-name').value = currentClient.full_name || '';
+  eid('mc-dob').value = currentClient.date_of_birth || '';
+  eid('mc-diagnosis').value = currentClient.diagnosis || '';
+  eid('mc-notes').value = currentClient.notes || '';
+  eid('mc-err').classList.add('hidden');
+  eid('mc-delete-btn').classList.remove('hidden');
+  eid('modal-client').classList.add('open');
+}
+
+async function saveClient() {
+  const name = eid('mc-name').value.trim();
+  if (!name) { showErr('mc-err', 'Full name is required.'); return; }
+  const payload = {
+    full_name: name,
+    date_of_birth: eid('mc-dob').value || null,
+    diagnosis: eid('mc-diagnosis').value.trim() || null,
+    notes: eid('mc-notes').value.trim() || null
+  };
+  if (editingClientId) {
+    await db.from('clients').update(payload).eq('id', editingClientId);
+    currentClient = { ...currentClient, ...payload };
+    eid('cp-name').textContent = currentClient.full_name;
+  } else {
+    const { data, error } = await db.from('clients')
+      .insert({ ...payload, bcba_id: currentUser.id }).select().single();
+    if (error) { showErr('mc-err', error.message); return; }
+    allClients.push(data);
+  }
+  closeModal('modal-client');
+  loadClients();
+}
+
+async function deleteCurrentClient() {
+  if (!editingClientId) return;
+  if (!confirm('Archive this client? Their assessment history will be preserved.')) return;
+  await db.from('clients').update({ archived_at: new Date().toISOString() }).eq('id', editingClientId);
+  closeModal('modal-client');
+  showView('clients');
+  loadClients();
+}
+
+// ─────────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = eid('view-' + name);
+  if (target) target.classList.add('active');
+}
+
+function closeModal(id) {
+  eid(id).classList.remove('open');
+}
+
+function showErr(id, msg, isSuccess) {
+  const el = eid(id);
+  el.textContent = msg;
+  el.style.color = isSuccess ? 'var(--teal-dk)' : '#be123c';
+  el.style.background = isSuccess ? '#e8f6f8' : '#fff1f2';
+  el.classList.remove('hidden');
+}
+
+function eid(id) { return document.getElementById(id); }
+
+function togglePassVis() {
+  const inp = eid('login-pass');
+  const eye = eid('pass-eye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function clientColor(id) {
+  const colors = ['#1e4d8c','#1a6b5a','#5a2d7a','#7a3d2d','#2a8a9c','#b8860b','#4a6741','#7a4d1a'];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+// ─────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const cv = eid('card-viewer');
+  if (!cv || cv.style.display !== 'flex') return;
+  if (e.key === 'Escape') { closeCardViewer(); }
+  else if (!cvPairMode && !cvMultiMode && !cvFeatureMode) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navCard(1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navCard(-1);
+  }
+  e.preventDefault();
+});
+init();
+</script>
+</body>
+</html>
