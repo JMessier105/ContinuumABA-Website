@@ -447,7 +447,7 @@
 
 
   <!-- ══════════════════════ HERO ══════════════════════ -->
-  <section class="relative hero-bg grain min-h-screen flex items-start pt-20 overflow-hidden" style="background-color:#0e7898;">
+  <section id="hero-section" class="relative hero-bg grain min-h-screen flex items-start overflow-hidden" style="background-color:#0e7898;padding-top:80px;">
 
     <!-- Wavy canvas background -->
     <canvas id="hero-canvas"></canvas>
@@ -1472,11 +1472,16 @@
     (function() {
       const bar    = document.getElementById('announcement-bar');
       const navbar = document.getElementById('navbar');
+      const hero   = document.getElementById('hero-section');
       if (!bar) return;
       if (sessionStorage.getItem('annBarDismissed') === '1') {
         bar.style.display = 'none';
       } else {
-        function setNavTop() { navbar.style.top = bar.offsetHeight + 'px'; }
+        function setNavTop() {
+          const barH = bar.offsetHeight;
+          navbar.style.top = barH + 'px';
+          if (hero) hero.style.paddingTop = (barH + navbar.offsetHeight) + 'px';
+        }
         setNavTop();
         window.addEventListener('resize', setNavTop, { passive: true });
       }
@@ -1484,11 +1489,13 @@
     function closeAnnouncementBar() {
       const bar    = document.getElementById('announcement-bar');
       const navbar = document.getElementById('navbar');
+      const hero   = document.getElementById('hero-section');
       bar.style.opacity   = '0';
       bar.style.transform = 'translateY(-100%)';
       setTimeout(() => {
         bar.style.display = 'none';
         navbar.style.top  = '0';
+        if (hero) hero.style.paddingTop = navbar.offsetHeight + 'px';
         sessionStorage.setItem('annBarDismissed', '1');
       }, 300);
     }
