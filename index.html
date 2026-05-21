@@ -122,6 +122,11 @@
     /* ── Section alt bg ── */
     .section-alt { background-color: #f0fafb; }
 
+    /* Hide ambient player on mobile */
+    @media (max-width: 767px) {
+      #ambient-player { display: none !important; }
+    }
+
     /* ── Nav scroll shadow ── */
     .nav-scrolled {
       box-shadow:
@@ -462,32 +467,31 @@
       <div class="max-w-3xl">
 
         <!-- Hero logo — transparent PNG, full content width -->
-        <div class="mb-8">
+        <div class="mb-4 sm:mb-8">
           <img src="Brand_assets/continuum logo hero.png"
                id="hero-logo"
                alt="Continuum ABA"
-               class="block h-auto object-contain w-full"
-               style="max-width: 560px;
-                      filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
+               class="block h-auto object-contain w-auto max-w-[200px] sm:max-w-[360px] md:max-w-[560px]"
+               style="filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
                       background: transparent;">
         </div>
 
         <!-- Pill tag -->
-        <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full
+        <div class="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full
                     bg-white/10 backdrop-blur-sm border border-white/20
-                    text-white/85 text-sm font-medium mb-8">
-          <span class="pulse-dot w-2 h-2 rounded-full bg-brandGreen"></span>
+                    text-white/85 text-xs sm:text-sm font-medium mb-4 sm:mb-8">
+          <span class="pulse-dot w-2 h-2 rounded-full bg-brandGreen flex-shrink-0"></span>
           Serving Lanark County, Perth, Smiths Falls & Carleton Place + Remote Services Ontario-wide
         </div>
 
-        <h1 class="font-display text-5xl md:text-6xl lg:text-[4.25rem] text-white leading-[1.08]
-                   tracking-tightest mb-7">
+        <h1 class="font-display text-[2.1rem] sm:text-5xl md:text-6xl lg:text-[4.25rem] text-white leading-[1.1]
+                   tracking-tightest mb-5 sm:mb-7">
           Evidence-Based ABA<br>
           for <span class="text-teal-300">Neurodivergent</span><br>
           Learners &amp; Families
         </h1>
 
-        <p class="text-white/75 text-xl leading-[1.75] mb-10 max-w-[34rem]">
+        <p class="text-white/75 text-base sm:text-xl leading-[1.75] mb-6 sm:mb-10 max-w-[34rem]">
           Supporting children, youth, and families across Lanark County with
           compassionate, neurodivergent-affirming Applied Behaviour Analysis.
         </p>
