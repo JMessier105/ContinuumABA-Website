@@ -364,13 +364,13 @@
     <div class="relative max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3 text-white">
       <span class="bar-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:rgba(255,255,255,0.85);"></span>
       <span class="font-bold text-sm sm:text-base tracking-wide">&#10024; Now Accepting New Clients</span>
-      <a href="intake.html"
+      <a href="tel:6134641929"
          class="hidden sm:inline-flex items-center gap-1.5 ml-1 px-4 py-1.5 rounded-full font-bold text-sm"
          style="background:white;color:#16a34a;transition:background-color 0.15s ease,transform 0.15s ease;"
          onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
-        Book Free Consultation &rarr;
+        📞 613-464-1929
       </a>
-      <a href="intake.html" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm">Get started &rarr;</a>
+      <a href="tel:6134641929" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm">📞 613-464-1929</a>
       <button onclick="closeAnnouncementBar()"
               class="ml-1 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
               style="color:rgba(255,255,255,0.6);transition:background-color 0.15s ease,color 0.15s ease;"
@@ -392,7 +392,7 @@
 
         <!-- Desktop links with logo inline on the left of the link group -->
         <div class="hidden md:flex items-center gap-7">
-          <a href="#" aria-label="Continuum ABA home" class="mr-2">
+          <a href="admin.html" aria-label="Continuum ABA home" class="mr-2">
             <img src="Brand_assets/continuum logo no padding.png"
                  alt="Continuum ABA"
                  style="height: 64px; width: 200px; object-fit: contain;">
@@ -405,7 +405,6 @@
           <a href="resources.html" class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Resources</a>
           <a href="faq.html"     class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">FAQ</a>
           <a href="intake.html"  class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Get Started</a>
-          <a href="admin.html"   class="nav-link text-gray-400 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">🔒 Admin</a>
           <a href="#contact"
              class="btn-primary ml-2 inline-flex items-center px-5 py-2.5
                     bg-teal-400 hover:bg-teal-500 text-white text-sm font-semibold
@@ -440,7 +439,6 @@
         <a href="resources.html" class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Resources</a>
         <a href="faq.html"     class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">FAQ</a>
         <a href="intake.html"  class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Get Started</a>
-        <a href="admin.html"   class="text-gray-400 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">🔒 Admin</a>
         <a href="#contact"
            class="btn-primary inline-flex items-center justify-center px-5 py-3
                   bg-teal-400 hover:bg-teal-500 text-white font-semibold rounded-xl">
@@ -496,25 +494,68 @@
           compassionate, neurodivergent-affirming Applied Behaviour Analysis.
         </p>
 
-        <div class="flex flex-wrap gap-4">
-          <a href="intake.html"
-             class="btn-primary inline-flex items-center gap-2 px-7 py-3.5
-                    bg-white text-teal-800 font-semibold rounded-xl text-base
-                    hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2
-                    focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-teal-600"
-             style="box-shadow: 0 6px 24px rgba(0,0,0,0.18);">
-            Start Intake
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        <!-- Quick callback form -->
+        <div id="hero-callback-form" class="w-full max-w-lg">
+          <p class="text-white/60 text-xs font-semibold uppercase tracking-widest mb-3">Request a quick call — we'll reach out within 1 business day</p>
+          <form id="callback-form" class="flex flex-col sm:flex-row gap-2.5">
+            <input type="text" name="name" placeholder="Your name" required
+                   class="flex-1 px-4 py-3 rounded-xl text-gray-800 text-sm font-medium placeholder-gray-400
+                          focus:outline-none focus:ring-2 focus:ring-white/60 bg-white/95"
+                   style="box-shadow:0 2px 12px rgba(0,0,0,0.15);">
+            <input type="tel" name="phone" placeholder="Phone number" required
+                   class="flex-1 px-4 py-3 rounded-xl text-gray-800 text-sm font-medium placeholder-gray-400
+                          focus:outline-none focus:ring-2 focus:ring-white/60 bg-white/95"
+                   style="box-shadow:0 2px 12px rgba(0,0,0,0.15);">
+            <button type="submit"
+                    class="flex-shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+                           font-semibold text-sm text-teal-800 bg-white hover:bg-teal-50
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    style="box-shadow:0 4px 18px rgba(0,0,0,0.2); transition:background-color 0.15s ease, transform 0.15s ease;"
+                    onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+              Call Me Back
+            </button>
+          </form>
+          <!-- Success state -->
+          <div id="callback-success" class="hidden mt-3 flex items-center gap-2 text-white/90 text-sm font-medium">
+            <svg class="w-4 h-4 flex-shrink-0" style="color:#6db33f;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
             </svg>
-          </a>
-          <a href="#services"
-             class="btn-outline inline-flex items-center gap-2 px-7 py-3.5
-                    border-2 border-white/40 text-white font-semibold rounded-xl text-base
-                    hover:bg-white/10 hover:border-white/70
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50">
-            Our Services
-          </a>
+            Got it — we'll call you within 1 business day.
+          </div>
+          <!-- Email option -->
+          <div class="mt-3 flex items-center gap-3">
+            <span class="text-white/35 text-xs">or</span>
+            <a href="mailto:continuumaba@gmail.com"
+               class="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-medium"
+               style="transition:color 0.15s ease;">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              Email us instead
+            </a>
+          </div>
+          <p class="mt-3 text-white/50 text-xs">
+            Already ready?
+            <a href="intake.html" class="text-white/75 hover:text-white underline underline-offset-2 font-medium"
+               style="transition:color 0.15s ease;">Complete the full intake form →</a>
+          </p>
+        </div>
+
+        <!-- Trust signals -->
+        <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div class="flex items-center gap-2.5">
+            <img src="Photos/Jess Messier Photo.jpg" alt="Jessica Messier"
+                 class="w-8 h-8 rounded-full object-cover border-2 border-white/30 flex-shrink-0">
+            <span class="text-white/70 text-sm">Led by <strong class="text-white font-semibold">Jessica Messier</strong>, BCBA · RBA (Ont.)</span>
+          </div>
+          <span class="hidden sm:block w-px h-4 bg-white/20"></span>
+          <div class="flex items-center gap-1.5 text-white/70 text-sm">
+            <svg class="w-4 h-4 flex-shrink-0" style="color:#6db33f;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+            No commitment — free initial consultation
+          </div>
         </div>
 
         <!-- Key facts strip -->
@@ -527,6 +568,11 @@
           <div>
             <div class="font-display text-2xl font-bold text-white">4</div>
             <div class="text-white/55 text-sm mt-0.5">Service Areas</div>
+          </div>
+          <div class="w-px bg-white/20 self-stretch hidden sm:block"></div>
+          <div>
+            <div class="font-display text-2xl font-bold text-white">RBA</div>
+            <div class="text-white/55 text-sm mt-0.5">Ontario Registered</div>
           </div>
           <div class="w-px bg-white/20 self-stretch hidden sm:block"></div>
           <div>
@@ -984,6 +1030,20 @@
     </div>
   </section>
 
+
+  <!-- ══ FAQ NUDGE ══ -->
+  <div class="bg-teal-50 border-y border-teal-100 py-5">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-teal-800 text-sm font-medium">Have questions about ABA therapy or how to get started?</p>
+      <div class="flex items-center gap-4 flex-shrink-0">
+        <a href="faq.html" class="text-teal-600 hover:text-teal-700 text-sm font-semibold underline underline-offset-2"
+           style="transition:color 0.15s ease;">Browse our FAQ</a>
+        <span class="text-teal-300">·</span>
+        <a href="resources.html" class="text-teal-600 hover:text-teal-700 text-sm font-semibold underline underline-offset-2"
+           style="transition:color 0.15s ease;">Parent Resources</a>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════════════ ACCESSOAP ══════════════════════ -->
   <section class="relative oap-bg grain py-20 overflow-hidden">
@@ -1520,6 +1580,29 @@
       link.addEventListener('click', () => {
         document.getElementById('mobile-menu').classList.remove('open');
       });
+    });
+
+    // ─── Hero callback form ──────────────────────────────────────────────
+    document.getElementById('callback-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      const data = { _subject: 'Callback Request — Continuum ABA', name: this.name.value, phone: this.phone.value };
+      try {
+        const res = await fetch('https://formspree.io/f/mqegrrod', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          this.classList.add('hidden');
+          document.getElementById('callback-success').classList.remove('hidden');
+        } else { throw new Error(); }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = 'Call Me Back';
+      }
     });
 
     // ─── Contact form → Formspree ───────────────────────────────────────
