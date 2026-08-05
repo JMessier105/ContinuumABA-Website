@@ -45,6 +45,8 @@
             },
             navy: '#2c4a7c',
             brandGreen: '#6db33f',
+            brandOrange: '#F7941D',
+            brandPurple: '#7c3aed',
           },
           fontFamily: {
             display: ['"Playfair Display"', 'serif'],
@@ -67,6 +69,13 @@
     @keyframes bar-pulse  { 0%,100%{opacity:1} 50%{opacity:.35} }
     @keyframes bar-shimmer{ 0%{left:-100%} 100%{left:200%} }
     .bar-dot { animation: bar-pulse 2s ease-in-out infinite; }
+
+    /* Rotating announcement slides (grid-stacked so height = tallest slide) */
+    #bar-rotator { display: grid; align-items: center; justify-items: center; }
+    #bar-rotator > .bar-slide { grid-area: 1 / 1; }
+    .bar-slide { opacity: 0; pointer-events: none; transition: opacity 0.6s ease; }
+    .bar-slide.is-active { opacity: 1; pointer-events: auto; }
+    @media (prefers-reduced-motion: reduce) { .bar-slide { transition: none; } }
 
     /* ── Grain overlay ── */
     .grain { position: relative; }
@@ -121,6 +130,21 @@
 
     /* ── Section alt bg ── */
     .section-alt { background-color: #f0fafb; }
+
+    /* ── Game On! featured band ── */
+    .game-on-bg {
+      background-color: #faf7ff;
+      background-image:
+        radial-gradient(ellipse 55% 60% at 92% 8%,  rgba(247,148,29,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 55% at 6% 92%,   rgba(124,58,237,0.11) 0%, transparent 58%),
+        radial-gradient(ellipse 42% 40% at 50% 100%, rgba(58,190,202,0.07) 0%, transparent 60%);
+    }
+    .game-on-accent {
+      background: linear-gradient(90deg, #7c3aed, #F7941D);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
 
     /* Hide ambient player on mobile */
     @media (max-width: 767px) {
@@ -348,6 +372,13 @@
     }
     .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
 
+    /* ── Request-a-spot modal ── */
+    #request-modal { opacity: 0; transition: opacity 0.2s ease; }
+    #request-modal.rm-open { opacity: 1; }
+    #rm-card { transform: translateY(12px) scale(0.98); transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease; }
+    #request-modal.rm-open #rm-card { transform: none; }
+    @media (prefers-reduced-motion: reduce) { #request-modal, #rm-card { transition: none; } }
+
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -361,16 +392,37 @@
     <div style="position:absolute;inset:0;pointer-events:none;">
       <div style="position:absolute;top:0;left:-100%;width:45%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);animation:bar-shimmer 2.2s ease-in-out infinite;"></div>
     </div>
-    <div class="relative max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3 text-white">
-      <span class="bar-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:rgba(255,255,255,0.85);"></span>
-      <span class="font-bold text-sm sm:text-base tracking-wide">&#10024; Now Accepting New Clients</span>
-      <a href="tel:6134641929"
-         class="hidden sm:inline-flex items-center gap-1.5 ml-1 px-4 py-1.5 rounded-full font-bold text-sm"
-         style="background:white;color:#16a34a;transition:background-color 0.15s ease,transform 0.15s ease;"
-         onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
-        📞 613-464-1929
-      </a>
-      <a href="tel:6134641929" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm">📞 613-464-1929</a>
+    <div class="relative max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-2 text-white">
+      <span class="w-6 flex-shrink-0 hidden sm:block" aria-hidden="true"></span>
+
+      <div id="bar-rotator">
+        <!-- Slide 1 — Now accepting clients -->
+        <div class="bar-slide is-active flex items-center justify-center gap-3">
+          <span class="bar-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:rgba(255,255,255,0.85);"></span>
+          <span class="font-bold text-sm sm:text-base tracking-wide whitespace-nowrap">&#10024; Now Accepting New Clients</span>
+          <a href="tel:6134641929"
+             class="hidden sm:inline-flex items-center gap-1.5 ml-1 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap"
+             style="background:white;color:#16a34a;transition:background-color 0.15s ease,transform 0.15s ease;"
+             onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+            📞 613-464-1929
+          </a>
+          <a href="tel:6134641929" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm whitespace-nowrap">📞 613-464-1929</a>
+        </div>
+
+        <!-- Slide 2 — Game On! now enrolling -->
+        <div class="bar-slide flex items-center justify-center gap-3">
+          <span class="bar-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:rgba(255,255,255,0.85);"></span>
+          <span class="font-bold text-sm sm:text-base tracking-wide whitespace-nowrap">🎲 Game On!<span class="hidden sm:inline"> Teen Social Group</span> · Now Enrolling</span>
+          <a href="programs.html#game-on"
+             class="hidden sm:inline-flex items-center gap-1.5 ml-1 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap"
+             style="background:white;color:#16a34a;transition:background-color 0.15s ease,transform 0.15s ease;"
+             onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+            Learn more →
+          </a>
+          <a href="programs.html#game-on" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm whitespace-nowrap">Learn more →</a>
+        </div>
+      </div>
+
       <button onclick="closeAnnouncementBar()"
               class="ml-1 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
               style="color:rgba(255,255,255,0.6);transition:background-color 0.15s ease,color 0.15s ease;"
@@ -400,6 +452,7 @@
           <a href="#about"       class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">About</a>
           <a href="#skills"      class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">What We Build</a>
           <a href="#services"    class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Services</a>
+          <a href="programs.html" class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Programs</a>
           <a href="#team"        class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Team</a>
           <a href="#contact"     class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Contact</a>
           <a href="resources.html" class="nav-link text-gray-600 hover:text-teal-500 text-sm font-medium tracking-wide" style="transition: color 0.15s ease;">Resources</a>
@@ -434,6 +487,7 @@
         <a href="#about"       class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">About</a>
         <a href="#skills"      class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">What We Build</a>
         <a href="#services"    class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Services</a>
+        <a href="programs.html" class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Programs</a>
         <a href="#team"        class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Team</a>
         <a href="#contact"     class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Contact</a>
         <a href="resources.html" class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">Resources</a>
@@ -616,6 +670,177 @@
         <path d="M0 72L1440 72L1440 24C1200 64 960 4 720 24C480 44 240 72 0 36L0 72Z"
               fill="white"/>
       </svg>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════ FEATURED: GAME ON! ══════════════════════ -->
+  <section id="game-on" class="relative overflow-hidden py-20 lg:py-24 game-on-bg grain">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 relative" style="z-index:2;">
+
+      <!-- Eyebrow -->
+      <div class="text-center mb-10 fade-in">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                    text-white text-sm font-semibold mb-4"
+             style="background:linear-gradient(90deg,#F7941D,#f0662e); box-shadow:0 6px 20px -4px rgba(247,148,29,0.5);">
+          <span class="pulse-dot w-2 h-2 rounded-full bg-white flex-shrink-0"></span>
+          New Program · Now Enrolling
+        </div>
+        <h2 class="font-display text-3xl md:text-4xl text-gray-900 leading-[1.1] tracking-tighter">
+          A New Way to <span class="game-on-accent">Connect &amp; Grow</span>
+        </h2>
+      </div>
+
+      <!-- Card -->
+      <div class="fade-in relative rounded-[2rem] overflow-hidden border border-white/60 bg-white"
+           style="box-shadow:0 28px 70px -18px rgba(76,29,120,0.30), 0 8px 22px -6px rgba(22,63,74,0.12);">
+        <!-- top accent bar -->
+        <div class="h-1.5 w-full" style="background:linear-gradient(90deg,#7c3aed 0%,#F7941D 45%,#3abeca 80%,#6db33f 100%);"></div>
+
+        <div class="grid lg:grid-cols-[minmax(0,380px)_1fr] gap-8 lg:gap-12 p-6 sm:p-8 lg:p-10 items-center">
+
+          <!-- LEFT: Flyer -->
+          <div class="relative mx-auto w-full max-w-[360px]">
+            <!-- playful glow behind -->
+            <div class="absolute -inset-3 rounded-[1.75rem] blur-xl opacity-60 pointer-events-none"
+                 style="background:radial-gradient(circle at 30% 20%,rgba(124,58,237,0.35),transparent 60%),radial-gradient(circle at 80% 90%,rgba(247,148,29,0.30),transparent 60%);"></div>
+            <a href="Brand_assets/game-on-teen-group.jpg" target="_blank" rel="noopener noreferrer"
+               class="group relative block rounded-2xl overflow-hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brandOrange/40"
+               style="box-shadow:0 18px 44px -10px rgba(76,29,120,0.45); transform:rotate(-1.5deg); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);"
+               onmouseover="this.style.transform='rotate(0deg) scale(1.02)'"
+               onmouseout="this.style.transform='rotate(-1.5deg) scale(1)'">
+              <img src="Brand_assets/game-on-teen-group.jpg"
+                   alt="Game On! Teen Social Group flyer — an 8-week social group for ages 13 to 18, Mondays 5:30 to 7:00 PM, starting September 21, OAP eligible."
+                   class="w-full block">
+              <!-- view-full hint -->
+              <div class="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                          text-white text-xs font-semibold opacity-0 group-hover:opacity-100"
+                   style="background:rgba(30,10,55,0.72); backdrop-filter:blur(6px); transition:opacity 0.2s ease;">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                View full flyer
+              </div>
+            </a>
+          </div>
+
+          <!-- RIGHT: Details -->
+          <div>
+            <h3 class="font-display text-4xl sm:text-5xl leading-[0.95] tracking-tightest mb-1">
+              <span class="text-gray-900">Game</span> <span style="color:#F7941D;">On!</span>
+            </h3>
+            <p class="text-lg font-semibold mb-4" style="color:#7c3aed;">Teen Social Group</p>
+
+            <p class="text-gray-600 leading-[1.75] mb-6 max-w-xl">
+              An 8-week social group where teens build friendships, communication,
+              confidence, and teamwork through board games, card games, and
+              collaborative challenges. Play together. Think together. Grow together.
+            </p>
+
+            <!-- Detail grid -->
+            <div class="grid sm:grid-cols-2 gap-x-6 gap-y-4 mb-7">
+              <!-- Starts -->
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(247,148,29,0.12);">
+                  <svg class="w-5 h-5" style="color:#F7941D;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Starts</div>
+                  <div class="text-gray-900 font-semibold text-sm">September 21</div>
+                </div>
+              </div>
+              <!-- When -->
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(124,58,237,0.10);">
+                  <svg class="w-5 h-5" style="color:#7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Mondays</div>
+                  <div class="text-gray-900 font-semibold text-sm">5:30 – 7:00 PM</div>
+                </div>
+              </div>
+              <!-- Ages -->
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(58,190,202,0.12);">
+                  <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ages</div>
+                  <div class="text-gray-900 font-semibold text-sm">13 – 18</div>
+                </div>
+              </div>
+              <!-- Location -->
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(109,179,63,0.12);">
+                  <svg class="w-5 h-5" style="color:#6db33f;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">In person</div>
+                  <div class="text-gray-900 font-semibold text-sm">Continuum ABA</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price + OAP + CTA row -->
+            <div class="rounded-2xl p-5 mb-6" style="background:linear-gradient(120deg,#f7f2ff 0%,#fff6ec 100%); border:1px solid rgba(124,58,237,0.12);">
+              <div class="flex flex-wrap items-center gap-x-6 gap-y-3 justify-between">
+                <div class="flex items-end gap-2">
+                  <span class="font-display text-3xl font-bold text-gray-900">$700</span>
+                  <span class="text-gray-500 text-sm pb-1">intro price · full 8 weeks</span>
+                </div>
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold"
+                     style="background:rgba(58,190,202,0.12); color:#1d6d7d;">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                  </svg>
+                  OAP Eligible
+                </div>
+              </div>
+            </div>
+
+            <!-- CTAs -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button type="button" onclick="openRequestModal('Game On!','Teen Social Group')"
+                 class="btn-primary inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl
+                        text-white font-semibold text-base focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:ring-offset-2"
+                 style="background:linear-gradient(90deg,#F7941D,#f0662e); box-shadow:0 10px 28px -6px rgba(247,148,29,0.55); --tw-ring-color:#F7941D;">
+                Request a Spot
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+              </button>
+              <a href="tel:6134641929"
+                 class="btn-outline inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl
+                        font-semibold text-base border-2 focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:ring-offset-2"
+                 style="border-color:#7c3aed; color:#7c3aed; --tw-ring-color:#7c3aed;"
+                 onmouseover="this.style.backgroundColor='#7c3aed';this.style.color='#fff'"
+                 onmouseout="this.style.backgroundColor='';this.style.color='#7c3aed'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+                613-464-1929
+              </a>
+              <span class="text-gray-500 text-sm sm:ml-1 flex items-center gap-1.5">
+                <span class="pulse-dot w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:#f0662e;"></span>
+                Spaces are limited
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1279,13 +1504,13 @@
             <div class="overflow-hidden flex-1" style="mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);">
               <div class="ticker-track inline-flex items-center gap-10 py-4 px-6 whitespace-nowrap"
                    style="animation: ticker 30s linear infinite;">
-                <span class="text-sm text-gray-400 italic">"Testimonials coming soon — we'd love to hear from your family."</span>
+                <span class="text-sm text-gray-600 italic">&ldquo;You, quite literally, changed my kid&rsquo;s life. Forever grateful for having you in our lives!&rdquo;<span class="not-italic text-teal-500 font-semibold text-xs ml-2">Continuum ABA family</span></span>
                 <span class="text-teal-300 select-none">✦</span>
-                <span class="text-sm text-gray-400 italic">"Real families, real results — check back as we grow."</span>
+                <span class="text-sm text-gray-600 italic">&ldquo;You, quite literally, changed my kid&rsquo;s life. Forever grateful for having you in our lives!&rdquo;<span class="not-italic text-teal-500 font-semibold text-xs ml-2">Continuum ABA family</span></span>
                 <span class="text-teal-300 select-none">✦</span>
-                <span class="text-sm text-gray-400 italic">"Testimonials coming soon — we'd love to hear from your family."</span>
+                <span class="text-sm text-gray-600 italic">&ldquo;You, quite literally, changed my kid&rsquo;s life. Forever grateful for having you in our lives!&rdquo;<span class="not-italic text-teal-500 font-semibold text-xs ml-2">Continuum ABA family</span></span>
                 <span class="text-teal-300 select-none">✦</span>
-                <span class="text-sm text-gray-400 italic">"Real families, real results — check back as we grow."</span>
+                <span class="text-sm text-gray-600 italic">&ldquo;You, quite literally, changed my kid&rsquo;s life. Forever grateful for having you in our lives!&rdquo;<span class="not-italic text-teal-500 font-semibold text-xs ml-2">Continuum ABA family</span></span>
                 <span class="text-teal-300 select-none">✦</span>
               </div>
             </div>
@@ -1508,6 +1733,7 @@
           <a href="#about"       class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">About</a>
           <a href="#skills"      class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">What We Build</a>
           <a href="#services"    class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">Services</a>
+          <a href="programs.html" class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">Programs</a>
           <a href="#team"        class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">Team</a>
           <a href="#feedback"    class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">Feedback</a>
           <a href="#contact"     class="text-white/55 hover:text-white text-sm" style="transition: color 0.15s ease;">Contact</a>
@@ -1556,6 +1782,80 @@
   </footer>
 
 
+  <!-- ══════════════════════ REQUEST-A-SPOT MODAL ══════════════════════ -->
+  <div id="request-modal" class="fixed inset-0 z-[80] items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="rm-title" style="display:none;">
+    <div id="rm-overlay" class="absolute inset-0" style="background:rgba(30,16,55,0.55); backdrop-filter:blur(4px);"></div>
+    <div id="rm-card" class="relative w-full max-w-md bg-white rounded-3xl overflow-hidden" style="box-shadow:0 30px 80px -20px rgba(76,29,120,0.5);">
+      <div class="h-1.5 w-full" style="background:linear-gradient(90deg,#7c3aed 0%,#F7941D 45%,#3abeca 80%,#6db33f 100%);"></div>
+      <button onclick="closeRequestModal()" aria-label="Close" type="button"
+              class="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brandPurple"
+              style="transition:background-color 0.15s ease, color 0.15s ease;">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+      <div class="p-7 sm:p-8">
+        <h3 id="rm-title" class="font-display text-2xl text-gray-900 leading-tight mb-1">Request a Spot</h3>
+        <p id="rm-sub" class="text-sm font-semibold mb-4" style="color:#7c3aed;"></p>
+        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+          Send us your details and we'll be in touch about availability. Sending a request doesn't guarantee a spot.
+        </p>
+
+        <form id="rm-form" class="space-y-4">
+          <input type="hidden" name="_subject" id="rm-subject">
+          <input type="hidden" name="Group" id="rm-group">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Your name</label>
+            <input type="text" name="Parent/guardian name" required placeholder="Jane Doe"
+                   class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 text-sm bg-white">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Participant's age</label>
+              <input type="text" name="Participant age" placeholder="14"
+                     class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 text-sm bg-white">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Phone</label>
+              <input type="tel" name="Phone" placeholder="613-000-0000"
+                     class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 text-sm bg-white">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Email</label>
+            <input type="email" name="Email" required placeholder="jane@example.com"
+                   class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 text-sm bg-white">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Anything we should know? (optional)</label>
+            <textarea name="Message" rows="2" placeholder="Questions, scheduling notes, etc."
+                      class="form-input w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 text-sm bg-white resize-none"></textarea>
+          </div>
+          <button type="submit" id="rm-submit"
+                  class="btn-primary w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style="background:linear-gradient(90deg,#F7941D,#f0662e); box-shadow:0 10px 28px -6px rgba(247,148,29,0.55); --tw-ring-color:#F7941D;">
+            Send request
+          </button>
+          <p class="text-center text-gray-400 text-xs">Prefer to call? <a href="tel:6134641929" class="font-semibold" style="color:#7c3aed;">613-464-1929</a></p>
+        </form>
+
+        <div id="rm-success" class="hidden text-center py-6">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style="background:#ecfdf5;">
+            <svg class="w-8 h-8" style="color:#16a34a;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <h4 class="font-display text-xl text-gray-900 mb-2">Request sent!</h4>
+          <p class="text-gray-500 text-sm leading-relaxed">Thanks. We'll be in touch about availability soon.</p>
+          <button type="button" onclick="closeRequestModal()" class="mt-6 text-sm font-semibold underline underline-offset-2" style="color:#7c3aed;">Close</button>
+        </div>
+
+        <div id="rm-error" class="hidden mt-4 p-4 rounded-xl bg-red-50 border border-red-100 text-center">
+          <p class="text-red-600 text-sm font-medium">Something went wrong. Please email
+            <a href="mailto:continuumaba@gmail.com" class="underline">continuumaba@gmail.com</a> or call 613-464-1929.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- ══════════════════════ JS ══════════════════════ -->
   <script>
     // Announcement bar
@@ -1574,6 +1874,17 @@
         }
         setNavTop();
         window.addEventListener('resize', setNavTop, { passive: true });
+      }
+
+      // Rotate announcement slides
+      const slides = bar.querySelectorAll('#bar-rotator .bar-slide');
+      if (slides.length > 1) {
+        let idx = 0;
+        setInterval(() => {
+          slides[idx].classList.remove('is-active');
+          idx = (idx + 1) % slides.length;
+          slides[idx].classList.add('is-active');
+        }, 5000);
       }
     })();
     function closeAnnouncementBar() {
@@ -1737,6 +2048,50 @@
           if (p) p.style.marginLeft = '';
         });
       }
+    });
+
+    // ─── Request-a-spot modal (submits to Formspree, lands in continuumaba@gmail.com) ───
+    function openRequestModal(title, subtitle) {
+      const modal = document.getElementById('request-modal');
+      if (!modal) return;
+      const groupName = title + (subtitle ? ' (' + subtitle + ')' : '');
+      document.getElementById('rm-title').textContent = 'Request a Spot';
+      document.getElementById('rm-sub').textContent = title + (subtitle ? ' · ' + subtitle : '');
+      document.getElementById('rm-group').value = groupName;
+      document.getElementById('rm-subject').value = 'Spot request: ' + groupName + ' at Continuum ABA';
+      const form = document.getElementById('rm-form');
+      form.reset(); form.classList.remove('hidden');
+      document.getElementById('rm-success').classList.add('hidden');
+      document.getElementById('rm-error').classList.add('hidden');
+      const btn = document.getElementById('rm-submit'); btn.disabled = false; btn.textContent = 'Send request';
+      modal.style.display = 'flex';
+      requestAnimationFrame(() => modal.classList.add('rm-open'));
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => { const f = form.querySelector('input[name="Parent/guardian name"]'); if (f) f.focus(); }, 60);
+    }
+    function closeRequestModal() {
+      const modal = document.getElementById('request-modal');
+      modal.classList.remove('rm-open');
+      document.body.style.overflow = '';
+      setTimeout(() => { modal.style.display = 'none'; }, 200);
+    }
+    document.getElementById('rm-overlay').addEventListener('click', closeRequestModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('request-modal').classList.contains('rm-open')) closeRequestModal();
+    });
+    document.getElementById('rm-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const btn = document.getElementById('rm-submit');
+      btn.disabled = true; btn.textContent = 'Sending…';
+      document.getElementById('rm-error').classList.add('hidden');
+      const fd = new FormData(this); const payload = {}; fd.forEach((v, k) => payload[k] = v);
+      try {
+        const res = await fetch('https://formspree.io/f/' + FORMSPREE_ID, {
+          method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+        if (res.ok) { this.classList.add('hidden'); document.getElementById('rm-success').classList.remove('hidden'); }
+        else throw new Error();
+      } catch { btn.disabled = false; btn.textContent = 'Send request'; document.getElementById('rm-error').classList.remove('hidden'); }
     });
 
   </script>
