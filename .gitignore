@@ -4,3 +4,8 @@ screenshot.mjs
 CLAUDE.md
 temporary screenshots/
 node_modules/
+
+# Secrets / local environment — never commit
+.env
+.env.local
+.env.*.local
