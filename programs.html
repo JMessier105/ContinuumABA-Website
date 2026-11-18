@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Programs &amp; Groups — Continuum ABA</title>
+  <title>Social Groups for Kids &amp; Teens in Perth, ON | Continuum ABA</title>
+  <meta name="description" content="Social skills groups and seasonal programs for kids and teens at the Continuum ABA clinic in Perth, serving Lanark County families. OAP eligible.">
+  <link rel="canonical" href="https://continuumaba.com/programs.html">
 
   <!-- Open Graph / Social sharing -->
   <meta property="og:type"        content="website" />
@@ -174,12 +176,12 @@
         </div>
         <div class="bar-slide flex items-center justify-center gap-3">
           <span class="bar-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:rgba(255,255,255,0.85);"></span>
-          <span class="font-bold text-sm sm:text-base tracking-wide whitespace-nowrap">🎲 Game On!<span class="hidden sm:inline"> Youth Social Group</span> · Ongoing</span>
-          <a href="#game-on"
+          <span class="font-bold text-sm sm:text-base tracking-wide whitespace-nowrap">🍪 Holiday Cookie Baking Day<span class="hidden sm:inline"> · Sun, Dec 20</span></span>
+          <a href="#holiday-bake"
              class="hidden sm:inline-flex items-center gap-1.5 ml-1 px-4 py-1.5 rounded-full font-bold text-sm whitespace-nowrap"
              style="background:white;color:#16a34a;transition:background-color 0.15s ease,transform 0.15s ease;"
              onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">Learn more →</a>
-          <a href="#game-on" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm whitespace-nowrap">Learn more →</a>
+          <a href="#holiday-bake" class="sm:hidden font-bold text-white underline underline-offset-2 text-sm whitespace-nowrap">Learn more →</a>
         </div>
       </div>
       <button onclick="closeAnnouncementBar()"
@@ -225,6 +227,20 @@
         </button>
       </div>
     </div>
+    <!-- Clinic address strip (always visible) -->
+    <div class="border-t border-gray-100" style="background:#f7fbfb;">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-8 flex items-center justify-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+        <svg class="w-3.5 h-3.5 flex-shrink-0 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span><span class="hidden sm:inline font-semibold text-gray-800">Clinic: </span>182 Christie Lake North Shore Rd, Perth<span class="hidden sm:inline">, ON K7H 3C6</span></span>
+        <a href="https://www.google.com/maps/search/?api=1&query=182+Christie+Lake+North+Shore+Rd,+Perth,+ON+K7H+3C6" target="_blank" rel="noopener"
+           class="ml-1 font-semibold text-teal-600 hover:text-teal-700 hover:underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 active:opacity-70"
+           style="transition: color 0.15s ease, opacity 0.15s ease;">Directions →</a>
+      </div>
+    </div>
+
     <div id="mobile-menu" class="md:hidden border-t border-gray-100 bg-white shadow-lg">
       <div class="px-6 py-5 flex flex-col gap-5">
         <a href="index.html#about"    class="text-gray-700 hover:text-teal-500 font-medium" style="transition: color 0.15s ease;">About</a>
@@ -497,8 +513,24 @@
          status : 'enrolling' (green badge, "Reserve a Spot")
                   'interest'  (purple badge, "I'm Interested")
          flyer  : path to the flyer image, OR null for a "coming soon" poster
+         formUrl: (optional) external sign-up form; the button opens it instead of the pop-up
        ════════════════════════════════════════════════════════════════ */
     const GROUPS = [
+      {
+        id: 'holiday-bake',
+        status: 'enrolling',
+        title: 'Holiday Cookie Baking Day!',
+        subtitle: 'Festive Baking Workshop',
+        flyer: 'Brand_assets/holiday-cookie-baking-day.jpg',
+        formUrl: 'https://forms.cloud.microsoft/r/db3LfYnyNJ',
+        blurb: 'A hands-on baking experience where participants mix, bake, decorate, and create a variety of festive cookies. Everyone heads home with a box of cookies to share with family.',
+        tags: ['Sunday, Dec 20', '9:00 AM – 12:00 PM', '1:00 PM – 4:00 PM', '$175 per participant', 'Perth', 'OAP eligible', 'Register by Dec 15'],
+        accent: '#d62839',
+      },
+
+      // ── Archived groups ───────────────────────────────────────────────
+      // Remove the slash-star / star-slash lines to bring one back.
+      /*
       {
         id: 'game-on',
         status: 'running',
@@ -509,6 +541,7 @@
         tags: ['Ages 8 – 13', 'Mondays 5:30 – 7:00 PM', 'Started Sept 21', 'Perth', 'OAP eligible'],
         accent: '#F7941D',
       },
+      */
 
       // ── Ready-to-use templates for future groups ──────────────────────
       // To show one, delete the two comment lines wrapping it (the line
@@ -598,7 +631,7 @@
         : `background:linear-gradient(90deg,#7c3aed,#6d28d9); box-shadow:0 10px 28px -6px rgba(124,58,237,0.5); --tw-ring-color:#7c3aed;`;
 
       return `
-      <div class="prog-slide" id="${esc(g.id)}" style="scroll-margin-top:150px;">
+      <div class="prog-slide" id="${esc(g.id)}" style="scroll-margin-top:180px;">
         <div class="mx-2 sm:mx-3">
           <div class="bg-white rounded-[2rem] border border-white/60 overflow-hidden"
                style="box-shadow:0 28px 70px -18px rgba(76,29,120,0.28), 0 8px 22px -6px rgba(22,63,74,0.10);">
@@ -618,12 +651,12 @@
                 <p class="text-gray-600 leading-[1.75] mb-6 max-w-xl">${esc(g.blurb)}</p>
                 <div class="flex flex-wrap gap-2 mb-7">${tags}</div>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <button type="button" onclick="openRequestModal('${esc(g.id)}')"
+                  <${g.formUrl ? `a href="${esc(g.formUrl)}" target="_blank" rel="noopener noreferrer"` : `button type="button" onclick="openRequestModal('${esc(g.id)}')"`}
                      class="btn-primary inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-white font-semibold text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                      style="${ctaStyle}">
                     ${ctaLabel}
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                  </button>
+                  </${g.formUrl ? 'a' : 'button'}>
                   <a href="tel:6134641929"
                      class="btn-outline inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-base border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                      style="border-color:#7c3aed; color:#7c3aed; --tw-ring-color:#7c3aed;"
@@ -706,7 +739,7 @@
     window.addEventListener('resize', () => goTo(index, false), { passive: true });
     update();
 
-    // Deep link to a specific group (#game-on etc.)
+    // Deep link to a specific group (#holiday-bake etc.)
     if (location.hash) {
       const i = slides.findIndex(s => '#' + s.id === location.hash);
       if (i >= 0) setTimeout(() => {
@@ -779,6 +812,7 @@
       if (!g) return;
       const modal = document.getElementById('request-modal');
       const enrolling = g.status === 'enrolling';
+      const running = g.status === 'running';
       const groupName = g.title + (g.subtitle ? ' (' + g.subtitle + ')' : '');
       document.getElementById('rm-title').textContent = enrolling ? 'Request a Spot' : running ? 'Join the Next Group' : 'Get on the List';
       document.getElementById('rm-sub').textContent = g.title + (g.subtitle ? ' · ' + g.subtitle : '');
